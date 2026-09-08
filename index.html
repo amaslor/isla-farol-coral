@@ -184,6 +184,43 @@
   #barraPuente{position:absolute; bottom:92px; left:50%; transform:translateX(-50%)}
   #relleno{height:100%; width:100%; background:linear-gradient(90deg,#5FA55A,#8FE3C8); transition:width .2s}
 
+  /* ---------- EN EL MÓVIL ----------
+     A 375 px de ancho no cabe lo mismo que en el Mac: la barra de arriba se
+     apretuja y el hada se come los botones. Aquí se recoloca todo. */
+  .en-estrecho{display:none}
+  @media (max-width: 620px){
+    body{font-size:17px}
+    h1{font-size:25px}
+    .en-ancho{display:none}
+    .en-estrecho{display:inline}
+
+    #hud{top:8px; left:8px; right:8px; gap:6px; font-size:15px; flex-wrap:nowrap}
+    #hud .caja-hud{padding:3px 9px; border-radius:10px}
+    #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
+    #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
+    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda{font-size:17px; padding:3px 5px; margin-right:0}
+    #volverInicio{font-size:17px; text-decoration:none; padding:0 3px}
+
+    /* El hada, más pequeña y por debajo de la barra de arriba */
+    #hada{top:62px; right:8px; gap:6px}
+    #hadaLienzo{width:66px; height:66px}
+    #hadaGlobo{font-size:15px; line-height:1.45; padding:9px 13px; max-width:62vw;
+               border-radius:16px 16px 4px 16px}
+
+    /* Los mandos, un poco más juntos para que quepan bien */
+    #mandos{bottom:10px; left:8px; right:8px; gap:8px}
+    #mandos button{width:58px; height:52px; font-size:21px; border-radius:15px}
+
+    /* Las ventanas, a pantalla casi completa */
+    .caja{padding:22px 14px 16px; border-radius:18px; max-height:94vh}
+    .dice{font-size:19px}
+    .tarjeta{width:150px; padding:12px; font-size:15px}
+    .opcion{width:108px}
+    .opcion .prevista{width:86px; height:112px}
+    .espejo-lado{min-width:0}
+    .pista-flotante{font-size:15px; padding:10px 14px; bottom:78px}
+  }
+
   /* Lumi, el hada que acompaña */
   #hada{position:fixed; top:64px; right:14px; display:flex; align-items:center;
         gap:10px; cursor:pointer; z-index:11;
@@ -303,13 +340,13 @@
   <div id="hud">
     <span class="caja-hud">🐚 <span id="conchas">0</span></span>
     <span class="caja-hud">💎 <span id="cristales">0/5</span></span>
-    <span class="caja-hud"><span id="nombreJugadora"></span></span>
+    <span class="caja-hud caja-nombre"><span id="nombreJugadora"></span></span>
     <span class="der"><button id="bAyuda" title="Cómo se juega (tecla T)">❓</button>
     <button id="bMochila" title="Mochila">🎒</button>
     <button id="bMapa" title="Mapa (tecla M)">🗺️</button>
     <button id="bPantalla" title="Pantalla completa (tecla P)">⛶</button>
     <button id="bSonido" title="Sonido">🔊</button>
-    <button class="enlace" id="volverInicio">cambiar de jugadora</button></span>
+    <button class="enlace" id="volverInicio"><span class="en-ancho">cambiar de jugadora</span><span class="en-estrecho">👤</span></button></span>
   </div>
 
   <div id="barraTiempo" class="oculto">
@@ -6274,12 +6311,14 @@ const Tutorial = {
              'es solo un trocito.' },
 
     { icono: '⬅️➡️', titulo: 'Para andar',
-      texto: 'Usa las <b>cuatro flechas</b> del teclado.<br><br>' +
-             'Si prefieres el ratón, <b>toca en el suelo</b> donde quieras ir y tu personaje ' +
-             'va solo hasta allí.' },
+      texto: 'Usa las <b>cuatro flechas</b>: las del teclado, o los botones de abajo a la ' +
+             'izquierda si juegas en tablet o móvil.<br><br>' +
+             'También puedes <b>tocar en el suelo</b> donde quieras ir y tu personaje va solo ' +
+             'hasta allí.' },
 
     { icono: '⏫', titulo: 'Para dar un brinco',
-      texto: 'La <b>barra espaciadora</b>.<br><br>No sirve para nada. Es solo porque mola.' },
+      texto: 'La <b>barra espaciadora</b>, o el botón <b>⤴</b> de abajo.<br><br>' +
+             'No sirve para nada. Es solo porque mola.' },
 
     { icono: '✨', titulo: 'Los sitios brillan',
       texto: 'Cuando en un sitio hay algo, el suelo <b>brilla y late</b>. Se ve desde lejos.<br><br>' +
@@ -6702,7 +6741,7 @@ const Hada = {
     Sonido.nota(1318, 0.3, 'sine', 0.08, 0.12);
     hada.classList.remove('presentando');
     document.getElementById('modal').classList.remove('con-hada');
-    setTimeout(() => this.decir('Me quedo aquí arriba. Muévete con las <b>flechas</b>.', 7), 1300);
+    setTimeout(() => this.decir('Me quedo aquí al lado. Muévete con las <b>flechas</b>: las del teclado o los botones de abajo.', 7), 1300);
   },
 
   /* Y un saludo corto cuando vuelve a jugar otro día */
@@ -6739,7 +6778,7 @@ const Pistas = {
   mostrando: false,
 
   textos: {
-    mover:   { i: '🕹️', t: 'Muévete con las <b>flechas</b>. Y con la <b>barra espaciadora</b> das un brinco, que mola.' },
+    mover:   { i: '🕹️', t: 'Muévete con las <b>flechas</b>: las del teclado o los botones de abajo. Con <b>⤴</b> das un brinco, que mola.' },
     brillo:  { i: '✨', t: '¿Ves ese <b>brillo en el suelo</b>? Ahí hay algo. Acércate y te digo qué es.' },
     reto:    { i: '🔢', t: 'Aquí hay un <b>reto de números</b>. Pulsa <b>J</b> de jugar y a ver qué tal.' },
     letras:  { i: '🔤', t: 'Este es de <b>palabras</b>. Pulsa <b>J</b> de jugar.' },
@@ -6755,11 +6794,11 @@ const Pistas = {
     conchas: { i: '🐚', t: 'Esas <b>conchas</b> son tu dinero. Guárdalas: en la tienda de Mila hay cosas.' },
     cristal: { i: '💎', t: '¡Tu primer <b>cristal del Farol</b>! Te faltan cuatro. Cuando estén los cinco… ya verás.' },
     puedeComprar: { i: '🛍️', t: 'Ya tienes conchas de sobra: date una vuelta por <b>la tienda de Mila</b>.' },
-    mapa:    { i: '🗺️', t: 'Vas encontrando sitios. Pulsa <b>M</b> para ver el <b>mapa</b> de la isla.' },
+    mapa:    { i: '🗺️', t: 'Vas encontrando sitios. Toca <b>🗺️</b> arriba (o la tecla <b>M</b>) para ver el <b>mapa</b>.' },
     mascota: { i: '🐾', t: '¡Tu primera mascota! En el <b>animalario</b> puedes elegir quién te acompaña.' },
     dormido: { i: '💤', t: 'Se ha ido a dormir. Ve al <b>salón de Coco</b>, juega una ronda y vuelve.' },
     mochila: { i: '🎒', t: 'Lo raro que encuentres se guarda en tu <b>mochila</b>, arriba a la derecha.' },
-    pantalla:{ i: '⛶', t: 'Con la tecla <b>P</b> pones el juego a <b>pantalla completa</b>.' },
+    pantalla:{ i: '⛶', t: 'Con el botón <b>⛶</b> de arriba (o la tecla <b>P</b>) lo pones a <b>pantalla completa</b>.' },
   },
 
   /* Enseña una pista si no se ha visto ya */
