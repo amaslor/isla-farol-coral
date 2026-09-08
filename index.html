@@ -227,9 +227,10 @@
     .espejo-fila{gap:10px}
     .espejo-fila > canvas{width:104px; height:auto}
     .opciones{max-height:none}
-    /* Con una ventana abierta, Lumi se quita de en medio */
-    .con-modal #hada{display:none}
   }
+
+  /* Con una ventana abierta, Lumi se quita de en medio (menos al presentarse) */
+  .con-modal #hada:not(.presentando){display:none}
 
   /* Lumi, el hada que acompaña */
   #hada{position:fixed; top:64px; right:14px; display:flex; align-items:center;
@@ -5965,6 +5966,7 @@ const Tienda = {
     UI.abrir(`
       <div class="quien">Mila, la tienda</div>
       <div class="contador">Tienes 🐚 <b>${p.conchas}</b> conchas</div>
+      ${Pedidos.cartel()}
       <div class="espejo-fila">
         <canvas id="espejoTienda" width="150" height="210"></canvas>
         <div class="espejo-lado">
@@ -5972,7 +5974,6 @@ const Tienda = {
           <div class="opciones">${opciones}</div>
         </div>
       </div>
-      ${Pedidos.cartel()}
       <p class="pista" id="pista">Lo que todavía no es tuyo se ve <b>sin color</b>. Al comprarlo, se enciende.</p>
     `);
 
