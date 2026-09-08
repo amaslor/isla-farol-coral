@@ -219,6 +219,13 @@
     .opcion .prevista{width:86px; height:112px}
     .espejo-lado{min-width:0}
     .pista-flotante{font-size:15px; padding:10px 14px; bottom:78px}
+
+    /* El espejo, pequeño: lo que importa aquí es ver la ropa de la lista */
+    .espejo-fila{gap:10px}
+    .espejo-fila > canvas{width:104px; height:auto}
+    .opciones{max-height:none}
+    /* Con una ventana abierta, Lumi se quita de en medio */
+    .con-modal #hada{display:none}
   }
 
   /* Lumi, el hada que acompaña */
@@ -4856,6 +4863,8 @@ const UI = {
     this.modal.innerHTML =
       '<div class="caja"><button class="cerrar" title="Salir">✕</button>' + html + '</div>';
     this.modal.classList.remove('oculto');
+    // En el móvil, Lumi se aparta mientras hay una ventana abierta
+    document.body.classList.add('con-modal');
     this.modal.querySelector('.cerrar').onclick = () => {
       Sonido.clic();
       if (alCerrar) alCerrar(); else this.cerrar();
@@ -4864,6 +4873,7 @@ const UI = {
 
   cerrar() {
     this.modal.classList.add('oculto');
+    document.body.classList.remove('con-modal');
     this.modal.innerHTML = '';
     this.pararVoz();
     if (window.Musica && Estado.actual) Musica.segunSitio();
