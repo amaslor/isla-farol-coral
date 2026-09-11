@@ -116,6 +116,7 @@
   .tarjeta .icono{font-size:30px}
   .tarjeta.bien{border-color:var(--verde); background:#E7F6E4}
   .tarjeta.mal{border-color:#DDD6CC; opacity:.55}
+  .tarjetas.esperando{visibility:hidden}
 
   /* Las conchas en filas de cinco: así se cuentan de un vistazo */
   /* Los peces del espigón */
@@ -413,6 +414,18 @@ const AJUSTES = {
      día y poco después, para que siga habiendo motivo para volver mañana. */
   conchasPorLimpiar: 7,
   conchasPorLimpiarRepe: 2,
+
+  /* --- Un reto al día --------------------------------------------------
+     Cada reto (granja y atracciones incluidas) se cobra una sola vez al día.
+     Y cada día solo unos cuantos sitios tienen reto: se sortean por la
+     mañana. Los retos de cristal que aún no ha ganado están siempre abiertos. */
+  retosPorDia: 8,
+
+  /* --- Para que lea antes de elegir ------------------------------------
+     Las tarjetas de «¿Qué hay que hacer?» tardan unos segundos en salir, y
+     acertar a la primera da una concha de más. */
+  segundosAntesDeTarjetas: { mayor: 3, pequena: 2 },
+  conchasALaPrimera: 1,
 
   // --- Cuándo se cansa un personaje ------------------------------------
   fallosParaDormirse: 3,     // fallos seguidos antes de que se vaya a dormir
@@ -1076,6 +1089,31 @@ const RETOS = {
                    'La tabla del {c}.'],
         },
         {
+          vars: () => { const n = AZ(12, 18), y = AZ(3, 8); return { n, y, sol: n - y, total: n - y + 6 }; },
+          enunciado: 'Para el collar necesito {n} conchas y ya tengo {y}. ¿Cuántas me faltan por coger?',
+          operacion: 'quitar',
+          opciones: ['juntar', 'quitar', 'multiplicar'],
+          explica: {
+            juntar: '{n} y {y} son muchas más de las que necesito.',
+            multiplicar: 'Aquí no hay grupos iguales.',
+          },
+          mecanica: 'coger', objetivo: '{sol}', total: '{total}',
+          pistas: ['De {y} hasta {n}, ¿cuántas faltan?', 'Cuenta desde {y} hasta llegar a {n}.'],
+        },
+        {
+          vars: () => { const p = AZ(3, 4), c = AZ(3, 5), y = AZ(2, 5);
+                        return { p, c, y, t: p * c, sol: p * c - y, total: p * c - y + 6 }; },
+          enunciado: 'Quiero {p} pulseras de {c} conchas. Ya tengo {y} conchas. ¿Cuántas me faltan?',
+          operacion: 'dosPasos',
+          opciones: ['multiplicar', 'quitar', 'dosPasos'],
+          explica: {
+            multiplicar: '{p} × {c} = {t} es lo que necesito en total. Pero ya tengo {y}…',
+            quitar: 'Antes de quitar, hay que saber cuántas necesito: {p} pulseras de {c}.',
+          },
+          mecanica: 'coger', objetivo: '{sol}', total: '{total}',
+          pistas: ['Primero: {p} pulseras de {c} son {t}.', 'Después: {t} menos las {y} que tengo.'],
+        },
+        {
           vars: () => { const a = AZ(4, 9), b = AZ(4, 9);
                         return { a, b, sol: a + b, mal: a * b, total: a + b + 7 }; },
           enunciado: 'Tengo {a} conchas y encuentro {b} más. ¿Cuántas tengo ahora?',
@@ -1147,6 +1185,15 @@ const RETOS = {
           mecanica: 'coger', objetivo: '{sol}', total: '{total}',
           pistas: ['{c} conchas, {p} veces.', 'Ve contando de {c} en {c}.'],
         },
+        {
+          vars: () => { const n = AZ(7, 10), y = AZ(2, 5); return { n, y, sol: n - y, total: n - y + 5 }; },
+          enunciado: 'Necesito {n} conchas y ya tengo {y}. ¿Cuántas me faltan?',
+          operacion: 'quitar',
+          opciones: ['juntar', 'quitar'],
+          explica: { juntar: '{n} y {y} son demasiadas: solo necesito {n}.' },
+          mecanica: 'coger', objetivo: '{sol}', total: '{total}',
+          pistas: ['De {y} hasta {n}.', 'Cuenta desde {y} hasta {n} con los dedos.'],
+        },
       ],
       facil: {
         vars: () => { const a = AZ(1, 3), b = AZ(2, 3);
@@ -1177,45 +1224,49 @@ const RETOS = {
 
     mayor: {
       variantes: [
-        {
-          vars: () => { const c = AZ(3, 4), q = AZ(3, 5);
-                        return { c, q, t: c * q, sol: q, mal: c * q * c }; },
-          enunciado: 'Tengo {t} manzanas y {c} cestas. Quiero que las {c} tengan la misma cantidad. ¿Cuánto le toca a cada una?',
-          operacion: 'repartir',
-          opciones: ['juntar', 'multiplicar', 'repartir'],
-          explica: {
-            juntar: 'Si lo junto todo me sale un montón de {t} en una cesta… y las otras vacías.',
-            multiplicar: 'Si pongo {t} en cada cesta necesito {mal} manzanas, ¡y solo tengo {t}!',
-          },
-          mecanica: 'repartir', frutas: '{t}', cestas: '{c}',
-          pistas: ['{t} manzanas entre {c} cestas.', 'Prueba a poner una en cada cesta e ir dando vueltas.'],
-        },
-        {
-          vars: () => { const c = AZ(4, 5), q = AZ(3, 5);
-                        return { c, q, t: c * q, sol: q, mal: c * q * c }; },
-          enunciado: 'Ahora son {t} naranjas y {c} cestas, todas con lo mismo. ¿Cuánto le toca a cada una?',
-          operacion: 'repartir',
-          opciones: ['quitar', 'multiplicar', 'repartir'],
-          explica: {
-            quitar: 'Quitando naranjas no lleno las cestas.',
-            multiplicar: '{t} en cada cesta serían {mal} naranjas. ¡Ojalá!',
-          },
-          mecanica: 'repartir', frutas: '{t}', cestas: '{c}',
-          pistas: ['{t} naranjas entre {c} cestas.', 'Si en cada una van {sol}, ¿cuántas gasto?'],
-        },
-        {
-          vars: () => { const c = AZ(3, 5), q = AZ(3, 5);
-                        return { c, q, sol: c * q, mal: c + q }; },
-          enunciado: 'Necesito llenar {c} cestas con {q} peras en cada una. ¿Cuántas peras hacen falta?',
-          operacion: 'multiplicar',
-          opciones: ['juntar', 'multiplicar', 'repartir'],
-          explica: {
-            juntar: '{c} y {q} son {mal}, pero cada una de las {c} cestas lleva {q}.',
-            repartir: 'Repartir es lo que haré luego: primero hay que saber cuántas necesito.',
-          },
-          mecanica: 'repartir', frutas: '{sol}', cestas: '{c}',
-          pistas: ['{c} cestas iguales, de {q} peras.', 'La tabla del {q}.'],
-        },
+        /* En el montón siempre hay fruta DE MÁS ('sobran'): hay que coger
+           solo la que dice el texto. Y la misma escena pregunta cosas
+           distintas: cuánto en cada cesta, cuántas cestas, cuánta en total. */
+        { vars: () => { const c = AZ(3, 4), q = AZ(3, 5);
+                        return { c, q, t: c * q, sol: q, mal: c * q * c, s: AZ(3, 7) }; },
+          enunciado: 'Del montón, coge {t} manzanas y ponlas en {c} cestas, todas igual. ¿Cuántas van en cada cesta?',
+          operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { juntar: 'Si lo junto todo me sale un montón de {t} en una cesta… y las otras vacías.',
+                     multiplicar: 'Si pongo {t} en cada cesta necesito {mal} manzanas.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{s}',
+          pistas: ['Solo {t} manzanas, no todo el montón.', 'Una en cada cesta, y otra vuelta, hasta gastar {t}.'] },
+        { vars: () => { const c = AZ(3, 5), q = AZ(2, 4);
+                        return { c, q, t: c * q, sol: c, cv: c + AZ(1, 2), s: AZ(2, 5) }; },
+          enunciado: 'Tengo que vender {t} naranjas en cestas de {q}. ¿Cuántas cestas lleno?',
+          operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { juntar: 'Juntarlas no me dice cuántas cestas salen.',
+                     multiplicar: '{t} cestas de {q} serían muchísimas naranjas.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', cestasVisibles: '{cv}', sobran: '{s}',
+          pistas: ['Pon {q} en una cesta, luego {q} en otra… hasta gastar {t}.', 'De {q} en {q} hasta {t}: ¿cuántas veces?'] },
+        { vars: () => { const c = AZ(3, 4), q = AZ(3, 5);
+                        return { c, q, sol: c * q, mal: c + q, s: AZ(3, 6) }; },
+          enunciado: 'Llena {c} cestas con {q} peras cada una. ¿Cuántas peras gastas?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { juntar: '{c} y {q} son {mal}, pero cada una de las {c} cestas lleva {q}.',
+                     repartir: 'No te dicen cuántas hay que repartir: te dicen cuántas van en cada cesta.' },
+          mecanica: 'repartir', frutas: '{sol}', cestas: '{c}', sobran: '{s}',
+          pistas: ['{c} cestas de {q}.', 'La tabla del {q}.'] },
+        { vars: () => { const c = AZ(3, 4), q = AZ(3, 4), t = c * q, b = AZ(3, t - 4);
+                        return { c, q, t, b, a: t - b, sol: q, s: AZ(2, 5) }; },
+          enunciado: 'Tenía {a} manzanas y me traen {b} más. Las reparto todas en {c} cestas iguales. ¿Cuántas van en cada cesta?',
+          operacion: 'dosPasos', opciones: ['juntar', 'repartir', 'dosPasos'],
+          explica: { juntar: 'Juntar {a} y {b} es solo el primer paso: luego hay que repartir.',
+                     repartir: 'Repartir es el segundo paso: antes hay que juntar {a} y {b}.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{s}',
+          pistas: ['Primero: {a} y {b} son {t}.', 'Después: {t} entre {c}.'] },
+        { vars: () => { const c = AZ(3, 4), q = AZ(2, 4), t = c * q, m = AZ(2, 5);
+                        return { c, q, t, m, a: t + m, sol: q }; },
+          enunciado: 'Tenía {a} peras, pero {m} estaban malas y las tiro. Las buenas van en {c} cestas iguales. ¿Cuántas van en cada cesta?',
+          operacion: 'dosPasos', opciones: ['quitar', 'repartir', 'dosPasos'],
+          explica: { quitar: 'Quitar las malas es solo el primer paso: luego hay que repartir.',
+                     repartir: 'Antes de repartir, hay que quitar las {m} malas.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{m}',
+          pistas: ['Primero: {a} menos {m} son {t}.', 'Después: {t} entre {c}.'] },
       ],
       facil: {
         vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q }; },
@@ -1229,30 +1280,30 @@ const RETOS = {
 
     pequena: {
       variantes: [
-        {
-          vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q }; },
-          enunciado: 'Tengo {t} manzanas y 2 cestas. La misma cantidad en cada una. ¿Cuánto le toca a cada una?',
+        { vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q, s: AZ(2, 4) }; },
+          enunciado: 'Del montón, coge {t} manzanas y ponlas en 2 cestas iguales. ¿Cuántas van en cada una?',
           operacion: 'repartir', opciones: ['juntar', 'repartir'],
           explica: { juntar: 'Todas juntas en una cesta y la otra vacía… no queda igual.' },
-          mecanica: 'repartir', frutas: '{t}', cestas: 2,
-          pistas: ['Una para esta, una para esta…', 'Van {sol} en cada una.'],
-        },
-        {
-          vars: () => { const q = AZ(3, 5); return { q, t: q * 2, sol: q }; },
-          enunciado: 'Y ahora {t} peras en 2 cestas iguales. ¿Cuánto le toca a cada una?',
-          operacion: 'repartir', opciones: ['juntar', 'repartir'],
-          explica: { juntar: 'Si las junto todas, una cesta se queda vacía.' },
-          mecanica: 'repartir', frutas: '{t}', cestas: 2,
-          pistas: ['Ve poniendo una y una.', '{sol} y {sol}.'],
-        },
-        {
-          vars: () => { const q = AZ(2, 4); return { q, t: q * 3, sol: q }; },
-          enunciado: 'Ahora son {t} ciruelas y 3 cestas iguales. ¿Cuánto le toca a cada una?',
+          mecanica: 'repartir', frutas: '{t}', cestas: 2, sobran: '{s}',
+          pistas: ['Solo {t}, no todo el montón.', 'Van {sol} en cada una.'] },
+        { vars: () => { const q = AZ(2, 3); return { q, t: q * 3, sol: q, s: AZ(2, 4) }; },
+          enunciado: 'Pon {t} ciruelas en 3 cestas, lo mismo en cada una. ¿Cuántas van en cada una?',
           operacion: 'repartir', opciones: ['juntar', 'repartir'],
           explica: { juntar: 'Todas en una cesta y las otras vacías no es repartir.' },
-          mecanica: 'repartir', frutas: '{t}', cestas: 3,
-          pistas: ['Una en cada cesta, y otra vuelta.', 'Van {sol} en cada una.'],
-        },
+          mecanica: 'repartir', frutas: '{t}', cestas: 3, sobran: '{s}',
+          pistas: ['Una en cada cesta, y otra vuelta, hasta {t}.', 'Van {sol} en cada una.'] },
+        { vars: () => { const q = AZ(2, 4); return { q, sol: q * 2, s: AZ(2, 4) }; },
+          enunciado: 'Llena 2 cestas con {q} fresas cada una. ¿Cuántas fresas usas?',
+          operacion: 'multiplicar', opciones: ['multiplicar', 'repartir'],
+          explica: { repartir: 'No hay que repartir: ya sabes cuántas van en cada cesta.' },
+          mecanica: 'repartir', frutas: '{sol}', cestas: 2, sobran: '{s}',
+          pistas: ['{q} en una cesta y {q} en la otra.', '{q} y {q}.'] },
+        { vars: () => { const c = AZ(2, 4); return { c, t: c * 2, sol: c, cv: c + 1, s: AZ(1, 3) }; },
+          enunciado: 'Tengo {t} peras y en cada cesta caben 2. ¿Cuántas cestas lleno?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'],
+          explica: { juntar: 'Juntarlas no me dice cuántas cestas salen.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', cestasVisibles: '{cv}', sobran: '{s}',
+          pistas: ['Pon 2 en una cesta, 2 en otra… hasta gastar {t}.', 'De 2 en 2 hasta {t}.'] },
       ],
       facil: {
         vars: () => { const q = AZ(2, 3); return { q, t: q * 2, sol: q }; },
@@ -1346,6 +1397,9 @@ const RETOS = {
         { enunciado: 'Tres paraules més, que aquestes són de les difícils.',
           operacion: null, mecanica: 'palabras', cuantas: 3,
           pistas: ['Llegeix la frase sencera.', 'Pensa en una paraula de la mateixa família.'] },
+        { enunciado: 'Avui totes són de b o de v. Compte, que enganyen!',
+          operacion: null, mecanica: 'palabras', cuantas: 3, grupo: 'b/v',
+          pistas: ['Llegeix la frase sencera.', 'Pensa en una paraula de la mateixa família.'] },
       ],
       facil: { enunciado: 'Només dues, i de les fàcils.',
         operacion: null, mecanica: 'palabras', cuantas: 2, faciles: true,
@@ -1359,6 +1413,9 @@ const RETOS = {
           pistas: ['Llegeix la frase sencera.', 'Mira la pista de sota.'] },
         { enunciado: 'Dues paraules més, va!',
           operacion: null, mecanica: 'palabras', cuantas: 2, faciles: true,
+          pistas: ['Llegeix la frase.', 'Mira la pista.'] },
+        { enunciado: 'Avui són de b o de v.',
+          operacion: null, mecanica: 'palabras', cuantas: 2, faciles: true, grupo: 'b/v',
           pistas: ['Llegeix la frase.', 'Mira la pista.'] },
       ],
       facil: { enunciado: 'Una sola paraula i ja està.',
@@ -1494,6 +1551,7 @@ const RETOS = {
                      repartir: 'Aquí no se reparte nada.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{t} × {c}', sol: '{sol}' }],
           pistas: ['{t} chalecos iguales, de {c} correas.', 'La tabla del {c}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const b = AZ(2, 4); return { b, sol: b * 2 }; },
         enunciado: 'Cada barca tiene 2 remos y hay {b} barcas. ¿Cuántos remos son?',
@@ -1522,6 +1580,7 @@ const RETOS = {
           explica: { juntar: 'Se han escapado, así que quedan menos.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{a} - {b}', sol: '{sol}' }],
           pistas: ['{a} menos {b}.', 'Cuenta hacia atrás desde {a}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const a = AZ(1, 3); return { a, sol: a + 1 }; },
         enunciado: 'Llevo {a} remos en una mano y 1 en la otra. ¿Cuántos llevo?',
@@ -1545,21 +1604,21 @@ const RETOS = {
     mayor: {
       variantes: [
         { vars: () => { const c = AZ(3, 4), q = AZ(3, 5);
-                        return { c, q, t: c * q, sol: q, mal: c * q * c }; },
-          enunciado: 'Tengo {t} manzanas y {c} caballos. A todos lo mismo. ¿Cuánto le toca a cada uno?',
+                        return { c, q, t: c * q, sol: q, mal: c * q * c, s: AZ(3, 6) }; },
+          enunciado: 'Del saco, coge {t} manzanas para {c} caballos. A todos lo mismo. ¿Cuántas le tocan a cada uno?',
           operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
           explica: { juntar: 'Si se las doy todas a Roseta, los demás se enfadan.',
                      multiplicar: '{t} a cada uno serían {mal} manzanas. ¡No tengo tantas!' },
-          mecanica: 'repartir', frutas: '{t}', cestas: '{c}',
-          pistas: ['{t} manzanas entre {c} caballos.', 'Una a cada uno, y otra vuelta.'] },
-        { vars: () => { const c = AZ(3, 5), q = AZ(3, 4);
-                        return { c, q, t: c * q, sol: q, mal: c * q * c }; },
-          enunciado: 'Ahora son {t} zanahorias y {c} caballos, a partes iguales. ¿Cuánto le toca a cada uno?',
-          operacion: 'repartir', opciones: ['quitar', 'multiplicar', 'repartir'],
-          explica: { quitar: 'Quitando zanahorias no come nadie.',
-                     multiplicar: '{t} a cada uno son {mal}. ¡Ojalá!' },
-          mecanica: 'repartir', frutas: '{t}', cestas: '{c}',
-          pistas: ['{t} entre {c}.', 'Si van {sol} a cada uno, ¿cuántas gasto?'] },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{s}',
+          pistas: ['Solo {t}, no todo el saco.', 'Una a cada uno, y otra vuelta.'] },
+        { vars: () => { const c = AZ(3, 4), q = AZ(2, 4), m = AZ(2, 4);
+                        return { c, q, m, t: c * q, a: c * q + m, sol: q }; },
+          enunciado: 'Traigo {a} zanahorias, pero {m} son para Neus. Las demás, para {c} caballos a partes iguales. ¿Cuántas le tocan a cada caballo?',
+          operacion: 'dosPasos', opciones: ['quitar', 'repartir', 'dosPasos'],
+          explica: { quitar: 'Quitar las de Neus es solo el primer paso.',
+                     repartir: 'Antes de repartir, aparta las {m} de Neus.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{m}',
+          pistas: ['Primero: {a} menos {m} son {t}.', 'Después: {t} entre {c}.'] },
       ],
       facil: { vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q }; },
         enunciado: 'Quedan {t} manzanas y 2 caballos. ¿Cuánto le toca a cada uno?',
@@ -1570,11 +1629,11 @@ const RETOS = {
     },
     pequena: {
       variantes: [
-        { vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q }; },
-          enunciado: 'Tengo {t} zanahorias y 2 caballos. A los dos lo mismo. ¿Cuánto le toca a cada uno?',
+        { vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q, s: AZ(2, 4) }; },
+          enunciado: 'Del saco, coge {t} zanahorias para 2 caballos. A los dos lo mismo. ¿Cuántas le tocan a cada uno?',
           operacion: 'repartir', opciones: ['juntar', 'repartir'],
           explica: { juntar: 'Uno se quedaría sin nada.' },
-          mecanica: 'repartir', frutas: '{t}', cestas: 2,
+          mecanica: 'repartir', frutas: '{t}', cestas: 2, sobran: '{s}',
           pistas: ['Una para ti, una para ti…', '{sol} y {sol}.'] },
         { vars: () => { const q = AZ(3, 5); return { q, t: q * 2, sol: q }; },
           enunciado: 'Y ahora {t} manzanas para 2 caballos. ¿Cuánto le toca a cada uno?',
@@ -1631,6 +1690,7 @@ const RETOS = {
                      multiplicar: 'Multiplicar da muchísimas más.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{t} - {c}', sol: '{sol}' }],
           pistas: ['{t} menos {c}.', 'Cuenta hacia atrás desde {t}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const c = AZ(2, 4); return { c, sol: c * 2 }; },
         enunciado: 'Hay {c} coches con 2 niñas en cada uno. ¿Cuál es el total?',
@@ -1653,6 +1713,7 @@ const RETOS = {
           explica: { juntar: 'Si las junto tengo más, y yo he gastado.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{a} - {b}', sol: '{sol}' }],
           pistas: ['Tenías {a} y se van {b}.', 'Cuenta hacia atrás desde {a}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const a = AZ(2, 4); return { a, sol: a + 1 }; },
         enunciado: 'Hay {a} coches y llega 1 más. ¿Cuál es el total?',
@@ -1695,6 +1756,7 @@ const RETOS = {
                      multiplicar: 'No son grupos iguales, son dos montones distintos.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{b} + {d}', sol: '{sol}' }],
           pistas: ['Los blancos y los negros, todos juntos.', '{b} y {d}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const m = AZ(2, 5); return { m, t: m * 2, sol: m }; },
         enunciado: 'Hay {t} caballos y la mitad son blancos. ¿Cuántos blancos son?',
@@ -1717,6 +1779,7 @@ const RETOS = {
           explica: { juntar: 'La mitad es partir en dos partes iguales.' },
           mecanica: 'cerradura', preguntas: [{ texto: 'la mitad de {t}', sol: '{sol}' }],
           pistas: ['{m} para un lado y {m} para el otro.', 'Son {m}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const a = AZ(2, 3), b = AZ(1, 3); return { a, b, sol: a + b }; },
         enunciado: 'Hay {a} caballos y {b} carrozas. ¿Cuál es el total?',
@@ -1753,6 +1816,7 @@ const RETOS = {
                      juntar: 'Juntarlas no dice cuántas van en cada taza.' },
           mecanica: 'cerradura', preguntas: [{ texto: 'la mitad de {t}', sol: '{sol}' }],
           pistas: ['La mitad de {t}.', '{n} y {n} son {t}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const t = AZ(3, 5); return { t, sol: t * 2 }; },
         enunciado: 'Hay {t} tazas con 2 niñas en cada una. ¿Cuál es el total?',
@@ -1774,6 +1838,7 @@ const RETOS = {
           explica: { juntar: 'Se han bajado, así que quedan menos.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{a} - {b}', sol: '{sol}' }],
           pistas: ['{a} menos {b}.', 'Cuenta hacia atrás desde {a}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const a = AZ(1, 3), b = AZ(2, 3); return { a, b, sol: a + b }; },
         enunciado: 'En una taza van {a} niñas y en la otra {b}. ¿Cuántas son entre las dos tazas?',
@@ -1812,6 +1877,7 @@ const RETOS = {
                      juntar: 'Juntar los dos números no dice cuántos vagones son.' },
           mecanica: 'cerradura', preguntas: [{ texto: 'vagones para {t} niñas, de {n} en {n}', sol: '{sol}' }],
           pistas: ['De {n} en {n}: con {g} vagones se quedan {s} fuera.', 'Hace falta un vagón más.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const v = AZ(2, 4); return { v, sol: v * 2 }; },
         enunciado: 'Hay {v} vagones con 2 niñas en cada uno. ¿Cuál es el total?',
@@ -1833,6 +1899,7 @@ const RETOS = {
           explica: { juntar: 'Se bajan, así que quedan menos.' },
           mecanica: 'cerradura', preguntas: [{ texto: '{a} - {b}', sol: '{sol}' }],
           pistas: ['{a} menos {b}.', 'Cuenta hacia atrás desde {a}.'] },
+        { delBanco: true }, { delBanco: true },   // un problema del banco, de cualquier forma
       ],
       facil: { vars: () => { const a = AZ(2, 4); return { a, sol: a + 1 }; },
         enunciado: 'Van {a} niñas y sube 1 más. ¿Cuál es el total?',
@@ -2037,6 +2104,13 @@ const RETOS = {
                      quitar: 'Quitar es lo que vamos a hacer, pero primero hay que contarlas.' },
           mecanica: 'limpiar', objetivo: '{sol}', total: '{total}',
           pistas: ['{e} veces {m}.', 'Ve contando de {m} en {m}.'] },
+        { vars: () => { const t = AZ(14, 22), q = AZ(4, 8); return { t, q, sol: t - q }; },
+          enunciado: 'Los elefantes tienen {t} manchas. Las {q} de las orejas las limpio yo. ¿Cuántas te tocan a ti?',
+          operacion: 'quitar', opciones: ['juntar', 'quitar', 'repartir'],
+          explica: { juntar: 'Si las junto salen más de las que hay.',
+                     repartir: 'No es a partes iguales: yo hago {q} y tú el resto.' },
+          mecanica: 'limpiar', objetivo: '{sol}', total: '{t}',
+          pistas: ['{t} menos las {q} mías.', 'Cuenta hacia atrás desde {t}.'] },
       ],
       facil: { vars: () => { const a = AZ(2, 4), b = AZ(1, 3);
                              return { a, b, sol: a + b, total: a + b + 5 }; },
@@ -2094,7 +2168,7 @@ const RETOS = {
           mecanica: 'limpiar', objetivo: '{sol}', total: '{t}',
           pistas: ['{t} entre {p}.', 'Si van {sol} a cada uno, ¿cuántas gasto?'] },
         { vars: () => { const p = AZ(3, 5), q = AZ(2, 4);
-                        return { p, q, t: p * q, sol: p * q, mal: p + q }; },
+                        return { p, q, t: p * q + AZ(3, 6), sol: p * q, mal: p + q }; },
           enunciado: 'Hay {p} ponis y cada uno tiene {q} manchas. ¿Cuántas hay que cepillar en total?',
           operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
           explica: { juntar: '{p} más {q} son {mal}… pero CADA poni tiene {q}.',
@@ -2162,12 +2236,12 @@ const RETOS = {
           mecanica: 'limpiar', objetivo: '{sol}', total: '{t}',
           pistas: ['{t} menos {q}.', 'Baja primero hasta 10 y sigue.'] },
         { vars: () => { const o = AZ(3, 5), c = AZ(3, 6);
-                        return { o, c, sol: o * c, mal: o + c }; },
+                        return { o, c, sol: o * c, mal: o + c, total: o * c + AZ(3, 6) }; },
           enunciado: 'Han vuelto {o} ovejas y cada una trae {c} cardos. ¿Cuántos hay que quitar?',
           operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'quitar'],
           explica: { juntar: '{o} y {c} son {mal}… pero CADA oveja trae {c}.',
                      quitar: 'Quitarlos es lo que haremos después: primero hay que contarlos.' },
-          mecanica: 'limpiar', objetivo: '{sol}', total: '{sol}',
+          mecanica: 'limpiar', objetivo: '{sol}', total: '{total}',
           pistas: ['{o} ovejas iguales, de {c} cardos.', 'La tabla del {c}.'] },
       ],
       facil: { vars: () => { const t = AZ(8, 12), q = AZ(3, 5); return { t, q, sol: t - q }; },
@@ -2216,6 +2290,9 @@ const TEXTOS = {
   cabana: 'Tu cabaña. Aquí están el espejo y la tienda.',
   farolApagado: 'El Farol de Coral, apagado. Le faltan sus cinco cristales.',
   cristalGanado: '¡Un cristal del Farol!',
+  yaHechoHoy: 'Hoy ya me has ayudado, ¡gracias! Vuelve mañana y tendré otra cosa para ti.',
+  cerradoHoy: 'Hoy no necesito ayuda. Busca los sitios que brillan: allí sí te esperan.',
+  paseoLibre: 'Hoy ya te lo has ganado. ¿Otra vuelta?',
 };
 
 </script>
@@ -2256,6 +2333,44 @@ const PALABRAS = [
   { inicio: 'ca', opciones: ['b', 'v'], correcta: 'b', fin: 'ra',
     frase: 'La ___ puja per la muntanya.', grupo: 'b/v', nivel: 'mayor',
     pista: 'Com "cabrit": amb b.' },
+
+  // ⚠️ NUEVAS (septiembre 2026): PENDIENTES DE QUE ANTONIO LAS VALIDE
+  { inicio: '', opciones: ['b', 'v'], correcta: 'v', fin: 'aixell',
+    frase: 'El ___ surt del port.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Com "vela": amb v.' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'b', fin: 'alena',
+    frase: 'La ___ neda pel mar.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Amb b, com "bany".' },
+  { inicio: 'ga', opciones: ['b', 'v'], correcta: 'v', fin: 'ina',
+    frase: 'Una ___ vola damunt la platja.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Amb v, com "volar".' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'b', fin: 'osc',
+    frase: 'Anem a buscar bolets al ___.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Amb b, com "bolet".' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'v', fin: 'ent',
+    frase: 'Fa tant de ___ que se m\'endú el barret.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Amb v, com "ventall".' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'b', fin: 'lau',
+    frase: 'El cel és ___.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Amb b. Davant de l, sempre b.' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'v', fin: 'ermell',
+    frase: 'La maduixa és de color ___.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Amb v.' },
+  { inicio: 'a', opciones: ['b', 'v'], correcta: 'v', fin: 'i',
+    frase: 'El meu ___ em conta contes.', grupo: 'b/v', nivel: 'mayor', dificil: true,
+    pista: 'Com "àvia": amb v.' },
+  { inicio: 'her', opciones: ['b', 'v'], correcta: 'b', fin: 'a',
+    frase: 'Les ovelles mengen ___.', grupo: 'b/v', nivel: 'mayor', dificil: true,
+    pista: 'Com "herbívor": amb b.' },
+  { inicio: 'tre', opciones: ['b', 'v'], correcta: 'b', fin: 'allar',
+    frase: 'La granjera ha de ___ cada dia.', grupo: 'b/v', nivel: 'mayor', dificil: true,
+    pista: 'Com "treball": amb b.' },
+  { inicio: 'lla', opciones: ['b', 'v'], correcta: 'v', fin: 'i',
+    frase: 'M\'he pintat el ___ de vermell.', grupo: 'b/v', nivel: 'mayor', dificil: true,
+    pista: 'Amb v, com "llavis".' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'b', fin: 'ufanda',
+    frase: 'A l\'hivern porto una ___ al coll.', grupo: 'b/v', nivel: 'mayor',
+    pista: 'Amb b.' },
 
   // --- G / J ---------------------------------------------------------
   { inicio: '', opciones: ['g', 'j'], correcta: 'g', fin: 'irafa',
@@ -2344,9 +2459,10 @@ const PALABRAS = [
 
 /* Saca las palabras que le tocan a esta jugadora, mezclando fáciles y
    difíciles para que no vayan todas seguidas del mismo tipo. */
-function palabrasPara(nivel, cuantas, soloFaciles) {
+function palabrasPara(nivel, cuantas, soloFaciles, grupo) {
   const sirven = PALABRAS.filter(p =>
-    (nivel === 'mayor' || p.nivel === 'pequena') && !(soloFaciles && p.dificil));
+    (nivel === 'mayor' || p.nivel === 'pequena') && !(soloFaciles && p.dificil) &&
+    (!grupo || p.grupo === grupo));
   const faciles = sirven.filter(p => !p.dificil);
   const dificiles = sirven.filter(p => p.dificil);
   const mezcla = (a) => a.slice().sort(() => Math.random() - 0.5);
@@ -3206,6 +3322,9 @@ const Estado = {
       pasos: {},                // caminos que ya ha abierto (montaña, puente)
       visitadas: {},            // por dónde ha pasado: el mapa se destapa ahí
       pedidos: [],              // lo que le han pedido a Teo el repartidor
+      hechosHoy: { dia: '', ids: [] },    // retos ya superados hoy: no se repiten
+      retosDelDia: { dia: '', ids: [] },  // qué sitios tienen reto hoy
+      ultimaVariante: {},       // qué versión salió la última vez en cada reto
     };
   },
 
@@ -3266,6 +3385,9 @@ const Estado = {
     p.encajado = {};
     p.pasos = {};
     p.visitadas = {};
+    p.hechosHoy = { dia: '', ids: [] };
+    p.retosDelDia = { dia: '', ids: [] };
+    p.ultimaVariante = {};
     // si llevaba puesto algo que ya no es suyo, se vuelve a lo de serie
     const base = lookPorDefecto();
     [['peinados', 'peinado'], ['coloresPelo', 'colorPelo'], ['conjuntos', 'conjunto'],
@@ -3358,6 +3480,42 @@ const Estado = {
     this.guardar();
     return true;
   },
+
+  /* UN RETO AL DÍA: superado hoy, ya no se repite hasta mañana */
+  hechoHoy(id) {
+    const p = this.actual;
+    return !!p.hechosHoy && p.hechosHoy.dia === this.hoy() && p.hechosHoy.ids.includes(id);
+  },
+
+  marcarHechoHoy(id) {
+    const p = this.actual;
+    if (!p.hechosHoy || p.hechosHoy.dia !== this.hoy()) p.hechosHoy = { dia: this.hoy(), ids: [] };
+    if (!p.hechosHoy.ids.includes(id)) p.hechosHoy.ids.push(id);
+    this.guardar();
+  },
+
+  /* Qué reto hay en un sitio de la isla (o null si allí no hay reto) */
+  retoDeLugar(l) {
+    if (l.accion === 'reto' || l.accion === 'letras') return l.id;
+    if (l.accion === 'cuidar') return l.id + 'Reto';
+    if (l.accion === 'montar') return (MUNDO.paseos[l.id] || {}).reto || null;
+    return null;
+  },
+
+  /* LOS SITIOS DE HOY: cada mañana se sortean unos cuantos. Así no puede ir
+     siempre al que le resulta fácil. Los de cristal sin ganar, siempre. */
+  retosDeHoy() {
+    const p = this.actual;
+    if (p.retosDelDia && p.retosDelDia.dia === this.hoy()) return p.retosDelDia.ids;
+    const todos = MUNDO.lugares.map(l => this.retoDeLugar(l)).filter(id => id && RETOS[id]);
+    const pendientes = todos.filter(id => !RETOS[id].trabajo && !RETOS[id].paseo && !this.tieneCristal(id));
+    const resto = todos.filter(id => !pendientes.includes(id)).sort(() => Math.random() - 0.5);
+    p.retosDelDia = { dia: this.hoy(), ids: pendientes.concat(resto.slice(0, AJUSTES.retosPorDia)) };
+    this.guardar();
+    return p.retosDelDia.ids;
+  },
+
+  abiertoHoy(id) { return this.retosDeHoy().includes(id); },
 
   apuntarRutina(id) {
     if (this.hizoRutina(id)) return false;
@@ -5024,6 +5182,26 @@ function montarConNumeros(base) {
   return salida;
 }
 
+/* La pregunta, en su propia línea y en negrita: es lo que más hay que leer,
+   porque la misma escena puede preguntar cosas distintas. */
+function conPregunta(texto) {
+  if (typeof texto !== 'string') return texto;
+  const i = texto.lastIndexOf('¿');
+  if (i <= 0) return texto;
+  return texto.slice(0, i).trim() + '<br><b>' + texto.slice(i) + '</b>';
+}
+
+function barajar(lista) { return lista.slice().sort(() => Math.random() - 0.5); }
+
+/* Las tarjetas salen unos segundos después del texto: primero se lee */
+function esperarTarjetas() {
+  const t = UI.modal.querySelector('.tarjetas');
+  if (!t) return;
+  t.classList.add('esperando');
+  setTimeout(() => t.classList.remove('esperando'),
+    AJUSTES.segundosAntesDeTarjetas[Estado.actual.nivel] * 1000);
+}
+
 const Desafio = {
 
   parada: null,
@@ -5032,13 +5210,36 @@ const Desafio = {
   alTerminar: null,
 
   /* Devuelve el reto que toca: el fácil si el personaje se durmió, y si no,
-     va rotando entre las variantes para que repetir no sea idéntico. */
+     una variante al azar (nunca la misma que la última vez), para que no se
+     pueda hacer de memoria sin leer. */
   elegir(id) {
     const p = Estado.actual;
     const bloque = RETOS[id][p.nivel];
     if (!p.facilitados) p.facilitados = {};
-    if (p.facilitados[id]) return montarConNumeros(bloque.facil);
-    return montarConNumeros(bloque.variantes[Estado.vecesHecho(id) % bloque.variantes.length]);
+    if (!p.ultimaVariante) p.ultimaVariante = {};
+    let r;
+    if (p.facilitados[id]) r = montarConNumeros(bloque.facil);
+    else {
+      const n = bloque.variantes.length;
+      let i = Math.floor(Math.random() * n);
+      if (n > 1 && i === p.ultimaVariante[id]) i = (i + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      p.ultimaVariante[id] = i;
+      r = bloque.variantes[i].delBanco ? this.retoDelBanco(p.nivel) : montarConNumeros(bloque.variantes[i]);
+    }
+    r.enunciado = conPregunta(r.enunciado);
+    return r;
+  },
+
+  /* Un problema del banco hecho reto: el dueño de la atracción te lo plantea
+     y se contesta con el teclado. Así en cualquier sitio puede salir
+     cualquier forma de problema. */
+  retoDelBanco(nivel) {
+    const pr = montarConNumeros(problemaPara(nivel, this.ultimoTipo));
+    this.ultimoTipo = pr.tipo;
+    return Object.assign({}, pr, {
+      mecanica: 'cerradura', preguntas: [{ texto: '', sol: pr.sol }],
+      moralejaPropia: { titulo: 'Lo que había que ver', texto: pr.clave },
+    });
   },
 
   quien(id) {
@@ -5060,6 +5261,12 @@ const Desafio = {
       return;
     }
 
+    if (Estado.hechoHoy(id)) {
+      UI.dialogo(this.quien(id), TEXTOS.yaHechoHoy, [{ texto: 'Vale', accion: () => UI.cerrar() }]);
+      return;
+    }
+
+    this.fallosLeer = 0;
     this.reto = this.elegir(id);
     const p = Estado.actual;
     let saludo = (p.facilitados && p.facilitados[id]) ? info.despierta : info.saludo;
@@ -5096,7 +5303,15 @@ const Desafio = {
     const tecnico = Estado.actual.nivel === 'mayor' && Math.random() < 0.5;
     const nombre = (o) => tecnico ? OPERACIONES[o].tecnico : OPERACIONES[o].texto;
 
-    const tarjetas = r.opciones.map(o => `
+    /* A las mayores, siempre las cuatro operaciones (menos en la versión
+       fácil): con dos o tres tarjetas se acierta probando sin leer. Y en
+       distinto orden cada vez, para que no valga acordarse del sitio. */
+    let ops = r.opciones.slice();
+    if (Estado.actual.nivel === 'mayor' && ops.length > 2)
+      ['juntar', 'quitar', 'multiplicar', 'repartir'].forEach(o => {
+        if (ops.length < 4 && !ops.includes(o)) ops.push(o);
+      });
+    const tarjetas = barajar(ops).map(o => `
       <button class="tarjeta" data-op="${o}">
         <span class="icono">${OPERACIONES[o].icono}</span>
         <span>${nombre(o)}</span>
@@ -5109,6 +5324,7 @@ const Desafio = {
       <div class="tarjetas">${tarjetas}</div>
       <p class="pista" id="pista"></p>
     `);
+    esperarTarjetas();
     UI.prepararAltavoz(r.enunciado + ' ¿Qué hay que hacer?');
 
     UI.modal.querySelectorAll('.tarjeta').forEach(b => {
@@ -5122,8 +5338,9 @@ const Desafio = {
         } else {
           b.classList.add('mal');
           Sonido.fallo();
-          const razon = (r.explica && r.explica[b.dataset.op]) || 'Mmm… así no nos sale.';
+          const razon = (r.explica && r.explica[b.dataset.op]) || 'Mmm… así no nos sale. Vuelve a leer la pregunta.';
           document.getElementById('pista').innerHTML = '💭 ' + razon;
+          this.fallosLeer++;
           this.sumarFallo();
         }
       };
@@ -5180,13 +5397,19 @@ const Desafio = {
     };
   },
 
-  /* Repartir la fruta en cestas iguales: toco una fruta, toco una cesta */
+  /* Repartir la fruta en cestas: toco una cesta y cae una fruta del montón.
+     En el montón hay MÁS fruta de la que se usa ('sobran') y a veces más
+     cestas de las que se llenan ('cestasVisibles'): los números hay que
+     sacarlos del texto, no vale vaciarlo todo a toques. Al final se escribe
+     la respuesta a lo que se preguntaba. */
   mecanicaRepartir() {
     const r = this.reto;
     const frutas = ['🍎', '🍊', '🍐', '🍓', '🍌'];
     const cara = frutas[Math.floor(Math.random() * frutas.length)];
-    let monton = r.frutas;
-    const cestas = Array(r.cestas).fill(0);
+    const porCesta = r.frutas / r.cestas;
+    let monton = r.frutas + (r.sobran || 0);
+    const cestas = Array(r.cestasVisibles || r.cestas).fill(0);
+    const puestas = [];                          // para poder deshacer
 
     const pintar = () => {
       document.getElementById('monton').innerHTML =
@@ -5206,30 +5429,73 @@ const Desafio = {
         ${cestas.map((_, i) => `<button class="cesta" id="cesta${i}" data-i="${i}"></button>`).join('')}
       </div>
       <p class="pista" id="pista"></p>
-      <div class="botones"><button class="btn defecto" id="listo">Ya está<span class="tecla">espacio</span></button></div>
+      <div class="botones">
+        <button class="btn defecto" id="listo">Ya está<span class="tecla">espacio</span></button>
+        <button class="btn gris" id="deshacer">↩️ Quitar la última</button>
+      </div>
     `);
     pintar();
 
     UI.modal.querySelectorAll('.cesta').forEach(b => {
       b.onclick = () => {
         const i = +b.dataset.i;
-        if (monton > 0) { monton--; cestas[i]++; }
-        else if (cestas[i] > 0) { cestas[i]--; monton++; }   // devolver al montón
+        if (monton > 0) { monton--; cestas[i]++; puestas.push(i); }
         Sonido.clic();
         pintar();
       };
     });
+    document.getElementById('deshacer').onclick = () => {
+      if (!puestas.length) return;
+      cestas[puestas.pop()]--; monton++;
+      Sonido.clic();
+      pintar();
+    };
 
     document.getElementById('listo').onclick = () => {
-      const iguales = cestas.every(n => n === cestas[0]);
-      if (monton === 0 && iguales && cestas[0] > 0) this.exito();
-      else {
-        document.getElementById('pista').innerHTML = '💭 ' +
-          (monton > 0 ? 'Todavía queda fruta en el montón. ' : 'Las cestas no tienen lo mismo. ')
-          + this.pista();
-        Sonido.fallo();
-        this.sumarFallo();
-      }
+      const llenas = cestas.filter(n => n > 0);
+      const puestasYa = llenas.reduce((a, n) => a + n, 0);
+      let queFalla = '';
+      if (puestasYa < r.frutas) queFalla = 'Todavía faltan frutas en las cestas. ';
+      else if (puestasYa > r.frutas) queFalla = 'Has puesto más fruta de la que decía. ';
+      else if (llenas.length !== r.cestas) queFalla = 'Mira bien cuántas cestas hay que llenar. ';
+      else if (!llenas.every(n => n === porCesta)) queFalla = 'Las cestas no tienen lo mismo. ';
+      if (!queFalla) return this.preguntaFinal();
+      document.getElementById('pista').innerHTML = '💭 ' + queFalla + this.pista();
+      Sonido.fallo();
+      this.sumarFallo();
+    };
+  },
+
+  /* Después de hacerlo con las manos, se contesta a la pregunta del texto */
+  preguntaFinal() {
+    const r = this.reto;
+    let marcado = '';
+    UI.abrir(`
+      <p class="dice">${r.enunciado}</p>
+      <div class="pantallita" id="marcado">—</div>
+      <div class="teclado">
+        ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button class="tecla-num" data-n="${n}">${n}</button>`).join('')}
+        <button class="tecla-num borrar" data-n="x">⌫</button>
+      </div>
+      <div class="botones"><button class="btn defecto" id="probar">Ya lo tengo<span class="tecla">espacio</span></button></div>
+      <p class="pista" id="pista">Escribe la respuesta a la pregunta.</p>
+    `);
+    UI.modal.querySelectorAll('.tecla-num').forEach(b => {
+      b.onclick = () => {
+        Sonido.clic();
+        if (b.dataset.n === 'x') marcado = marcado.slice(0, -1);
+        else if (marcado.length < 3) marcado += b.dataset.n;
+        document.getElementById('marcado').textContent = marcado || '—';
+      };
+    });
+    document.getElementById('probar').onclick = () => {
+      const sol = r.sol !== undefined ? r.sol : r.frutas / r.cestas;   // si no dice, «cuántas en cada una»
+      if (marcado !== '' && +marcado === sol) { Sonido.acierto(); return setTimeout(() => this.exito(), 400); }
+      Sonido.fallo();
+      document.getElementById('pista').innerHTML = '💭 Lee otra vez qué se pregunta. ' + this.pista();
+      marcado = '';
+      document.getElementById('marcado').textContent = '—';
+      this.sumarFallo();
     };
   },
 
@@ -5239,6 +5505,7 @@ const Desafio = {
   problema(nivel, alTerminar) {
     const p = montarConNumeros(problemaPara(nivel, this.ultimoTipo));
     this.ultimoTipo = p.tipo;
+    p.enunciado = conPregunta(p.enunciado);
     this.problemaActual = p;
     this.alTerminar = alTerminar;
     this.parada = null;
@@ -5256,7 +5523,7 @@ const Desafio = {
       <div class="altavoz" id="zonaVoz"></div>
       <p class="pregunta">¿Qué hay que hacer?</p>
       <div class="tarjetas">
-        ${p.opciones.map(o => `
+        ${barajar(p.opciones).map(o => `
           <button class="tarjeta" data-op="${o}">
             <span class="icono">${OPERACIONES[o].icono}</span>
             <span>${nombre(o)}</span>
@@ -5264,6 +5531,7 @@ const Desafio = {
       </div>
       <p class="pista" id="pista"></p>
     `);
+    esperarTarjetas();
     UI.prepararAltavoz(p.enunciado + ' ¿Qué hay que hacer?');
 
     UI.modal.querySelectorAll('.tarjeta').forEach(b => {
@@ -5453,7 +5721,7 @@ const Desafio = {
   /* LAS PALABRAS DIFÍCILES: una frase, un hueco y dos maneras de escribirlo */
   mecanicaPalabras() {
     const r = this.reto;
-    const lista = palabrasPara(Estado.actual.nivel, r.cuantas || 3, r.faciles);
+    const lista = palabrasPara(Estado.actual.nivel, r.cuantas || 3, r.faciles, r.grupo);
     let i = 0;
 
     const siguiente = () => {
@@ -5506,7 +5774,7 @@ const Desafio = {
       const q = preguntas[i];
       UI.abrir(`
         <p class="dice">${r.enunciado}</p>
-        <p class="cuenta-grande">${q.texto}</p>
+        ${q.texto ? `<p class="cuenta-grande">${q.texto}</p>` : ''}
         <div class="pantallita" id="marcado">${marcado || '—'}</div>
         <div class="teclado">
           ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button class="tecla-num" data-n="${n}">${n}</button>`).join('')}
@@ -5575,18 +5843,27 @@ const Desafio = {
     const id = this.parada;
     const p = Estado.actual;
     if (p.facilitados) delete p.facilitados[id];
+    Estado.marcarHechoHoy(id);                  // hasta mañana no se repite
+
+    // Premio a leer: si eligió bien la operación sin probar
+    let extra = '';
+    if (this.reto.operacion && this.fallosLeer === 0 && AJUSTES.conchasALaPrimera) {
+      Estado.darConchas(AJUSTES.conchasALaPrimera);
+      extra = '<br>⭐ <b>+' + AJUSTES.conchasALaPrimera + '</b> por leerlo bien a la primera';
+    }
+    if (this.reto.tipo) Estado.apuntarProblema(this.reto.tipo);   // venía del banco
 
     // Los animales de la granja no dan cristales: dan jornal
-    if (RETOS[id].trabajo) return this.pagarTrabajo(id);
+    if (RETOS[id].trabajo) return this.pagarTrabajo(id, extra);
 
     // Los retos de las atracciones tampoco: lo que dan es el paseo
     if (RETOS[id].paseo) {
       Estado.darConchas(AJUSTES.conchasPorPaseo);
       Sonido.fiesta();
       UI.refrescarHud();
-      const m = RETOS[id].moraleja;
+      const m = this.reto.moralejaPropia || RETOS[id].moraleja;
       return UI.dialogo(this.quien(id),
-        RETOS[id].exito + '<br><br>🐚 <b>+' + AJUSTES.conchasPorPaseo + ' conchas</b>', [
+        RETOS[id].exito + '<br><br>🐚 <b>+' + AJUSTES.conchasPorPaseo + ' conchas</b>' + extra, [
         { texto: m ? '¿Y qué he hecho?' : '¡Vamos allá!', accion: () => {
             if (m) return this.explicar(m);
             UI.cerrar();
@@ -5597,7 +5874,7 @@ const Desafio = {
 
     const premio = Estado.superarReto(id);
 
-    let texto = RETOS[id].exito + '<br><br>🐚 <b>+' + premio.conchas + ' conchas</b>';
+    let texto = RETOS[id].exito + '<br><br>🐚 <b>+' + premio.conchas + ' conchas</b>' + extra;
     if (premio.primeraVez) {
       texto += '<br>💎 <b>' + TEXTOS.cristalGanado + '</b>';
       // la primera vez también se lleva una prenda
@@ -5627,7 +5904,7 @@ const Desafio = {
   },
 
   /* El jornal de la granja: bien la primera vez de cada día, menos después */
-  pagarTrabajo(id) {
+  pagarTrabajo(id, extra) {
     const primera = Estado.trabajoDeHoy(id);
     const pago = primera ? AJUSTES.conchasPorLimpiar : AJUSTES.conchasPorLimpiarRepe;
     Estado.darConchas(pago);
@@ -5635,7 +5912,7 @@ const Desafio = {
     setTimeout(() => Sonido.moneda(), 450);
     UI.refrescarHud();
 
-    let texto = RETOS[id].exito + '<br><br>🐚 <b>+' + pago + ' conchas</b>';
+    let texto = RETOS[id].exito + '<br><br>🐚 <b>+' + pago + ' conchas</b>' + (extra || '');
     if (!primera) texto += '<br><small>Hoy ya los limpiaste: mañana vuelven a pagar bien.</small>';
 
     const moraleja = RETOS[id].moraleja;
@@ -6105,7 +6382,46 @@ const Bano = {
     document.getElementById('volverCasa').onclick = () => { Sonido.clic(); Casa.abrir(); };
   },
 
-  hacer(c) {
+  /* EL CALENTAMIENTO: antes de cada cosa del día, algo de un segundo. A las
+     mayores, una tabla de multiplicar; a las pequeñas, una suma; y a veces una
+     palabra con b o v. Fallar no cuenta: se prueba otra. */
+  calentar(seguir) {
+    const nivel = Estado.actual.nivel, mayor = nivel === 'mayor';
+    const palabra = Math.random() < 0.35 && palabrasPara(nivel, 1, true, 'b/v')[0];
+    let arriba, opciones, sol;
+    if (palabra) {
+      arriba = '<p class="dice">' + palabra.frase.replace('___',
+        '<b>' + palabra.inicio + '<span class="hueco">?</span>' + palabra.fin + '</b>') + '</p>';
+      opciones = palabra.opciones; sol = palabra.correcta;
+    } else {
+      const a = AZ(2, 9), b = mayor ? AZ(2, 9) : AZ(1, 9);
+      const bien = mayor ? a * b : a + b;
+      const vecinos = mayor ? [a * (b + 1), a * (b - 1), (a + 1) * b] : [bien + 1, bien - 1, bien + 2];
+      const malos = barajar([...new Set(vecinos)].filter(n => n > 0 && n !== bien)).slice(0, 2);
+      sol = String(bien);
+      opciones = barajar([sol].concat(malos.map(String)));
+      arriba = '<p class="cuenta-grande">' + a + (mayor ? ' × ' : ' + ') + b + '</p>';
+    }
+    UI.abrir(`
+      <div class="quien">Mientras te arreglas…</div>
+      ${arriba}
+      <div class="botones grandes">
+        ${opciones.map(o => `<button class="btn num" data-v="${o}">${o}</button>`).join('')}
+      </div>
+      <p class="pista" id="pista"></p>
+    `);
+    UI.modal.querySelectorAll('.num').forEach(b => {
+      b.onclick = () => {
+        if (b.dataset.v === sol) { b.classList.add('bien'); Sonido.acierto(); setTimeout(seguir, 600); return; }
+        b.classList.add('mal'); b.disabled = true;
+        Sonido.fallo();
+        document.getElementById('pista').textContent = palabra ? '💭 ' + palabra.pista : 'Casi. Prueba otra.';
+      };
+    });
+  },
+
+  hacer(c, calentado) {
+    if (!calentado && !Estado.hizoRutina(c.id)) return this.calentar(() => this.hacer(c, true));
     Sonido[c.sonido]();
     const primera = Estado.apuntarRutina(c.id);
     let texto = c.texto;
@@ -7534,6 +7850,12 @@ const Juego = {
     Sonido.clic();
 
     if (l.accion === 'hablar') return this.hablar(l);
+
+    // Hoy aquí no hay reto: se sortean cada mañana
+    const rid = Estado.retoDeLugar(l);
+    if (rid && !Estado.abiertoHoy(rid) && !Estado.hechoHoy(rid))
+      return UI.dialogo(Desafio.quien(rid), TEXTOS.cerradoHoy);
+
     if (l.accion === 'cuidar') return Desafio.abrir(l.id + 'Reto', () => UI.refrescarHud());
     if (l.accion === 'paso') return this.abrirPaso(l);
     if (l.accion === 'montar') return this.atraccion(l);
@@ -7642,6 +7964,14 @@ const Juego = {
   atraccion(l) {
     const p = MUNDO.paseos[l.id];
     if (!p) return;
+    // Si hoy ya se lo ganó, puede repetir vuelta (sin cobrar). Si hoy no hay
+    // reto aquí, la atracción está cerrada: montar es el premio de leer.
+    if (Estado.hechoHoy(p.reto)) {
+      return UI.dialogo(p.personaje, TEXTOS.paseoLibre, [
+        { texto: '¡Vamos!', accion: () => { UI.cerrar(); this.montar(l.id); } },
+        { texto: 'Ahora no', accion: () => UI.cerrar() },
+      ]);
+    }
     Desafio.abrir(p.reto, (bien) => {
       UI.refrescarHud();
       if (bien) this.montar(l.id);
@@ -8477,15 +8807,19 @@ const Juego = {
     let color = colores[l.accion] || '150,170,190';
     let icono = ICONOS[l.accion] || '';
 
-    if (l.accion === 'reto' || l.accion === 'letras') {
-      if (Estado.estaDormido(l.id)) { color = '150,150,150'; icono = '💤'; }
-      else if (Estado.tieneCristal(l.id)) { color = '120,205,150'; icono = '✅'; }
+    // Los retos: dormido, hecho hoy, o apagado porque hoy no toca
+    const rid = Estado.retoDeLugar(l);
+    let apagado = false;
+    if (rid) {
+      if (Estado.estaDormido(rid)) { color = '150,150,150'; icono = '💤'; }
+      else if (Estado.hechoHoy(rid)) { color = '120,205,150'; icono = '✅'; }
+      else if (!Estado.abiertoHoy(rid)) { color = '150,170,190'; icono = ''; apagado = true; }
     }
     if (l.accion === 'meta' && Estado.actual.cristales.length >= 5) icono = '✨';
 
     const d = Math.hypot(l.x - this.jugador.x, l.y - this.jugador.y);
     const cerca = Math.max(0, 1 - d / 280);
-    const flojo = l.accion === 'ver';
+    const flojo = l.accion === 'ver' || apagado;
     const fuerza = (flojo ? 0.14 : 0.30) + cerca * 0.45;
     const pulso = 1 + Math.sin(this.t * (2.2 + cerca * 2) + l.x) * 0.09;
     const radio = (flojo ? 54 : 78) * pulso;
