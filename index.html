@@ -441,6 +441,18 @@ const AJUSTES = {
      sale ni qué trae: unas conchas o una prenda barata que aún no tiene. */
   cofre: { probabilidad: 0.3, probPrenda: 0.4, conchas: [3, 6], precioMaxPrenda: 30 },
 
+  /* --- NOVEDADES POR MÓDULOS --------------------------------------------
+     Las novedades que cambian la forma de jugar no entran todas de golpe:
+     cada una se enciende sola a partir de su fecha (una cada 3-4 días).
+       'ya'          → encendida
+       'AAAA-MM-DD'  → se enciende sola ese día
+       null          → apagada */
+  novedades: {
+    album:         'ya',          // álbum de pegatinas de problemas, en la mochila
+    calentamiento: 'ya',          // mini reto antes de cada rutina del baño
+    cofre:         '2026-09-15',  // cofre sorpresa al leer bien a la primera
+  },
+
   // --- Cuándo se cansa un personaje ------------------------------------
   fallosParaDormirse: 3,     // fallos seguidos antes de que se vaya a dormir
 
@@ -465,6 +477,14 @@ const AJUSTES = {
   fuerzaSalto: 12,
   gravedad: 0.55,
 };
+
+/* ¿Está encendida esta novedad hoy? */
+function novedad(id) {
+  const f = AJUSTES.novedades[id];
+  if (f === 'ya') return true;
+  if (!f) return false;
+  return new Date().toISOString().slice(0, 10) >= f;
+}
 
 </script>
 <script>
@@ -5639,7 +5659,7 @@ const Desafio = {
   premiarProblema(p) {
     const paga = AJUSTES.conchasPorProblema;
     Estado.darConchas(paga);
-    const nueva = Estado.apuntarProblema(p.tipo) === 1;
+    const nueva = Estado.apuntarProblema(p.tipo) === 1 && novedad('album');
     const cofre = this.fallos === 0 && Cofre.toca();     // sin fallos = leído a la primera
     const luego = (f) => (cofre ? Cofre.abrir(f) : f());
     UI.refrescarHud();
@@ -5898,7 +5918,7 @@ const Desafio = {
       extra = '<br>⭐ <b>+' + AJUSTES.conchasALaPrimera + '</b> por leerlo bien a la primera';
     }
     // Venía del banco: cuenta para el álbum
-    if (this.reto.tipo && Estado.apuntarProblema(this.reto.tipo) === 1)
+    if (this.reto.tipo && Estado.apuntarProblema(this.reto.tipo) === 1 && novedad('album'))
       extra += '<br>📒 <b>¡Pegatina nueva!</b> Mírala en la mochila 🎒';
 
     // El cofre: a veces, y solo si lo ha leído bien a la primera
@@ -6475,7 +6495,7 @@ const Bano = {
   },
 
   hacer(c, calentado) {
-    if (!calentado && !Estado.hizoRutina(c.id)) return this.calentar(() => this.hacer(c, true));
+    if (!calentado && novedad('calentamiento') && !Estado.hizoRutina(c.id)) return this.calentar(() => this.hacer(c, true));
     Sonido[c.sonido]();
     const primera = Estado.apuntarRutina(c.id);
     let texto = c.texto;
@@ -6516,11 +6536,12 @@ const Mochila = {
 
     UI.abrir(`
       <div class="quien">Tu mochila</div>
-      <div class="botones"><button class="btn" id="verAlbum">📒 Mi álbum de problemas</button></div>
+      ${novedad('album') ? '<div class="botones"><button class="btn" id="verAlbum">📒 Mi álbum de problemas</button></div>' : ''}
       <p class="contador">Llevas <b>${mias.length}</b> de <b>${RAREZAS.length}</b> rarezas</p>
       <div class="rarezas">${lista}</div>
     `);
-    document.getElementById('verAlbum').onclick = () => { Sonido.clic(); Album.abrir(); };
+    const bAlbum = document.getElementById('verAlbum');
+    if (bAlbum) bAlbum.onclick = () => { Sonido.clic(); Album.abrir(); };
   },
 };
 
@@ -6561,7 +6582,7 @@ const Album = {
    un cofre. Nunca se sabe cuándo ni qué trae, y siempre es algo modesto. */
 const Cofre = {
 
-  toca() { return Math.random() < AJUSTES.cofre.probabilidad; },
+  toca() { return novedad('cofre') && Math.random() < AJUSTES.cofre.probabilidad; },
 
   abrir(seguir) {
     Sonido.cristal();
