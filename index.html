@@ -118,6 +118,15 @@
   .tarjeta.mal{border-color:#DDD6CC; opacity:.55}
   .tarjetas.esperando{visibility:hidden}
 
+  /* El álbum de pegatinas */
+  .album{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin:10px 0}
+  .pegatina{background:#fff; border:3px solid #E3D9C0; border-radius:16px; padding:10px 6px;
+            display:flex; flex-direction:column; gap:4px; font-size:15px}
+  .pegatina-icono{font-size:34px}
+  .pegatina.plata{border-color:#B8C4CC; background:#F4F7F9}
+  .pegatina.oro{border-color:#F2C14E; background:#FFF6D8}
+  .pegatina.vacia{border-style:dashed; opacity:.5}
+
   /* Las conchas en filas de cinco: así se cuentan de un vistazo */
   /* Los peces del espigón */
   .mar{background:linear-gradient(#7FD3E8,#4FB8D8); border-radius:18px; padding:14px;
@@ -426,6 +435,11 @@ const AJUSTES = {
      acertar a la primera da una concha de más. */
   segundosAntesDeTarjetas: { mayor: 3, pequena: 2 },
   conchasALaPrimera: 1,
+
+  /* --- El cofre sorpresa (recompensa variable) ------------------------
+     Solo puede salir si lo ha leído bien a la primera. Nunca se sabe si
+     sale ni qué trae: unas conchas o una prenda barata que aún no tiene. */
+  cofre: { probabilidad: 0.3, probPrenda: 0.4, conchas: [3, 6], precioMaxPrenda: 30 },
 
   // --- Cuándo se cansa un personaje ------------------------------------
   fallosParaDormirse: 3,     // fallos seguidos antes de que se vaya a dormir
@@ -2852,12 +2866,41 @@ const PROBLEMAS = {
 
 /* Saca un problema del banco. Evita repetir la misma forma dos veces seguidas,
    para que vea planteamientos distintos y no se acostumbre a uno solo. */
-function problemaPara(nivel, ultimoTipo) {
+function problemaPara(nivel, ultimoTipo, hechos) {
   const banco = PROBLEMAS[nivel] || PROBLEMAS.pequena;
-  const sirven = banco.filter(p => p.tipo !== ultimoTipo);
-  const lista = sirven.length ? sirven : banco;
+  let lista = banco.filter(p => p.tipo !== ultimoTipo);
+  if (!lista.length) lista = banco;
+  /* La mitad de las veces, de las formas que menos ha resuelto: así los
+     huecos del álbum son justo lo que más le toca practicar. */
+  if (hechos && Math.random() < 0.5) {
+    const n = (p) => hechos[p.tipo] || 0;
+    const menos = Math.min(...lista.map(n));
+    lista = lista.filter(p => n(p) === menos);
+  }
   return lista[Math.floor(Math.random() * lista.length)];
 }
+
+/* EL ÁLBUM: una pegatina por cada forma de problema. Con 3 resueltos lleva
+   estrella y con 6 es de oro. Se ve en la mochila. */
+const PEGATINAS = {
+  'cambio':        { icono: '🔄', nombre: 'Tenía y pasó algo' },
+  'cambio-medio':  { icono: '🕵️', nombre: '¿Qué pasó en medio?' },
+  'cambio-inicio': { icono: '⏪', nombre: '¿Cuánto había al principio?' },
+  'combina':       { icono: '🧩', nombre: 'Dos partes, un todo' },
+  'parte':         { icono: '✂️', nombre: 'Falta una parte' },
+  'compara':       { icono: '⚖️', nombre: '¿Cuántos más?' },
+  'compara-menos': { icono: '🔻', nombre: '«Tiene menos que…»' },
+  'iguala':        { icono: '🤝', nombre: 'Para tener los mismos' },
+  'grupos':        { icono: '🧺', nombre: 'Grupos iguales' },
+  'reparto':       { icono: '🍎', nombre: 'Repartir entre todos' },
+  'agrupa':        { icono: '📦', nombre: '¿Cuántos grupos salen?' },
+  'compara-mult':  { icono: '✖️', nombre: 'El doble, el triple' },
+  'combina-mult':  { icono: '👗', nombre: 'Todas las combinaciones' },
+  'rejilla':       { icono: '🔲', nombre: 'Filas y columnas' },
+  'dos-pasos':     { icono: '👣', nombre: 'Dos pasos seguidos' },
+  'sobra':         { icono: '🙈', nombre: 'Un dato que sobra' },
+  'resto':         { icono: '🍪', nombre: '¿Y lo que sobra?' },
+};
 
 </script>
 <script>
@@ -3556,6 +3599,7 @@ const Estado = {
     if (!this.actual.problemas) this.actual.problemas = {};
     this.actual.problemas[tipo] = (this.actual.problemas[tipo] || 0) + 1;
     this.guardar();
+    return this.actual.problemas[tipo];      // 1 = pegatina nueva en el álbum
   },
 
   leerHistoria(id) {
@@ -5234,7 +5278,7 @@ const Desafio = {
      y se contesta con el teclado. Así en cualquier sitio puede salir
      cualquier forma de problema. */
   retoDelBanco(nivel) {
-    const pr = montarConNumeros(problemaPara(nivel, this.ultimoTipo));
+    const pr = montarConNumeros(problemaPara(nivel, this.ultimoTipo, Estado.actual.problemas));
     this.ultimoTipo = pr.tipo;
     return Object.assign({}, pr, {
       mecanica: 'cerradura', preguntas: [{ texto: '', sol: pr.sol }],
@@ -5503,7 +5547,7 @@ const Desafio = {
      Se lee, se decide qué hay que hacer y se teclea el resultado. Al final se
      explica QUÉ HABÍA QUE VER, que es lo que de verdad se aprende. */
   problema(nivel, alTerminar) {
-    const p = montarConNumeros(problemaPara(nivel, this.ultimoTipo));
+    const p = montarConNumeros(problemaPara(nivel, this.ultimoTipo, Estado.actual.problemas));
     this.ultimoTipo = p.tipo;
     p.enunciado = conPregunta(p.enunciado);
     this.problemaActual = p;
@@ -5595,7 +5639,9 @@ const Desafio = {
   premiarProblema(p) {
     const paga = AJUSTES.conchasPorProblema;
     Estado.darConchas(paga);
-    Estado.apuntarProblema(p.tipo);
+    const nueva = Estado.apuntarProblema(p.tipo) === 1;
+    const cofre = this.fallos === 0 && Cofre.toca();     // sin fallos = leído a la primera
+    const luego = (f) => (cofre ? Cofre.abrir(f) : f());
     UI.refrescarHud();
     Sonido.fiesta();
     setTimeout(() => Sonido.moneda(), 400);
@@ -5605,6 +5651,7 @@ const Desafio = {
       <p class="dice">${p.clave}</p>
       <div class="altavoz" id="zonaVoz"></div>
       <p class="contador">🐚 <b>+${paga} conchas</b></p>
+      ${nueva ? '<p class="contador">📒 <b>¡Pegatina nueva!</b> Mírala en la mochila 🎒</p>' : ''}
       <div class="botones">
         <button class="btn defecto" id="otro">Otro problema<span class="tecla">espacio</span></button>
         <button class="btn gris" id="basta">Ya está bien</button>
@@ -5613,12 +5660,11 @@ const Desafio = {
     UI.prepararAltavoz(p.clave.replace(/<[^>]*>/g, ' '));
     document.getElementById('otro').onclick = () => {
       Sonido.clic();
-      this.problema(Estado.actual.nivel, this.alTerminar);
+      luego(() => this.problema(Estado.actual.nivel, this.alTerminar));
     };
     document.getElementById('basta').onclick = () => {
       Sonido.clic();
-      UI.cerrar();
-      if (this.alTerminar) this.alTerminar(true);
+      luego(() => { UI.cerrar(); if (this.alTerminar) this.alTerminar(true); });
     };
   },
 
@@ -5851,7 +5897,15 @@ const Desafio = {
       Estado.darConchas(AJUSTES.conchasALaPrimera);
       extra = '<br>⭐ <b>+' + AJUSTES.conchasALaPrimera + '</b> por leerlo bien a la primera';
     }
-    if (this.reto.tipo) Estado.apuntarProblema(this.reto.tipo);   // venía del banco
+    // Venía del banco: cuenta para el álbum
+    if (this.reto.tipo && Estado.apuntarProblema(this.reto.tipo) === 1)
+      extra += '<br>📒 <b>¡Pegatina nueva!</b> Mírala en la mochila 🎒';
+
+    // El cofre: a veces, y solo si lo ha leído bien a la primera
+    if (this.reto.operacion && this.fallosLeer === 0 && Cofre.toca()) {
+      const seguir = this.alTerminar;
+      this.alTerminar = (bien) => Cofre.abrir(() => { UI.cerrar(); if (seguir) seguir(bien); });
+    }
 
     // Los animales de la granja no dan cristales: dan jornal
     if (RETOS[id].trabajo) return this.pagarTrabajo(id, extra);
@@ -6462,9 +6516,91 @@ const Mochila = {
 
     UI.abrir(`
       <div class="quien">Tu mochila</div>
+      <div class="botones"><button class="btn" id="verAlbum">📒 Mi álbum de problemas</button></div>
       <p class="contador">Llevas <b>${mias.length}</b> de <b>${RAREZAS.length}</b> rarezas</p>
       <div class="rarezas">${lista}</div>
     `);
+    document.getElementById('verAlbum').onclick = () => { Sonido.clic(); Album.abrir(); };
+  },
+};
+
+/* ===================================================== EL ÁLBUM =========
+   Una pegatina por cada forma de problema resuelta. Un álbum a medias tira
+   mucho, y sus huecos son justo las formas que le falta practicar. */
+const Album = {
+
+  abrir() {
+    const hechos = Estado.actual.problemas || {};
+    const tipos = [...new Set((PROBLEMAS[Estado.actual.nivel] || []).map(p => p.tipo))];
+    const tengo = tipos.filter(t => hechos[t]).length;
+    const fichas = tipos.map(t => {
+      const pg = PEGATINAS[t] || { icono: '⭐', nombre: t };
+      const n = hechos[t] || 0;
+      if (!n) return '<div class="pegatina vacia"><span class="pegatina-icono">?</span><small>Aún no</small></div>';
+      const clase = n >= 6 ? 'oro' : n >= 3 ? 'plata' : '';
+      const cuenta = n >= 6 ? '🏅 ¡De oro!' : n >= 3 ? '⭐ ' + n + ' de 6 para el oro'
+                                                  : n + ' de 3 para la estrella';
+      return `<div class="pegatina ${clase}"><span class="pegatina-icono">${pg.icono}</span>
+              <b>${pg.nombre}</b><small>${cuenta}</small></div>`;
+    }).join('');
+
+    UI.abrir(`
+      <div class="quien">📒 Tu álbum de problemas</div>
+      <p class="contador">Tienes <b>${tengo}</b> de <b>${tipos.length}</b> pegatinas</p>
+      <div class="album">${fichas}</div>
+      <p class="pista">Cada forma de problema que resuelves te da su pegatina. Salen en el salón de Coco
+         y en las atracciones.</p>
+      <div class="botones"><button class="btn gris" id="volverMochila">← Volver a la mochila</button></div>
+    `);
+    document.getElementById('volverMochila').onclick = () => { Sonido.clic(); Mochila.abrir(); };
+  },
+};
+
+/* ===================================================== EL COFRE =========
+   Recompensa variable: a veces, después de leer bien a la primera, aparece
+   un cofre. Nunca se sabe cuándo ni qué trae, y siempre es algo modesto. */
+const Cofre = {
+
+  toca() { return Math.random() < AJUSTES.cofre.probabilidad; },
+
+  abrir(seguir) {
+    Sonido.cristal();
+    UI.abrir(`
+      <div class="quien">¡Un cofre!</div>
+      <p class="cuenta-grande">🧰</p>
+      <p class="dice">Como lo has leído bien a la primera, ha aparecido un cofre.</p>
+      <div class="botones"><button class="btn defecto" id="abrirCofre">Abrirlo<span class="tecla">espacio</span></button></div>
+    `);
+    document.getElementById('abrirCofre').onclick = () => {
+      Sonido.clic();
+      const dentro = this.sacar();
+      Sonido.fiesta();
+      UI.refrescarHud();
+      UI.abrir(`
+        <div class="quien">Dentro del cofre…</div>
+        <p class="cuenta-grande">✨</p>
+        <p class="dice">${dentro}</p>
+        <div class="botones"><button class="btn defecto" id="cerrarCofre">¡Bien!<span class="tecla">espacio</span></button></div>
+      `);
+      document.getElementById('cerrarCofre').onclick = () => { Sonido.clic(); seguir(); };
+    };
+  },
+
+  /* Unas conchas, o una prenda barata de la tienda que aún no tiene */
+  sacar() {
+    const c = AJUSTES.cofre;
+    const prendas = Object.keys(ROPA).filter(k => k !== 'mascotas' && Array.isArray(ROPA[k]))
+      .flatMap(k => ROPA[k])
+      .filter(o => typeof o.precio === 'number' && o.precio > 0 && o.precio <= c.precioMaxPrenda &&
+                   !Estado.tiene(o));
+    if (prendas.length && Math.random() < c.probPrenda) {
+      const o = prendas[Math.floor(Math.random() * prendas.length)];
+      Estado.dar(o.id);
+      return '🎁 <b>' + o.nombre + '</b><br><small>Ya es tuyo: póntelo en el espejo de tu casa.</small>';
+    }
+    const n = AZ(c.conchas[0], c.conchas[1]);
+    Estado.darConchas(n);
+    return '🐚 <b>+' + n + ' conchas</b>';
   },
 };
 
