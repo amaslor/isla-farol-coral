@@ -18,7 +18,7 @@
     margin:0; background:var(--crema); color:var(--tinta);
     font-family:"Verdana","Trebuchet MS",system-ui,sans-serif;
     font-size:19px; line-height:1.7; letter-spacing:.3px;
-    display:flex; justify-content:center; align-items:center; min-height:100vh;
+    display:flex; justify-content:center; align-items:center; min-height:100vh; min-height:100dvh;
   }
   .oculto{display:none !important}
   h1{font-size:30px; margin:.2em 0; color:var(--turquesa)}
@@ -66,7 +66,10 @@
 
   /* ---------- el juego ---------- */
   /* El juego ocupa toda la ventana, no una cajita en medio */
-  #juego{position:fixed; inset:0; width:100vw; height:100vh}
+  /* El juego ocupa lo que de verdad se ve. En el iPad, 100vh es la altura SIN
+     la barra del navegador, así que la parte de abajo (los mandos) quedaba
+     tapada; 'dvh' es la altura real de cada momento. (12-09-2026) */
+  #juego{position:fixed; inset:0; width:100vw; height:100vh; height:100dvh}
   #lienzo{width:100%; height:100%; display:block; background:#4FB8D8; touch-action:manipulation}
   #hud{position:absolute; top:10px; left:14px; right:14px; display:flex; gap:12px; align-items:center;
        font-weight:bold; text-shadow:0 2px 0 #fff; pointer-events:none}
@@ -78,7 +81,13 @@
   #hadaGlobo small{display:block; color:#7A736A; font-size:15px; font-weight:normal}
   #globo b{display:inline-block; background:var(--verde); color:#fff; border-radius:8px;
            padding:1px 10px; margin-right:6px}
-  #mandos{position:absolute; bottom:14px; left:14px; right:14px; display:flex; gap:10px; align-items:flex-end}
+  /* OJO: el contenedor de los mandos ocupa todo el ancho y 168 px de alto, así
+     que tapaba el botón «Bajarme» de la barra del paseo (y los clics en la
+     parte de abajo del mapa). Los huecos entre botones no deben capturar nada:
+     por eso el contenedor no recibe pulsaciones y los botones sí. (12-09-2026) */
+  #mandos{position:absolute; bottom:14px; left:14px; right:14px; display:flex; gap:10px;
+          align-items:flex-end; pointer-events:none}
+  #mandos button{pointer-events:auto}
   #mandos .der{margin-left:auto; display:flex; gap:10px; align-items:flex-end}
   #mandos button{font-size:24px; width:66px; height:58px; border:0; border-radius:18px;
                  background:rgba(255,255,255,.9); box-shadow:var(--sombra); cursor:pointer;
@@ -86,7 +95,7 @@
   #mandos .accion{background:var(--verde); color:#fff; font-size:26px}
   .cruceta{display:flex; flex-direction:column; align-items:center; gap:6px}
   .cruceta div{display:flex; gap:6px}
-  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda{font-size:20px; border:0; border-radius:10px;
+  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos{font-size:20px; border:0; border-radius:10px;
            padding:4px 8px; background:rgba(255,255,255,.85); cursor:pointer; margin-right:6px}
 
   /* Los avisos van abajo: arriba taparían las piedras del río */
@@ -98,8 +107,14 @@
   /* ---------- ventanas ---------- */
   #modal{position:fixed; inset:0; background:rgba(47,42,40,.45);
          display:flex; align-items:center; justify-content:center; padding:16px; z-index:10}
+  /* Mientras hay una ventana abierta, la página de debajo no se mueve. En la
+     tableta, sin esto, abrir y cerrar un reto arrastraba el scroll y hacía
+     reaparecer la barra del navegador. (12-09-2026) */
+  body.con-modal{overflow:hidden}
   .caja{position:relative; background:var(--crema); border-radius:24px; padding:30px 26px 24px; max-width:860px;
-        width:100%; max-height:92vh; overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,.3); text-align:center}
+        width:100%; max-height:92vh; max-height:92dvh; overflow:auto;
+        box-shadow:0 10px 40px rgba(0,0,0,.3); text-align:center;
+        -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
   .quien{font-weight:bold; color:var(--coral); font-size:17px}
   .dice{font-size:22px; line-height:1.75; margin:10px auto; max-width:22em}
   .pregunta{font-weight:bold; color:var(--turquesa)}
@@ -126,6 +141,15 @@
   .pegatina.plata{border-color:#B8C4CC; background:#F4F7F9}
   .pegatina.oro{border-color:#F2C14E; background:#FFF6D8}
   .pegatina.vacia{border-style:dashed; opacity:.5}
+  /* El Cuaderno de Manitas: los cromos que faltan salen apagados y con su pista */
+  .cromo{background:#fff; border:3px solid #E3D9C0; border-radius:16px; padding:10px 8px;
+         text-align:center; display:flex; flex-direction:column; gap:4px}
+  .cromo .cara{font-size:38px; line-height:1.1}
+  .cromo small{color:#7A736A; font-size:13px; line-height:1.4}
+  .cromo.hecho{border-color:var(--verde); background:#E7F6E4}
+  .cromo.falta{border-style:dashed}
+  .cromo.falta .cara{filter:grayscale(1); opacity:.45}
+  .cromo.llevo{border-color:var(--coral); background:#FFF1EC}
 
   /* Las conchas en filas de cinco: así se cuentan de un vistazo */
   /* Los peces del espigón */
@@ -199,10 +223,10 @@
   /* La barra del paseo: cuánto queda */
   #barraTiempo{position:absolute; bottom:92px; left:50%; transform:translateX(-50%);
     background:#fff; border-radius:20px; padding:10px 20px; box-shadow:var(--sombra);
-    display:flex; align-items:center; gap:14px; font-weight:bold; font-size:19px}
+    display:flex; align-items:center; gap:14px; font-weight:bold; font-size:19px; z-index:5}
   #barraTiempo .barra{width:min(280px,34vw); height:16px; background:#EFE6D0; border-radius:10px; overflow:hidden}
   .btn.chiquito{padding:8px 18px; min-height:0; font-size:16px; margin:0}
-  #barraPuente{position:absolute; bottom:92px; left:50%; transform:translateX(-50%)}
+  #barraPuente{position:absolute; bottom:92px; left:50%; transform:translateX(-50%); z-index:5}
   #relleno{height:100%; width:100%; background:linear-gradient(90deg,#5FA55A,#8FE3C8); transition:width .2s}
 
   /* ---------- EN EL MÓVIL ----------
@@ -219,7 +243,7 @@
     #hud .caja-hud{padding:3px 9px; border-radius:10px}
     #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
     #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
-    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda{font-size:17px; padding:3px 5px; margin-right:0}
+    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos{font-size:17px; padding:3px 5px; margin-right:0}
     #volverInicio{font-size:17px; text-decoration:none; padding:0 3px}
 
     /* El hada, más pequeña y por debajo de la barra de arriba */
@@ -314,14 +338,31 @@
             max-height:48vh; overflow-y:auto; padding:4px}
   /* El dibujito de cada prenda: se ve cómo quedaría puesta */
   .opcion .prevista{display:block; margin:0 auto 2px; background:#F7F1E1; border-radius:12px}
+  .opcion .prevista.bicho{width:96px; height:96px}
   /* El rótulo de cada estantería: ocupa toda la fila */
   .grupo-titulo{flex-basis:100%; margin:12px 0 2px; font-size:16px; color:var(--turquesa);
-                text-align:left; border-bottom:2px solid #E3D9C0; padding-bottom:4px}
+                text-align:left; border-bottom:2px solid #E3D9C0; padding-bottom:4px;
+                display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .grupo-titulo small{color:#9A938A; font-size:14px; font-weight:normal; white-space:nowrap}
+  /* Cuántas prendas tiene de cada estilo: el armario como colección */
+  .cuentas{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 4px}
+  .cuenta-chip{background:#fff; border:2px solid #E3D9C0; border-radius:12px;
+               padding:3px 10px; font-size:14px; color:#7A736A}
+  .cuenta-chip b{color:var(--turquesa)}
+  .cuenta-chip.activa{border-color:var(--turquesa); background:#EAF6F6}
+  .cuenta-chip.total{background:#FFF3C4; border-color:#EBD88A; color:#7A6A3A}
+  .cuenta-chip.total b{color:#7A6A3A}
   .grupo-titulo:first-child{margin-top:0}
   .opcion{font:inherit; color:var(--tinta); font-size:14px; background:#fff; border:3px solid #E3D9C0;
-          border-radius:14px; padding:8px 6px; cursor:pointer; width:120px}
+          border-radius:14px; padding:8px 6px; cursor:pointer; width:120px; position:relative}
   .opcion.puesta{border-color:var(--verde); background:#E7F6E4}
   .opcion.bloqueada{opacity:.7}
+  /* La chapa que dice «esto ya es tuyo»: como la ropa se ve siempre en color,
+     hace falta una marca que no dependa del color de la prenda. */
+  .opcion .chapa{position:absolute; top:-10px; right:-8px; width:30px; height:30px;
+                 border-radius:50%; background:var(--verde); color:#fff; font-size:17px;
+                 font-weight:bold; line-height:30px; text-align:center;
+                 box-shadow:0 2px 0 rgba(0,0,0,.15)}
   .opcion .muestra{display:block; width:100%; height:22px; border-radius:8px; margin-bottom:4px}
   .opcion .precio{display:block; color:var(--coral); font-weight:bold}
 </style>
@@ -372,6 +413,7 @@
     <span class="caja-hud caja-nombre"><span id="nombreJugadora"></span></span>
     <span class="der"><button id="bAyuda" title="Cómo se juega (tecla T)">❓</button>
     <button id="bMochila" title="Mochila">🎒</button>
+    <button id="bCuadernos" title="Mis cuadernos (tecla L)">📔</button>
     <button id="bMapa" title="Mapa (tecla M)">🗺️</button>
     <button id="bPantalla" title="Pantalla completa (tecla P)">⛶</button>
     <button id="bSonido" title="Sonido">🔊</button>
@@ -442,6 +484,13 @@ const AJUSTES = {
      sortear qué sitios tienen reto cada día. */
   retosPorDia: 0,            // 0 = todos los sitios abiertos siempre
   conchasPorRepetirHoy: 0,   // repetir hoy un reto ya ganado hoy: no paga
+
+  /* TOPE DIARIO DE LO REPETIBLE SIN FIN (12-09-2026)
+     El salón de Coco y los problemas sueltos no se acaban nunca: sin tope se
+     hacen veinte seguidos y se compra media isla en una tarde. Pasado el tope
+     se siguen pudiendo hacer (y siguen dando pegatinas), pero ya no pagan.
+     Súbelo o bájalo aquí; 0 quitaría el tope del todo. */
+  topeConchasRepetibles: 18,
 
   /* --- Para que lea antes de elegir ------------------------------------
      Las tarjetas de «¿Qué hay que hacer?» tardan unos segundos en salir, y
@@ -531,7 +580,8 @@ const GRUPOS = {
                  { id: 'juegos',     titulo: '✨ Juegos completos' }],
   mascotas:     [{ id: 'tierra',  titulo: '🐾 De tierra' },
                  { id: 'mar',     titulo: '🌊 De mar y de playa' },
-                 { id: 'cuento',  titulo: '🦄 De cuento' }],
+                 { id: 'cuento',  titulo: '🦄 De cuento' },
+                 { id: 'raros',   titulo: '🌴 Los raros (de un barco perdido)' }],
   complementos: [{ id: 'cara',    titulo: '👓 Para la cara' },
                  { id: 'cabeza',  titulo: '🎩 Para la cabeza' },
                  { id: 'espalda', titulo: '🎒 A la espalda' },
@@ -701,10 +751,22 @@ const ROPA = {
     { id: 'cangrejo',  nombre: 'Cangrejito',     color: '#E8506B', detalle: '#FFD9E0', precio: 65, grupo: 'mar', forma: 'cangrejo' },
     { id: 'tortuguita',nombre: 'Tortuguita',     color: '#7ED6A5', detalle: '#6E8F3E', precio: 85, grupo: 'mar', forma: 'tortuga' },
     { id: 'pinguino',  nombre: 'Pingüino',       color: '#3A3A3A', detalle: '#FFB03B', precio: 110, grupo: 'mar', forma: 'pinguino' },
+    // El pez no anda: va contigo dentro de su pecera, y se nota que pesa
+    { id: 'pez',       nombre: 'Pez en su pecera',color: '#F2A03D', detalle: '#E8506B', precio: 140, grupo: 'mar', forma: 'pez' },
 
     { id: 'dragon',    nombre: 'Dragoncito',     color: '#7ED6A5', detalle: '#F2C14E', precio: null, grupo: 'cuento' },
     { id: 'pajarito',  nombre: 'Pajarito',       color: '#5AA9DC', detalle: '#FFE066', precio: 95, grupo: 'cuento', forma: 'pajaro' },
     { id: 'unicornito',nombre: 'Unicornito',     color: '#FFF1F4', detalle: '#F26FA8', precio: 160, grupo: 'cuento', forma: 'unicornio' },
+
+    /* LOS RAROS: el sumidero caro de la isla. Valen muchísimo a propósito,
+       para que siempre haya algo grande por lo que seguir jugando. Se compran
+       solo en la Casa dels Bitxos, con Ona. */
+    { id: 'flamenco',  nombre: 'Flamenco',       color: '#F58FB0', detalle: '#F2C8D8', precio: 200, grupo: 'raros', forma: 'flamenco' },
+    { id: 'tucan',     nombre: 'Tucán',          color: '#2F2A28', detalle: '#F2A03D', precio: 240, grupo: 'raros', forma: 'tucan' },
+    { id: 'camaleon',  nombre: 'Camaleón',       color: '#7BC96F', detalle: '#F2C14E', precio: 280, grupo: 'raros', forma: 'camaleon' },
+    { id: 'axolote',   nombre: 'Ajolote',        color: '#F9C7D8', detalle: '#F26FA8', precio: 320, grupo: 'raros', forma: 'axolote' },
+    { id: 'pulpito',   nombre: 'Pulpito',        color: '#B58BE0', detalle: '#E8D5F2', precio: 380, grupo: 'raros', forma: 'pulpo' },
+    { id: 'pavoreal',  nombre: 'Pavo real',      color: '#2E8B96', detalle: '#8A6D3B', precio: 450, grupo: 'raros', forma: 'pavoreal' },
   ],
 };
 
@@ -797,6 +859,12 @@ const MUNDO = {
       nombre: 'Na Tortuga', mapa: 'Na Tortuga' },
     { id: 'roc', x: 2280, y: 1520, accion: 'hablar', charla: 'roc', dibujo: 'lenador',
       nombre: 'Roc, el del bosque', mapa: 'Roc' },
+    { id: 'raton', x: 1200, y: 1520, accion: 'hablar', charla: 'raton', dibujo: 'raton',
+      nombre: 'Nit, el del molino', mapa: 'Nit' },
+
+    // ------------------------------------------ la tienda de mascotas
+    { id: 'bitxos', x: 1560, y: 2960, accion: 'mascotas', dibujo: 'casaBitxos',
+      nombre: 'La Casa dels Bitxos', mapa: 'Casa dels Bitxos', personaje: 'Ona' },
 
     // ----------------------------------------------------- la feria
     { id: 'tiovivo', x: 4360, y: 3260, accion: 'montar', dibujo: 'tiovivo',
@@ -885,8 +953,11 @@ const MUNDO = {
                zona: { x: 4760, y: 2400, rx: 495, ry: 310 }, arranque: { x: 4380, y: 2380 } },
     caballo: { vehiculo: 'caballo', segundos: 55, reto: 'caballoReto', personaje: 'Neus',
                zona: { x: 3900, y: 1900, rx: 380, ry: 250 }, arranque: { x: 3900, y: 1900 } },
+    /* La pista de los coches es justo lo que se ve dentro de la barandilla.
+       Antes la zona era más grande y estaba 120 px más abajo que la valla
+       dibujada: se conducía por fuera y no rebotaba en ningún sitio. */
     coches:  { vehiculo: 'coche',   segundos: 50, reto: 'cochesReto',  personaje: 'Gori',
-               zona: { x: 4980, y: 3480, rx: 320, ry: 190 }, arranque: { x: 4980, y: 3480 } },
+               zona: { x: 4980, y: 3360, rx: 225, ry: 122 }, arranque: { x: 4980, y: 3320 } },
     tazas:   { vehiculo: 'taza',    segundos: 40, reto: 'tazasReto',   personaje: 'Bet',
                zona: { x: 5020, y: 3020, rx: 250, ry: 150 }, arranque: { x: 5020, y: 3020 } },
     tren:    { vehiculo: 'tren',    segundos: 45, reto: 'trenReto',    personaje: 'Ton',
@@ -944,10 +1015,15 @@ const MUNDO = {
       paso: { x: 2900, y: 2180, rx: 56, ry: 240 },
       mensaje: 'Esta colina es muy empinada. Sube por los <b>escalones</b> del medio.' },
     { dibujo: 'montana',    x: 4760, y: 1180, rx: 620, ry: 430,
-      // el sendero de la ladera este, cerrado hasta que se supera el reto
-      paso: { x: 5180, y: 1180, rx: 62, ry: 380, requiere: 'montana' },
+      /* EL SENDERO (12-09-2026). Antes eran dos elipses estrechas que se
+         afilaban por los extremos: se subía la escalera y arriba solo se podía
+         andar en línea recta, sin llegar a la meseta. Ahora el sendero es un
+         PASILLO de verdad —los mismos puntos que se pintan, con su ancho— así
+         que se puede andar justo por donde se ve el camino. */
+      senda: { requiere: 'montana', ancho: 170,
+               puntos: [[5180, 1660], [5180, 1130], [4790, 1130]] },
       // y la meseta de arriba, que es la recompensa
-      hueco: { x: 4720, y: 1010, rx: 330, ry: 190 },
+      hueco: { x: 4720, y: 1010, rx: 370, ry: 215 },
       mensaje: 'La montaña es muy escarpada. Hay un <b>sendero</b> en la ladera este, pero está cortado.' },
     { dibujo: 'volcan',     x: 5480, y: 940,  rx: 380, ry: 280,
       mensaje: 'Al volcán ni te acerques, que está dormido y <b>ronca</b>.' },
@@ -979,33 +1055,84 @@ const MUNDO = {
   piezas: [
     { id: 'aspa', x: 2480, y: 1080, icono: '🌀', nombre: 'Un aspa de molino',
       hallazgo: 'Un aspa de madera, tirada entre la hierba. Pesa lo suyo.',
-      encaja: 'molino',
+      encaja: 'molino', arreglo: 'El molino vuelve a girar',
+      pista: 'En algún sitio hay algo que lleva años sin dar vueltas.',
       alColocar: 'Encajas el aspa que faltaba. El molino cruje, se queja… y <b>empieza a girar</b>. ' +
                  'Dentro, el tic-tac se convierte en una musiquilla.' },
 
-    { id: 'herradura', x: 3560, y: 1560, icono: '🧲', nombre: 'Una herradura',
+    { id: 'herradura', x: 1660, y: 2640, icono: '🧲', nombre: 'Una herradura',
       hallazgo: 'Una herradura de hierro, medio enterrada. Dicen que dan suerte.',
-      encaja: 'caballo',
+      encaja: 'caballo', arreglo: 'Roseta ya no cojea',
+      pista: 'Alguien de la isla galopa mal y no se queja.',
       alColocar: 'Se la pones a Roseta y la yegua da tres saltos seguidos de puro gusto. ' +
                  'Ahora galopa <b>sin cojear</b>.' },
 
     { id: 'grifo', x: 5540, y: 3660, icono: '🚰', nombre: 'Un grifo dorado',
       hallazgo: 'Un grifo dorado entre las rocas de la cala. Está como nuevo.',
-      encaja: 'fuente',
+      encaja: 'fuente', arreglo: 'La fuente vuelve a manar',
+      pista: 'Hay una fuente en la que ya solo quedan las monedas.',
       alColocar: 'Enroscas el grifo en la fuente seca y sale un chorro de agua clarísima. ' +
                  'Las monedas del fondo <b>vuelven a brillar</b>.' },
 
     { id: 'campana', x: 4720, y: 1120, icono: '🔔', nombre: 'Una campana pequeña',
       hallazgo: 'Una campana de bronce, sin badajo, en lo alto de la montaña.',
-      encaja: 'totem',
+      encaja: 'totem', arreglo: 'El tótem suena con el viento',
+      pista: 'Tres caras de madera llevan mucho tiempo calladas.',
       alColocar: 'Cuelgas la campana en el tótem y suena sola cuando pasa el viento.<br><br>' +
                  'Las tres caras de madera parecen <b>escucharla</b>.' },
 
     { id: 'vela', x: 1900, y: 3980, icono: '⛵', nombre: 'Una vela vieja',
       hallazgo: 'Una vela de tela enrollada, con un remiendo en una esquina.',
-      encaja: 'barcavieja',
+      encaja: 'barcavieja', arreglo: 'La Peixera parece navegar',
+      pista: 'Una barca que llegó a la arena y ya no salió de ella.',
       alColocar: 'Le pones la vela a <i>La Peixera</i> y se hincha con el viento, aunque la barca ' +
                  'siga en la arena.<br><br>Desde lejos, <b>parece que navega</b>.' },
+
+    /* --- Seis más, repartidas por toda la isla (12-09-2026) --------------
+       A propósito, cada una está LEJOS del sitio donde encaja: para saber
+       dónde va hay que haber leído el texto de ese sitio. */
+
+    { id: 'manecilla', x: 3060, y: 4260, icono: '🕰️', nombre: 'Una manecilla de reloj',
+      hallazgo: 'Una aguja de hierro negro, medio enterrada en la arena rosa.',
+      encaja: 'ruinas', arreglo: 'El reloj vuelve a andar',
+      pista: 'Hay un reloj que marca las siete y cuarto desde hace años.',
+      alColocar: 'Encajas la manecilla en el reloj de las ruinas y, con un chasquido, ' +
+                 '<b>empieza a moverse</b>.<br><br>Ya no son siempre las siete y cuarto.' },
+
+    { id: 'catalejo', x: 6460, y: 1700, icono: '🔭', nombre: 'Un catalejo',
+      hallazgo: 'Un catalejo de latón, apoyado en la pared de una cueva.',
+      encaja: 'mirador', arreglo: 'El mirador ve de lejos',
+      pista: 'Desde un banco se ve el mar entero, pero solo de cerca.',
+      alColocar: 'Montas el catalejo en la barandilla del mirador y lo giras.<br><br>' +
+                 'Desde aquí ahora <b>se ve hasta el Farol</b>.' },
+
+    { id: 'cubo', x: 2100, y: 1180, icono: '🪣', nombre: 'Un cubo con cuerda',
+      hallazgo: 'Un cubo de madera con su cuerda, colgado de una rama del bosque.',
+      encaja: 'pozo', arreglo: 'El pozo saca agua',
+      pista: 'Un pozo que contesta cuando gritas, pero del que no se saca nada.',
+      alColocar: 'Atas el cubo a la cuerda del pozo y lo bajas. Sube lleno de agua fría.<br><br>' +
+                 'El eco, esta vez, <b>contesta contento</b>.' },
+
+    { id: 'cabeza', x: 2900, y: 4300, icono: '🗿', nombre: 'Una cabeza de piedra',
+      hallazgo: 'Una cabeza de piedra en el espigón, mirando al agua. Pesa un montón.',
+      encaja: 'estatua', arreglo: 'La estatua recupera la cabeza',
+      pista: 'Un señor de piedra lee un libro sin poder mirarlo.',
+      alColocar: 'Colocas la cabeza encima del cuello y encaja como si nunca se hubiera caído.<br><br>' +
+                 'Ahora <b>está leyendo su libro</b>.' },
+
+    { id: 'farolillo', x: 7500, y: 2500, icono: '🏮', nombre: 'Un farolillo',
+      hallazgo: 'Un farolillo de papel, enganchado en un matojo de l\'Illa Petita.',
+      encaja: 'claro', arreglo: 'El claro se ilumina de día',
+      pista: 'Un sitio que, dicen, solo se ilumina de noche.',
+      alColocar: 'Cuelgas el farolillo de una rama y se enciende solo.<br><br>' +
+                 'Las luciérnagas salen a verlo: ahora el claro <b>brilla también de día</b>.' },
+
+    { id: 'molinillo', x: 5340, y: 1500, icono: '🎐', nombre: 'Un molinillo de viento',
+      hallazgo: 'Un molinillo de colores clavado en la ceniza, cerca del volcán.',
+      encaja: 'espantapajaros', arreglo: 'El espantapájaros por fin espanta',
+      pista: 'Hay un espantapájaros al que los pájaros no hacen ningún caso.',
+      alColocar: 'Le clavas el molinillo en el sombrero. Gira, zumba… y los pájaros ' +
+                 'salen volando.<br><br>Por fin <b>hace su trabajo</b>.' },
   ],
 
   secretos: [
@@ -2996,24 +3123,45 @@ function problemaPara(nivel, ultimoTipo, hechos) {
 
 /* EL ÁLBUM: una pegatina por cada forma de problema. Con 3 resueltos lleva
    estrella y con 6 es de oro. Se ve en la mochila. */
+/* Cada forma de problema con su REGLA: la frase que hay que saber ver para
+   resolver todos los de esa clase. Sale en el Cuaderno de Cabeza al tocar la
+   pegatina, y es lo más parecido a «aprenderse la teoría» que hay en el juego:
+   la regla llega después de haberlo hecho, no antes. */
 const PEGATINAS = {
-  'cambio':        { icono: '🔄', nombre: 'Tenía y pasó algo' },
-  'cambio-medio':  { icono: '🕵️', nombre: '¿Qué pasó en medio?' },
-  'cambio-inicio': { icono: '⏪', nombre: '¿Cuánto había al principio?' },
-  'combina':       { icono: '🧩', nombre: 'Dos partes, un todo' },
-  'parte':         { icono: '✂️', nombre: 'Falta una parte' },
-  'compara':       { icono: '⚖️', nombre: '¿Cuántos más?' },
-  'compara-menos': { icono: '🔻', nombre: '«Tiene menos que…»' },
-  'iguala':        { icono: '🤝', nombre: 'Para tener los mismos' },
-  'grupos':        { icono: '🧺', nombre: 'Grupos iguales' },
-  'reparto':       { icono: '🍎', nombre: 'Repartir entre todos' },
-  'agrupa':        { icono: '📦', nombre: '¿Cuántos grupos salen?' },
-  'compara-mult':  { icono: '✖️', nombre: 'El doble, el triple' },
-  'combina-mult':  { icono: '👗', nombre: 'Todas las combinaciones' },
-  'rejilla':       { icono: '🔲', nombre: 'Filas y columnas' },
-  'dos-pasos':     { icono: '👣', nombre: 'Dos pasos seguidos' },
-  'sobra':         { icono: '🙈', nombre: 'Un dato que sobra' },
-  'resto':         { icono: '🍪', nombre: '¿Y lo que sobra?' },
+  'cambio':        { icono: '🔄', nombre: 'Tenía y pasó algo',
+    regla: 'Había una cantidad y algo la cambió. Si <b>llegan</b>, se suma; si <b>se van</b>, se resta.' },
+  'cambio-medio':  { icono: '🕵️', nombre: '¿Qué pasó en medio?',
+    regla: 'Sabes cómo empezó y cómo acabó, y buscas el cambio. <b>Final menos principio</b>.' },
+  'cambio-inicio': { icono: '⏪', nombre: '¿Cuánto había al principio?',
+    regla: 'Vas <b>hacia atrás</b>: deshaces lo que pasó. Si se fueron, se suman; si llegaron, se restan.' },
+  'combina':       { icono: '🧩', nombre: 'Dos partes, un todo',
+    regla: 'Dos grupos que no cambian y quieres el total: <b>se suman</b>. Aquí no pasa nada, solo se juntan.' },
+  'parte':         { icono: '✂️', nombre: 'Falta una parte',
+    regla: 'Sabes el total y una parte, y buscas la otra: <b>total menos la parte que sabes</b>.' },
+  'compara':       { icono: '⚖️', nombre: '¿Cuántos más?',
+    regla: 'Comparar es <b>restar</b>: el mayor menos el menor. Nadie pierde nada, solo se mide la diferencia.' },
+  'compara-menos': { icono: '🔻', nombre: '«Tiene menos que…»',
+    regla: 'Cuidado: «menos» no siempre es restar. Si te dicen cuánto <b>menos</b> tiene uno, para hallar el otro puede tocar <b>sumar</b>.' },
+  'iguala':        { icono: '🤝', nombre: 'Para tener los mismos',
+    regla: 'Cuánto le falta al pequeño para alcanzar al grande: <b>la diferencia</b> entre los dos.' },
+  'grupos':        { icono: '🧺', nombre: 'Grupos iguales',
+    regla: 'Varios grupos <b>del mismo tamaño</b>: se multiplica. Cuántos grupos × cuántos en cada uno.' },
+  'reparto':       { icono: '🍎', nombre: 'Repartir entre todos',
+    regla: 'Un total a repartir en partes iguales: <b>se divide</b>. Total entre el número de personas.' },
+  'agrupa':        { icono: '📦', nombre: '¿Cuántos grupos salen?',
+    regla: 'También es dividir, pero al revés: sabes cuántos van en cada grupo y buscas <b>cuántos grupos</b>.' },
+  'compara-mult':  { icono: '✖️', nombre: 'El doble, el triple',
+    regla: '«El doble» es ×2, «el triple» ×3. Si te dan el doble y buscas el sencillo, <b>se divide</b>.' },
+  'combina-mult':  { icono: '👗', nombre: 'Todas las combinaciones',
+    regla: 'Cada cosa de un grupo con cada cosa del otro: <b>se multiplica</b>. 3 camisetas × 2 faldas = 6 conjuntos.' },
+  'rejilla':       { icono: '🔲', nombre: 'Filas y columnas',
+    regla: 'Cuadrícula: <b>filas × columnas</b>. Sirve para baldosas, sillas, huevos… todo lo ordenado en rejilla.' },
+  'dos-pasos':     { icono: '👣', nombre: 'Dos pasos seguidos',
+    regla: 'No se puede de una vez. Haz <b>el primer paso</b>, apunta el resultado y úsalo en el segundo.' },
+  'sobra':         { icono: '🙈', nombre: 'Un dato que sobra',
+    regla: 'No todos los números del enunciado sirven. Pregúntate <b>qué te están pidiendo</b> y usa solo lo que haga falta.' },
+  'resto':         { icono: '🍪', nombre: '¿Y lo que sobra?',
+    regla: 'Al repartir no siempre sale exacto: lo que no se puede repartir es el <b>resto</b>.' },
 };
 
 </script>
@@ -3030,11 +3178,16 @@ const HISTORIAS = {
 
   barca: { titulo: 'Una barca varada',
     texto: 'Se llamaba <i>La Peixera</i>. Su capitán decía que sabía llegar a cualquier sitio ' +
-           'sin mirar el mapa.<br><br>Llegó aquí. Dice que a propósito.' },
+           'sin mirar el mapa.<br><br>Llegó aquí. Dice que a propósito. El mástil sigue ' +
+           'de pie, pelado, sin nada que el viento pueda hinchar.',
+    arreglado: 'Con la vela puesta, <i>La Peixera</i> se hincha con el viento.<br><br>' +
+               'Desde lejos parece que navega, aunque siga en la arena.' },
 
   pozo: { titulo: 'Un pozo con eco',
     texto: 'Si gritas tu nombre, tarda tres segundos en contestar.<br><br>' +
-           'Nube dice que una vez contestó antes de que ella gritara.' },
+           'De la cuerda no cuelga nada: alguien se llevó el cubo y no lo devolvió.',
+    arreglado: 'Bajas el cubo y sube lleno de agua fría.<br><br>' +
+               'El eco contesta antes incluso de que grites.' },
 
   tronco: { titulo: 'Un tronco con nombres',
     texto: 'Hay siete nombres grabados con navaja. Seis están tachados.<br><br>' +
@@ -3042,19 +3195,27 @@ const HISTORIAS = {
 
   estatua: { titulo: 'Una estatua sin cabeza',
     texto: 'Un señor de piedra con un libro abierto en las manos.<br><br>' +
-           'En el libro pone: «Aquí acaba el mapa y empieza lo otro».' },
+           'En el libro pone: «Aquí acaba el mapa y empieza lo otro». Da pena que no ' +
+           'pueda leerlo: la cabeza se le cayó hace años y no está por aquí.',
+    arreglado: 'Con la cabeza puesta, el señor de piedra por fin mira su libro.<br><br>' +
+               'Parece que está en la mejor parte.' },
 
   cueva: { titulo: 'Una cueva pequeñita',
     texto: 'Cabe una persona sentada. Dentro hay una manta doblada y una taza.<br><br>' +
            'La taza todavía está caliente.' },
 
   reloj: { titulo: 'El reloj parado',
-    texto: 'Marca las siete y cuarto desde hace mucho.<br><br>' +
-           'Bruno dice que a esa hora fue cuando se apagó el Farol.' },
+    texto: 'Marca las siete y cuarto desde hace mucho, porque le falta una manecilla.<br><br>' +
+           'Bruno dice que a esa hora fue cuando se apagó el Farol.',
+    arreglado: 'El reloj vuelve a andar y ya no son siempre las siete y cuarto.<br><br>' +
+               'Bruno ha venido dos veces a mirarlo, por si acaso.' },
 
   mirador: { titulo: 'El Mirador del Viento',
-    texto: 'Desde aquí se ve el mar entero.<br><br>' +
-           'El banco está hundido de tanto sentarse alguien en el mismo sitio.' },
+    texto: 'Desde aquí se ve el mar entero, pero solo de cerca: en la barandilla hay ' +
+           'un soporte vacío, y quien se sentaba aquí miraba mucho más lejos.<br><br>' +
+           'El banco está hundido de tanto sentarse alguien en el mismo sitio.',
+    arreglado: 'Con el catalejo montado se ve hasta el Farol de Coral.<br><br>' +
+               'Y, si lo giras del todo, l\'Illa Petita.' },
 
   cala: { titulo: 'La Cala Escondida',
     texto: 'Una playita entre rocas donde no cabe casi nadie.<br><br>' +
@@ -3062,7 +3223,10 @@ const HISTORIAS = {
 
   claro: { titulo: 'El Claro de las Luciérnagas',
     texto: 'De día no hay nada. De noche, dicen, se ilumina entero.<br><br>' +
-           'Pau vino a verlo una noche y volvió sin decir palabra.' },
+           'Pau vino a verlo una noche y volvió sin decir palabra. Dice que si hubiera ' +
+           'una luz colgada de una rama, vendrían también de día.',
+    arreglado: 'Con el farolillo encendido, las luciérnagas salen a verlo también de día.<br><br>' +
+               'Pau ha vuelto y esta vez sí ha hablado.' },
 
   nido: { titulo: 'El Nido Vacío',
     texto: 'Un nido enorme hecho de ramas gordas, en el suelo.<br><br>' +
@@ -3070,7 +3234,10 @@ const HISTORIAS = {
 
   espantapajaros: { titulo: 'Un espantapájaros',
     texto: 'Lleva un sombrero de paja y una camisa que le viene grande.<br><br>' +
-           'Los pájaros se le posan encima. No parece que funcione muy bien.' },
+           'Los pájaros se le posan encima. No parece que funcione muy bien: le falta ' +
+           'algo que se mueva y haga ruido con el viento.',
+    arreglado: 'El molinillo gira y zumba, y no queda ni un pájaro a la vista.<br><br>' +
+               'El espantapájaros parece hasta más alto.' },
 
   buzon: { titulo: 'Un buzón en medio del campo',
     texto: 'Sin casa, sin camino, sin nada alrededor. Solo el buzón.<br><br>' +
@@ -3081,11 +3248,17 @@ const HISTORIAS = {
            'En cada una hay alguien que te deja montar… si le sacas su reto.' },
 
   molino: { titulo: 'Un molino parado',
-    texto: 'Las aspas llevan años sin girar.<br><br>Dentro se oye un tic-tac que no es de reloj.' },
+    texto: 'Las aspas llevan años sin girar, y encima le falta una.<br><br>' +
+           'Dentro se oye un tic-tac que no es de reloj.',
+    arreglado: 'El molino gira y dentro suena una musiquilla.<br><br>' +
+               'El tic-tac sigue ahí, debajo de la música.' },
 
   fuente: { titulo: 'La fuente de los deseos',
-    texto: 'En el fondo hay monedas de todos los colores.<br><br>' +
-           'Dicen que la que está boca abajo es la que se cumplió.' },
+    texto: 'En el fondo hay monedas de todos los colores, pero ni gota de agua: ' +
+           'del caño solo queda la rosca.<br><br>' +
+           'Dicen que la que está boca abajo es la que se cumplió.',
+    arreglado: 'La fuente mana otra vez y las monedas del fondo brillan.<br><br>' +
+               'La que está boca abajo sigue boca abajo.' },
 
   hamaca: { titulo: 'Una hamaca',
     texto: 'Colgada entre dos palmeras, se mueve sola.<br><br>' +
@@ -3093,7 +3266,9 @@ const HISTORIAS = {
 
   totem: { titulo: 'Un tótem de madera',
     texto: 'Tres caras talladas, una encima de otra: una ríe, otra bosteza y la de arriba mira al mar.<br><br>' +
-           'Siempre mira al mar.' },
+           'De un gancho de arriba no cuelga nada, y las tres parecen estar esperando oír algo.',
+    arreglado: 'La campana suena sola cuando pasa el viento.<br><br>' +
+               'Las tres caras parecen escucharla.' },
 
   cima: { titulo: 'La cima',
     texto: 'Desde aquí se ve la isla entera: la feria, el bosque, el Farol.<br><br>' +
@@ -3186,6 +3361,43 @@ const CHARLAS = {
     ],
   },
 
+  /* Nit vive dentro del molino. Es el único de la isla al que le cabe el
+     anillo diminuto, y lo dice sin decirlo. */
+  raton: {
+    quien: 'Nit, el del molino',
+    saludo: '¡Ah! Perdona, que casi no me ves. Vivo aquí dentro, entre los engranajes.',
+    opciones: [
+      { texto: '¿Vives en el molino?',
+        respuesta: 'Desde siempre. Mi familia lleva aquí cien años, y eso que el molino ' +
+                   'llevaba parado casi todos.<br><br>Se duerme muy bien con el tic-tac.' },
+      { texto: '¿Qué es ese tic-tac?',
+        respuesta: 'Ni idea. Está debajo del suelo y no para nunca.<br><br>' +
+                   'Yo ya ni lo oigo, como tú no oyes tu corazón.' },
+      { texto: '¿Necesitas algo?',
+        respuesta: 'Nada que se pueda comprar. Cosas de familia, ya sabes: se pierden por ' +
+                   'un agujero y no vuelven.<br><br><i>Se mira las manos, que son pequeñísimas.</i>' },
+    ],
+  },
+
+  /* Ona, la de las mascotas. Su tienda es el sumidero caro de la isla: las
+     bestias exóticas cuestan mucho a propósito, para que haya motivo para
+     seguir resolviendo retos. */
+  ona: {
+    quien: 'Ona, la de los bichos',
+    saludo: '¡Bienvenida a la Casa dels Bitxos! Aquí todos buscan a alguien.',
+    opciones: [
+      { texto: '¿De dónde salen?',
+        respuesta: 'De todas partes. Los de tierra y los de mar son de aquí.<br><br>' +
+                   'Los raros llegaron en un barco que se perdió, y se quedaron tan a gusto.' },
+      { texto: '¿Por qué son tan caros los raros?',
+        respuesta: 'Porque comen muchísimo y porque no hay otro igual en toda la isla.<br><br>' +
+                   'Si te llevas uno, no habrá nadie más con ese. Por eso valen lo que valen.' },
+      { texto: '¿Y si no tengo conchas?',
+        respuesta: 'Pues vuelves cuando las tengas, que aquí no se van a ninguna parte.<br><br>' +
+                   'Míralos todo lo que quieras: mirar es gratis.' },
+    ],
+  },
+
   roc: {
     quien: 'Roc, el del bosque',
     saludo: 'Ssshhh. Estoy escuchando el bosque. …Ya está, ya he acabado. Dime.',
@@ -3206,32 +3418,122 @@ const CHARLAS = {
   },
 };
 
-/* Las rarezas: doce, y en cada partida se esconden seis por la isla */
+/* LOS ENCARGOS: doce objetos raros, y en cada partida se esconden seis por la
+   isla. NINGUNO es adorno: todos son de alguien. El texto del objeto dice a
+   quién, pero nunca con su nombre: hay que leerlo y atar cabos («alguien que
+   sale a la mar», «alguien muy, muy pequeño»). Al dárselo, esa persona hace
+   algo y se apunta en el Cuaderno de Vecinos.
+     para   → el id del lugar donde está esa persona
+     pista  → lo que se lee en el cuaderno mientras no se ha entregado
+     alDar  → lo que pasa al dárselo
+     premio → { conchas: n } y, si toca, { prenda: 'id' } o { mascota: 'id' } */
 const RAREZAS = [
   { id: 'moneda',  icono: '🪙', nombre: 'Moneda con un pulpo',
-    texto: 'Una moneda muy gastada con un pulpo dibujado. No vale en ninguna tienda.' },
+    texto: 'Una moneda muy gastada con un pulpo dibujado. No vale en ninguna tienda…<br><br>' +
+           'pero la que tiene tienda en la isla lleva años buscando una así.',
+    para: 'tienda', pista: 'Vale cero en cualquier tienda, y aun así hay quien la quiere.',
+    alDar: 'Mila la coge con dos dedos, la mira a contraluz y se le ilumina la cara.<br><br>' +
+           '«¡La del pulpo! Me faltaba justo esta.» La clava en el corcho, detrás del mostrador, ' +
+           'y te paga la voluntad.',
+    premio: { conchas: 6 } },
+
   { id: 'canica',  icono: '🔮', nombre: 'Canica con niebla',
-    texto: 'Dentro tiene niebla de verdad, y se mueve cuando la giras.' },
+    texto: 'Dentro tiene niebla de verdad, y se mueve cuando la giras.<br><br>' +
+           'Pide a gritos una partida con alguien que se pase el día jugando.',
+    para: 'salon', pista: 'Una canica quiere lo mismo que todas las canicas: que jueguen con ella.',
+    alDar: 'Coco la hace rodar por la mesa y la niebla de dentro se arremolina.<br><br>' +
+           '«Con esta no se puede hacer trampa: no se ve por dónde va.» La guarda en el bote ' +
+           'de las buenas y te paga la partida.',
+    premio: { conchas: 6 } },
+
   { id: 'pluma',   icono: '🪶', nombre: 'Pluma azul',
-    texto: 'No pesa nada. Si la sueltas, tarda un buen rato en llegar al suelo.' },
+    texto: 'No pesa nada. Si la sueltas, tarda un buen rato en llegar al suelo.<br><br>' +
+           'Es de un pájaro que solo conoce quien vive entre árboles.',
+    para: 'roc', pista: 'De un pájaro que solo conoce quien vive entre árboles.',
+    alDar: 'Roc la mira al trasluz y silba bajito.<br><br>' +
+           '«Un blauet. Hacía años que no bajaba uno.» La clava en su gorro y, desde ese día, ' +
+           'cuando pasas por el bosque te saluda desde lejos.',
+    premio: { conchas: 5 } },
+
   { id: 'llave',   icono: '🗝️', nombre: 'Llave sin puerta',
-    texto: 'Una llave pequeña y muy trabajada. Nadie sabe qué abre. Tomeu dice que él la tiró al mar.' },
+    texto: 'Una llave pequeña y muy trabajada. Nadie sabe qué abre.<br><br>' +
+           '<b>Tomeu dice que él la tiró al mar.</b>',
+    para: 'tomeu', pista: 'Alguien juró que la había tirado al mar. Habrá que devolvérsela.',
+    alDar: 'Tomeu se queda callado un rato largo.<br><br>' +
+           '«La tiré al mar, sí. Tres veces.» Abre con ella una caja de madera que tiene bajo el ' +
+           'banco. Dentro solo hay más llaves. «Pues nada», dice, y te paga el viaje.',
+    premio: { conchas: 6 } },
+
   { id: 'caracol', icono: '🐚', nombre: 'Caracola que ríe',
-    texto: 'Si te la pones en la oreja no se oye el mar: se oyen risas de lejos.' },
+    texto: 'Si te la pones en la oreja no se oye el mar: se oyen risas de lejos.<br><br>' +
+           'Le haría compañía a alguien que viva solo, y muy arriba.',
+    para: 'ermitano', pista: 'Suena a gente. Le vendría bien a quien no ve a nadie en todo el día.',
+    alDar: 'Guillem se la pone en la oreja y se ríe él también, que hacía tiempo.<br><br>' +
+           '«Mira tú, resulta que aquí arriba también se oye el pueblo.» La deja en la piedra de ' +
+           'la entrada, donde le dé el viento.',
+    premio: { conchas: 6 } },
+
   { id: 'brujula', icono: '🧭', nombre: 'Brújula al revés',
-    texto: 'Señala siempre al sur. Alguien la montó del revés, o a propósito.' },
+    texto: 'Señala siempre al sur. Alguien la montó del revés, o a propósito.<br><br>' +
+           'Una brújula, aunque sea rara, es de quien sale a navegar.',
+    para: 'barca', pista: 'Aunque esté del revés, una brújula es de quien sale a navegar.',
+    alDar: 'Quim le da la vuelta, la mira y se echa a reír.<br><br>' +
+           '«Perfecta. Yo siempre voy al sur.» La ata al banco de la barca con un cordel ' +
+           'y a partir de hoy la barca vuelve sola al embarcadero.',
+    premio: { conchas: 6 } },
+
   { id: 'anillo',  icono: '💍', nombre: 'Anillo diminuto',
-    texto: 'Le cabría en el dedo a alguien muy pequeño. Muy, muy pequeño.' },
+    texto: 'Le cabría en el dedo a alguien muy pequeño. Muy, muy pequeño.<br><br>' +
+           'Del tamaño, digamos, de quien vive dentro de un molino.',
+    para: 'raton', pista: 'Para un dedo minúsculo. ¿Quién es tan pequeño en esta isla?',
+    alDar: 'Nit se lo prueba y le queda como un cinturón, pero da igual: se lo pone igual.<br><br>' +
+           '«¡Es de mi abuela! Se le cayó por el agujero hace cien años.» Desaparece un momento ' +
+           'y vuelve arrastrando un queso enorme para ti.',
+    premio: { conchas: 8 } },
+
   { id: 'hueso',   icono: '🦴', nombre: 'Hueso desconocido',
-    texto: 'No es de pájaro, ni de pez, ni de gato. Bruno lo miró un rato largo y se calló.' },
+    texto: 'No es de pájaro, ni de pez, ni de gato.<br><br>' +
+           '<b>Bruno lo miró un rato largo y se calló.</b> Igual ya sabe de qué es.',
+    para: 'fruta', pista: 'Uno de la isla lo miró un rato largo y no dijo nada. Sabe algo.',
+    alDar: 'Bruno lo coge, lo pone a contraluz y por fin habla.<br><br>' +
+           '«Es de dragón. Pequeño, de los de antes.» Lo envuelve en un trapo, lo guarda bajo el ' +
+           'mostrador y te llena una bolsa de fruta.',
+    premio: { conchas: 7 } },
+
   { id: 'trebol',  icono: '🍀', nombre: 'Trébol de cinco hojas',
-    texto: 'De cuatro dan suerte. Este tiene cinco. Nadie sabe qué da.' },
+    texto: 'De cuatro dan suerte. Este tiene cinco. Nadie sabe qué da.<br><br>' +
+           'Quien se pasa el día chocando querrá probarlo.',
+    para: 'coches', pista: 'Quien más choca es quien más suerte necesita.',
+    alDar: 'Gori se lo mete en el bolsillo del mono antes de que te lo pienses.<br><br>' +
+           '«Cinco hojas: hoy no me choca nadie.» Le chocan seis veces seguidas. Se ríe tanto ' +
+           'que te invita a la próxima vuelta.',
+    premio: { conchas: 5 } },
+
   { id: 'burbuja', icono: '🫧', nombre: 'Burbuja que no revienta',
-    texto: 'La aprietas y no pasa nada. Lleva así desde que la encontraste.' },
+    texto: 'La aprietas y no pasa nada. Lleva así desde que la encontraste.<br><br>' +
+           'Daría vueltas de maravilla en algo que gire mucho.',
+    para: 'tazas', pista: 'Algo redondo que no se rompe. Pide dar vueltas.',
+    alDar: 'Bet la mete en la taza azul y arranca el motor.<br><br>' +
+           'La burbuja da cuarenta vueltas y sale tan entera como entró. «Esta se queda aquí ' +
+           'de mascota», dice Bet.',
+    premio: { conchas: 5 } },
+
   { id: 'estrella',icono: '⭐', nombre: 'Trocito de estrella',
-    texto: 'Cayó hace poco: todavía está tibio.' },
+    texto: 'Cayó hace poco: todavía está tibio.<br><br>' +
+           'En la isla hay un sitio que gira y al que le falta algo brillante arriba del todo.',
+    para: 'tiovivo', pista: 'Está tibio y brilla. Algo que da vueltas lo querría en lo más alto.',
+    alDar: 'Fina se sube a la escalera y lo clava en la punta del tiovivo.<br><br>' +
+           'Los caballitos dan una vuelta entera solos, sin motor, solo por verlo.',
+    premio: { conchas: 7 } },
+
   { id: 'espejito',icono: '🪞', nombre: 'Espejito raro',
-    texto: 'Refleja el cielo, pero el de ayer. Si ayer llovió, en el espejito llueve.' },
+    texto: 'Refleja el cielo, pero el de ayer. Si ayer llovió, en el espejito llueve.<br><br>' +
+           'Alguien que se pase la vida mirando el cielo le sacaría partido.',
+    para: 'playa', pista: 'Enseña el cielo de ayer. ¿Quién se pasa el día mirando el cielo?',
+    alDar: 'Nube lo mira, mira arriba, y vuelve a mirarlo.<br><br>' +
+           '«Entonces mañana veré el de hoy.» Se sienta en la arena a esperar a mañana, ' +
+           'tan contenta, y te regala un puñado de conchas de las gordas.',
+    premio: { conchas: 8 } },
 ];
 
 </script>
@@ -3252,16 +3554,126 @@ const Sonido = {
   olas: null,
   encendido: true,
 
+  /* ARRANCAR EL SONIDO (revisado el 12-09-2026 por el iPad)
+     En el iPad pasaban tres cosas y las tres dejaban el juego mudo:
+       1. el contexto nace «suspendido» y hay que despertarlo a mano;
+       2. se despertaba una sola vez y, si esa vez fallaba, ya no había otra;
+       3. y, sobre todo, el iPad silencia el sonido fabricado por la página
+          cuando el aparato está en modo silencio, aunque el volumen esté alto.
+     Lo de abajo resuelve las tres: se reintenta en cada toque hasta que suene
+     de verdad, y el sonido sale «colgado» de un audio mudo en bucle, que es lo
+     que hace que el iPad lo trate como música y no lo calle. */
   arrancar() {
-    if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    this.ctx = new AC();
-    this.maestro = this.ctx.createGain();
-    this.maestro.gain.value = this.encendido ? 0.5 : 0;
-    this.maestro.connect(this.ctx.destination);
-    this.ambiente();
+    if (!this.ctx) {
+      this.ctx = new AC();
+      this.maestro = this.ctx.createGain();
+      this.maestro.gain.value = this.encendido ? 0.5 : 0;
+      this.maestro.connect(this.ctx.destination);
+      this.ambiente();
+      this.destaparIOS();
+    }
+    if (this.ctx.state !== 'running' && this.ctx.resume) {
+      this.ctx.resume().catch(() => {});
+    }
+    return this.ctx.state === 'running';
   },
+
+  /* El truco del iPad: un audio mudo en bucle enganchado al mismo contexto.
+     Sin esto, con el interruptor lateral en silencio el juego no suena nada,
+     por mucho que el volumen esté al máximo. */
+  destaparIOS() {
+    if (this.mudo) return;
+    try {
+      const a = document.createElement('audio');
+      a.setAttribute('playsinline', '');
+      a.loop = true;
+      // medio segundo de silencio en WAV, para no depender de ningún archivo
+      // un cuarto de segundo de silencio, escrito aquí mismo para no
+      // depender de ningún archivo suelto
+      a.src = 'data:audio/wav;base64,' +
+              'UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YaAPAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+              'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      a.volume = 0.001;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => {});
+      this.mudo = a;
+      if (this.ctx.createMediaElementSource) {
+        const fuente = this.ctx.createMediaElementSource(a);
+        fuente.connect(this.maestro);
+      }
+    } catch (e) { /* si el navegador no deja, se sigue oyendo por lo normal */ }
+  },
+
+  /* ¿Está sonando de verdad? Lo usa el botón del altavoz para poder avisar */
+  estaSonando() { return !!(this.ctx && this.ctx.state === 'running'); },
 
   /* El mar solo suena mientras se está dentro de la isla */
   ambienteEncendido(si) {
@@ -3387,12 +3799,18 @@ const Sonido = {
   suspiro()  { this.barrido(500, 240, 0.7, 'sine', 0.12); },
 };
 
-/* El sonido se enciende con el primer gesto de la persona */
-['pointerdown', 'keydown'].forEach(ev =>
-  addEventListener(ev, () => Sonido.arrancar(), { once: true }));
+/* EL SONIDO SE ENCIENDE CON EL PRIMER GESTO… y con todos los siguientes
+   mientras no haya arrancado de verdad. Antes era `{ once: true }`: si el
+   primer toque no valía (pasa en el iPad al volver de otra aplicación), el
+   juego se quedaba mudo para siempre y no había manera de recuperarlo. */
+['pointerdown', 'pointerup', 'touchend', 'keydown'].forEach(ev =>
+  addEventListener(ev, () => {
+    if (!Sonido.estaSonando()) Sonido.arrancar();
+  }, true));
 
-/* Si se cambia de pestaña o se minimiza, se calla */
+/* Si se cambia de pestaña o se minimiza, se calla; al volver, se despierta */
 addEventListener('visibilitychange', () => Sonido.pausar(document.hidden));
+addEventListener('pageshow', () => { if (!document.hidden) Sonido.pausar(false); });
 
 </script>
 <script>
@@ -3467,6 +3885,8 @@ const Estado = {
       secretos: {},             // cosas escondidas que ya ha encontrado
       mascotas: [],             // animales del animalario (se empieza sin ninguno)
       rarezas: [],              // objetos raros de la mochila
+      tope: { dia: '', dadas: 0 },        // conchas de hoy por lo repetible sin fin
+      entregado: {},            // encargos ya entregados a su dueño
       escondites: null,         // dónde le han tocado las rarezas en esta partida
       historias: {},            // qué historias ya ha leído
       rutinas: { dia: '', hechas: [] },   // ducha, dientes, peinado y desayuno de hoy
@@ -3531,6 +3951,8 @@ const Estado = {
     p.secretos = {};
     p.mascotas = [];
     p.rarezas = [];
+    p.tope = { dia: '', dadas: 0 };
+    p.entregado = {};
     p.escondites = null;
     p.historias = {};
     p.rutinas = { dia: '', hechas: [] };
@@ -3578,6 +4000,23 @@ const Estado = {
 
   darConchas(n) { this.actual.conchas += n; this.guardar(); },
 
+  /* CONCHAS CON TOPE DIARIO
+     El salón de Coco y los problemas sueltos se pueden repetir todas las veces
+     que se quiera: sin tope, se hacen cien seguidos, se compra la tienda entera
+     en dos tardes y se acaba la gracia. A partir del tope siguen funcionando
+     (y siguen dando pegatinas), pero ya no pagan. (12-09-2026) */
+  darConchasConTope(n) {
+    const t = this.actual.tope || { dia: '', dadas: 0 };
+    if (t.dia !== this.hoy()) { t.dia = this.hoy(); t.dadas = 0; }
+    const sitio = Math.max(0, AJUSTES.topeConchasRepetibles - t.dadas);
+    const paga = Math.min(n, sitio);
+    t.dadas += paga;
+    this.actual.tope = t;
+    this.actual.conchas += paga;
+    this.guardar();
+    return paga;                          // lo que de verdad se ha cobrado
+  },
+
   puedePagar(precio) { return this.actual.conchas >= precio; },
 
   comprar(id, precio) {
@@ -3609,6 +4048,15 @@ const Estado = {
   },
 
   // --- La mochila de rarezas ---------------------------------------------
+  /* Los encargos: un objeto de la mochila entregado a su dueño */
+  yaEntregado(id) { return !!(this.actual.entregado || {})[id]; },
+
+  entregar(id) {
+    if (!this.actual.entregado) this.actual.entregado = {};
+    this.actual.entregado[id] = true;
+    this.guardar();
+  },
+
   tieneRareza(id) { return (this.actual.rarezas || []).includes(id); },
 
   guardarRareza(id) {
@@ -5081,6 +5529,186 @@ const Avatar = {
       ctx.beginPath(); ctx.arc(11, -20, 1.4, 0, 7); ctx.fill();
       ctx.fillStyle = '#F8B8C8';
       ctx.beginPath(); ctx.arc(14, -17, 1.6, 0, 7); ctx.fill();
+
+    } else if (m.forma === 'pez') {
+      /* EL PEZ VA EN PECERA (lo pidió Gala). No tiene patas: la pecera se
+         apoya en el suelo y se bambolea, y el agua se mueve con ella. */
+      const bamba = Math.sin(t * 3) * 0.09;
+      ctx.save(); ctx.translate(0, -13); ctx.rotate(bamba);
+      ctx.fillStyle = '#C9BFA8';                          // el pie de la pecera
+      ctx.beginPath(); ctx.ellipse(0, 12, 8, 3, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(120,200,225,0.55)';           // el agua
+      ctx.beginPath(); ctx.arc(0, 0, 11.5, 0.5, 2.64); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, -4 + Math.sin(t * 2) * 0.8, 10.4, 3, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#D8C9A8';                          // la arenita del fondo
+      ctx.beginPath(); ctx.ellipse(0, 9, 8, 2.6, 0, 0, 7); ctx.fill();
+      const px = Math.sin(t * 1.6) * 4.5, mira = Math.cos(t * 1.6) > 0 ? 1 : -1;
+      ctx.save(); ctx.translate(px, 2 + Math.sin(t * 3.1) * 1.6); ctx.scale(mira, 1);
+      ctx.fillStyle = m.color;                            // y el pez, nadando
+      ctx.beginPath(); ctx.ellipse(0, 0, 4.6, 3.1, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(-8, -2.6);
+      ctx.lineTo(-8, 2.6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = m.detalle;                          // la aleta de arriba
+      ctx.beginPath(); ctx.moveTo(-1, -2.6); ctx.lineTo(1.5, -5); ctx.lineTo(2.5, -2); ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath(); ctx.arc(2.4, -0.8, 1.3, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.arc(2.7, -0.8, 0.7, 0, 7); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';            // burbujitas
+      for (let k = 0; k < 3; k++) {
+        const sube = ((t * 14 + k * 7) % 16);
+        ctx.beginPath(); ctx.arc(3 + k * 2 - 2, 8 - sube, 0.9 + k * 0.2, 0, 7); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';         // el cristal
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(0, 0, 12, 0, 7); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 8.5, 3.5, 4.4); ctx.stroke();   // el brillo
+      ctx.restore();
+
+    /* ---------------- LOS BICHOS RAROS de la Casa dels Bitxos -----------
+       Son los caros. Cada uno tiene una cosa que se mueve y que ninguno de
+       los demás tiene: por eso vale la pena ahorrar para ellos. */
+    } else if (m.forma === 'flamenco') {
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(1, -10);                // la pata de palo
+      ctx.lineTo(1 + Math.sin(t * 2) * 1.5, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-2, -10); ctx.lineTo(-5, -6); ctx.stroke();
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.ellipse(0, -15, 9, 7, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = m.detalle;                          // el ala
+      ctx.beginPath(); ctx.ellipse(-2, -16, 6, 4, vaiven * 0.15, 0, 7); ctx.fill();
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2.6;     // el cuello en S
+      ctx.beginPath(); ctx.moveTo(6, -18);
+      ctx.quadraticCurveTo(14, -22 + vaiven, 10, -29); ctx.stroke();
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.arc(10, -30, 3.4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.moveTo(12, -31); ctx.lineTo(17, -28); ctx.lineTo(12, -28); ctx.fill();
+      ctx.beginPath(); ctx.arc(11, -31, 1.1, 0, 7); ctx.fill();
+
+    } else if (m.forma === 'pulpo') {
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+      for (let k = 0; k < 6; k++) {                       // los ocho brazos (se ven seis)
+        const o = -11 + k * 4.4, curva = Math.sin(t * 2.4 + k * 0.8);
+        ctx.beginPath(); ctx.moveTo(o * 0.55, -9);
+        ctx.quadraticCurveTo(o + curva * 3, -4, o * 1.35 + curva * 4, 0);
+        ctx.stroke();
+      }
+      ctx.fillStyle = m.color;                            // la cabezota
+      ctx.beginPath(); ctx.ellipse(0, -14, 11, 8.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = m.detalle;                          // los lunares de arriba
+      [[-5, -18], [1, -20], [6, -17]].forEach(g => {
+        ctx.beginPath(); ctx.ellipse(g[0], g[1], 2, 1.4, 0, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath(); ctx.arc(-4, -13, 3.4, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(4.5, -13, 3.4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.arc(-3.4 + vaiven * 0.9, -13, 1.6, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(5.1 + vaiven * 0.9, -13, 1.6, 0, 7); ctx.fill();
+      ctx.fillStyle = m.detalle;                          // la sonrisilla
+      ctx.beginPath(); ctx.ellipse(0.5, -8.5, 2, 1.2, 0, 0, 7); ctx.fill();
+
+    } else if (m.forma === 'pavoreal') {
+      const plumas = ['#2E8B96', '#3FC1C9', '#4E8ED8', '#8FD3F4', '#3FC1C9'];
+      plumas.forEach((c, k) => {                          // la cola en abanico
+        const a = -2.5 + k * 0.42 + Math.sin(t * 1.5) * 0.06;
+        ctx.strokeStyle = c; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-6, -12);
+        ctx.lineTo(-6 + Math.cos(a) * 16, -12 + Math.sin(a) * 16); ctx.stroke();
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.ellipse(-6 + Math.cos(a) * 17, -12 + Math.sin(a) * 17, 3.4, 2.6, a, 0, 7); ctx.fill();
+        ctx.fillStyle = '#FFE066';
+        ctx.beginPath();
+        ctx.arc(-6 + Math.cos(a) * 17, -12 + Math.sin(a) * 17, 1.1, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = m.detalle;
+      ctx.fillRect(-2 + patas, -5, 2, 5); ctx.fillRect(3 - patas, -5, 2, 5);
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.ellipse(0, -11, 8, 7, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(5, -15); ctx.lineTo(8, -23); ctx.stroke();
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.arc(8, -24, 3.2, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#3FC1C9'; ctx.lineWidth = 1;     // la cresta
+      [-0.3, 0, 0.3].forEach(d => {
+        ctx.beginPath(); ctx.moveTo(8, -27); ctx.lineTo(8 + d * 8, -31); ctx.stroke();
+      });
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.arc(9, -25, 1.1, 0, 7); ctx.fill();
+      ctx.fillStyle = '#E8C33D';
+      ctx.beginPath(); ctx.moveTo(11, -24.5); ctx.lineTo(15, -23.5); ctx.lineTo(11, -22.5); ctx.fill();
+
+    } else if (m.forma === 'camaleon') {
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2.2;     // la cola enrollada
+      ctx.beginPath(); ctx.arc(-11, -12, 4.5, 0.4 + vaiven * 0.2, 5.2); ctx.stroke();
+      ctx.fillStyle = m.detalle;
+      ctx.fillRect(-4 + patas, -5, 2.6, 5); ctx.fillRect(4 - patas, -5, 2.6, 5);
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.ellipse(0, -12, 10, 7, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = m.detalle;                          // las manchas que cambian
+      [[-4, -14], [1, -16], [5, -12]].forEach((g, i) => {
+        ctx.globalAlpha = 0.5 + Math.sin(t * 2 + i * 2) * 0.4;
+        ctx.beginPath(); ctx.arc(g[0], g[1], 2.4, 0, 7); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.arc(9, -18, 5.5, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(5, -24); ctx.lineTo(11, -26); ctx.lineTo(12, -21); ctx.fill();
+      ctx.fillStyle = '#FFE066';                          // el ojo giratorio
+      ctx.beginPath(); ctx.arc(11, -19, 2.8, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath();
+      ctx.arc(11 + Math.cos(t * 2) * 1.2, -19 + Math.sin(t * 2) * 1.2, 1.3, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#F8B8C8'; ctx.lineWidth = 1.4;   // la lengua, de vez en cuando
+      if (Math.sin(t * 1.3) > 0.93) {
+        ctx.beginPath(); ctx.moveTo(14, -17); ctx.lineTo(22, -16); ctx.stroke();
+      }
+
+    } else if (m.forma === 'tucan') {
+      ctx.fillStyle = m.detalle;
+      ctx.fillRect(-2 + patas, -5, 2.2, 5); ctx.fillRect(3 - patas, -5, 2.2, 5);
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.ellipse(0, -13, 9, 9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFF6E0';                          // el pecho
+      ctx.beginPath(); ctx.ellipse(4, -14, 5, 5.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = m.color;                            // el ala
+      ctx.save(); ctx.translate(-5, -15); ctx.rotate(vaiven * 0.25);
+      ctx.beginPath(); ctx.ellipse(0, 0, 4, 6.5, 0, 0, 7); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = m.detalle;                          // el pico enorme
+      ctx.beginPath(); ctx.moveTo(7, -20); ctx.lineTo(21, -19);
+      ctx.lineTo(20, -15); ctx.lineTo(7, -14); ctx.fill();
+      ctx.fillStyle = '#E8506B';
+      ctx.beginPath(); ctx.moveTo(14, -19.4); ctx.lineTo(21, -19); ctx.lineTo(20.5, -16.5); ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath(); ctx.arc(5, -21, 2.8, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.arc(5.6, -21, 1.4, 0, 7); ctx.fill();
+
+    } else if (m.forma === 'axolote') {
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2.6;     // la cola de renacuajo
+      ctx.beginPath(); ctx.moveTo(-8, -8);
+      ctx.quadraticCurveTo(-14, -8 + vaiven * 3, -17, -10); ctx.stroke();
+      ctx.fillStyle = m.color;
+      ctx.beginPath(); ctx.ellipse(0, -9, 10, 6, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(9, -13, 7, 0, 7); ctx.fill();
+      ctx.fillStyle = m.detalle;                          // las branquias de plumero
+      [[-0.9, 4], [-0.3, 5], [0.3, 4]].forEach((g, i) => {
+        const a = g[0] + Math.sin(t * 2.5 + i) * 0.18;
+        ctx.beginPath();
+        ctx.ellipse(4 + Math.cos(a + 3) * g[1], -17 + Math.sin(a) * 2, 4, 1.8, a, 0, 7); ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(14 - Math.cos(a + 3) * g[1], -17 + Math.sin(a) * 2, 4, 1.8, -a, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.arc(7, -14, 1.3, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(12.5, -14, 1.3, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#3A3A3A'; ctx.lineWidth = 1;     // la sonrisa de siempre
+      ctx.beginPath(); ctx.arc(10, -11, 3, 0.3, 2.8); ctx.stroke();
     }
     ctx.restore();
   },
@@ -5757,8 +6385,7 @@ const Desafio = {
   },
 
   premiarProblema(p) {
-    const paga = AJUSTES.conchasPorProblema;
-    Estado.darConchas(paga);
+    const paga = Estado.darConchasConTope(AJUSTES.conchasPorProblema);
     const nueva = Estado.apuntarProblema(p.tipo) === 1 && novedad('album');
     const cofre = this.fallos === 0 && Cofre.toca();     // sin fallos = leído a la primera
     const luego = (f) => (cofre ? Cofre.abrir(f) : f());
@@ -5770,8 +6397,10 @@ const Desafio = {
       <div class="quien">💡 Lo que había que ver aquí</div>
       <p class="dice">${p.clave}</p>
       <div class="altavoz" id="zonaVoz"></div>
-      <p class="contador">🐚 <b>+${paga} conchas</b></p>
-      ${nueva ? '<p class="contador">📒 <b>¡Pegatina nueva!</b> Mírala en la mochila 🎒</p>' : ''}
+      <p class="contador">${paga ? '🐚 <b>+' + paga + ' conchas</b>'
+        : '🐚 <small>Por hoy ya has ganado todas las conchas que se pueden ganar aquí. ' +
+          'Los problemas siguen contando para el álbum.</small>'}</p>
+      ${nueva ? '<p class="contador">📒 <b>¡Pegatina nueva!</b> Mírala en tus cuadernos 📔</p>' : ''}
       <div class="botones">
         <button class="btn defecto" id="otro">Otro problema<span class="tecla">espacio</span></button>
         <button class="btn gris" id="basta">Ya está bien</button>
@@ -6090,7 +6719,7 @@ const Desafio = {
     }
     // Venía del banco: cuenta para el álbum
     if (this.reto.tipo && Estado.apuntarProblema(this.reto.tipo) === 1 && novedad('album'))
-      extra += '<br>📒 <b>¡Pegatina nueva!</b> Mírala en la mochila 🎒';
+      extra += '<br>📒 <b>¡Pegatina nueva!</b> Mírala en tus cuadernos 📔';
 
     // El cofre: a veces, y solo si lo ha leído bien a la primera
     if (!yaHoy && this.reto.operacion && this.fallosLeer === 0 && Cofre.toca()) {
@@ -6253,13 +6882,15 @@ const Salon = {
   },
 
   premiar(alTerminar, acertadas) {
-    Estado.darConchas(AJUSTES.conchasPorRondaSalon);
+    const paga = Estado.darConchasConTope(AJUSTES.conchasPorRondaSalon);
     Sonido.moneda();
     const habiaDormidos = Object.keys(Estado.actual.dormidos || {}).length > 0;
     Estado.despertarTodos();
     UI.refrescarHud();
 
-    let txt = `¡Squawk! ${acertadas} de 3.<br><br>🐚 <b>+${AJUSTES.conchasPorRondaSalon} conchas</b>`;
+    let txt = `¡Squawk! ${acertadas} de 3.` + (paga
+      ? `<br><br>🐚 <b>+${paga} conchas</b>`
+      : '<br><br><small>Por hoy ya no quedan conchas que ganar aquí, pero jugar es gratis.</small>');
     if (habiaDormidos) txt += '<br><br>' + TEXTOS.salonDespierta;
 
     UI.dialogo('Coco', txt, [
@@ -6366,6 +6997,7 @@ const Armario = {
 
     UI.abrir(`
       <div class="quien">${titulo}</div>
+      ${this.resumen(dueno.secciones, dueno.seccion)}
       <div class="espejo-fila">
         <canvas id="${idLienzo}" width="200" height="280"></canvas>
         <div class="espejo-lado">
@@ -6395,21 +7027,62 @@ const Armario = {
   /* EL DIBUJITO DE CADA PRENDA
      Vale más que el nombre: se ve cómo le quedaría puesto. Es lo que hace que
      una quiera juntar conchas para llevarse ese y no otro. */
-  miniatura(o, apagada) {
-    return `<canvas class="prevista" data-p="${o.id}"${apagada ? ' data-gris="1"' : ''}
-                    width="96" height="124"></canvas>`;
+  /* SIEMPRE EN COLOR (12-09-2026, lo pidió Gala). Antes, lo que aún no era
+     suyo salía casi en blanco y negro, y se compraba una prenda preciosa cuyo
+     color luego no gustaba. Ahora todo se ve tal cual es y lo que marca si ya
+     la tienes es la chapa ✓ y el marco verde, no el color. */
+  miniatura(o) {
+    return `<canvas class="prevista" data-p="${o.id}" width="96" height="124"></canvas>`;
+  },
+
+  /* ¿ESTO YA ES SUYO? (vale para ropa y para mascotas) */
+  esSuyoItem(seccion, o) {
+    return seccion === 'mascotas' ? Estado.tieneMascota(o.id) : Estado.tiene(o);
+  },
+
+  /* CUÁNTAS TIENE DE CADA COSA (lo pidió Gala, 12-09-2026)
+     Saber «6 de 18» convierte el armario en una colección, y una colección a
+     medias pide que la acabes. Cuenta TODO lo que existe en el juego de esa
+     estantería, lo que se compra y lo que se gana. */
+  cuantas(seccion, grupo) {
+    const lista = ROPA[seccion];
+    if (!Array.isArray(lista)) return { tengo: 0, total: 0 };
+    const grupos = GRUPOS[seccion];
+    const dentro = lista.filter(o => o.id && (!grupo ||
+      (o.grupo || (grupos && grupos[0].id)) === grupo));
+    return { tengo: dentro.filter(o => this.esSuyoItem(seccion, o)).length,
+             total: dentro.length };
+  },
+
+  /* La fila de arriba: cuántas tiene de cada estantería, y el total */
+  resumen(secciones, actual) {
+    const contables = secciones.filter(s => Array.isArray(ROPA[s.id]));
+    if (!contables.length) return '';
+    let tengo = 0, total = 0;
+    const chips = contables.map(s => {
+      const c = this.cuantas(s.id);
+      tengo += c.tengo; total += c.total;
+      return `<span class="cuenta-chip ${s.id === actual ? 'activa' : ''}">${s.titulo}
+                <b>${c.tengo}/${c.total}</b></span>`;
+    }).join('');
+    return `<div class="cuentas">${chips}
+              <span class="cuenta-chip total">En total <b>${tengo}/${total}</b></span>
+            </div>`;
   },
 
   /* LAS ESTANTERÍAS
      Una lista larga y seguida no se mira; una lista con rótulos, sí. Cada
-     grupo de GRUPOS sale con su título y sus prendas debajo. */
+     grupo de GRUPOS sale con su título, cuántas tiene de ese estilo y sus
+     prendas debajo. */
   lista(seccion, items, boton) {
     const grupos = GRUPOS[seccion];
     if (!grupos) return items.map(boton).join('');
     return grupos.map(g => {
       const dentro = items.filter(o => (o.grupo || grupos[0].id) === g.id);
       if (!dentro.length) return '';
-      return `<h4 class="grupo-titulo">${g.titulo}</h4>` + dentro.map(boton).join('');
+      const c = this.cuantas(seccion, g.id);
+      return `<h4 class="grupo-titulo">${g.titulo}
+                <small>${c.tengo} de ${c.total}</small></h4>` + dentro.map(boton).join('');
     }).join('');
   },
 
@@ -6425,13 +7098,11 @@ const Armario = {
         look[seccion === 'pieles' ? 'piel' : campo] = c.dataset.p;
         Avatar.dibujar(ctx, c.width / 2, c.height - 8, 1.25, look, 1, 0);
       }
-      if (c.dataset.gris) this.apagar(ctx, c.width, c.height);
     });
   },
 
-  /* LO QUE TODAVÍA NO ES SUYO SALE CASI EN BLANCO Y NEGRO.
-     Se ve perfectamente la forma —para poder desearlo— pero le falta el color,
-     y el color llega justo al comprarlo. */
+  /* DEJAR ALGO EN GRIS, como los cromos que faltan del Cuaderno de Manitas.
+     (En la tienda ya no se usa: allí todo se ve en color.) */
   apagar(ctx, ancho, alto) {
     try {
       const img = ctx.getImageData(0, 0, ancho, alto);
@@ -6470,7 +7141,7 @@ const Tienda = {
     { id: 'coloresPelo',  titulo: 'Color de pelo', campo: 'colorPelo' },
     { id: 'joyas',        titulo: 'Joyas',         campo: 'joyas' },
     { id: 'complementos', titulo: 'Complementos',  campo: 'complemento' },
-    { id: 'mascotas',     titulo: 'Mascotas',      campo: 'mascota' },
+    // Las mascotas ya no se venden aquí: tienen su propia tienda (Bitxos).
   ],
 
   abrir() { Musica.poner('casa'); this.pintar(); },
@@ -6489,7 +7160,8 @@ const Tienda = {
       const mio = this.esSuyo(o);
       const puede = Estado.puedePagar(o.precio);
       return `<button class="opcion ${mio ? 'puesta' : ''} ${!mio && !puede ? 'bloqueada' : ''}"
-                      data-v="${o.id}">${Armario.miniatura(o, !mio)}<span>${o.nombre}</span>` +
+                      data-v="${o.id}">${mio ? '<span class="chapa">✓</span>' : ''}` +
+             `${Armario.miniatura(o)}<span>${o.nombre}</span>` +
              (mio ? '<span class="tuyo">ya es tuyo</span>'
                   : `<span class="precio">🐚 ${o.precio}</span>`) + '</button>';
     });
@@ -6497,6 +7169,7 @@ const Tienda = {
     UI.abrir(`
       <div class="quien">Mila, la tienda</div>
       <div class="contador">Tienes 🐚 <b>${p.conchas}</b> conchas</div>
+      ${Armario.resumen(this.secciones, this.seccion)}
       ${Pedidos.cartel()}
       <div class="espejo-fila">
         <canvas id="espejoTienda" width="150" height="210"></canvas>
@@ -6505,7 +7178,7 @@ const Tienda = {
           <div class="opciones">${opciones}</div>
         </div>
       </div>
-      <p class="pista" id="pista">Lo que todavía no es tuyo se ve <b>sin color</b>. Al comprarlo, se enciende.</p>
+      <p class="pista" id="pista">Todo se ve con su color de verdad. Lo que ya es tuyo lleva su <b>✓</b>.</p>
     `);
 
     Armario.dibujarEspejo('espejoTienda');
@@ -6551,6 +7224,79 @@ const Tienda = {
   },
 };
 
+/* ============================================ LA CASA DELS BITXOS =======
+   La tienda de mascotas de Ona. Aparte de la de Mila a propósito: aquí se
+   viene a por algo grande y caro, no a por un lazo. Los bichos raros valen
+   entre 200 y 450 conchas, que es mucho, y esa es la gracia. */
+const Bitxos = {
+
+  abrir() { Musica.poner('casa'); this.pintar(); },
+
+  pintar() {
+    const p = Estado.actual;
+    const enVenta = ROPA.mascotas.filter(m => typeof m.precio === 'number' && m.precio > 0);
+    const c = Armario.cuantas('mascotas');
+
+    const fichas = Armario.lista('mascotas', enVenta, m => {
+      const mio = Estado.tieneMascota(m.id);
+      const puede = Estado.puedePagar(m.precio);
+      return `<button class="opcion ${mio ? 'puesta' : ''} ${!mio && !puede ? 'bloqueada' : ''}"
+                      data-v="${m.id}">${mio ? '<span class="chapa">✓</span>' : ''}` +
+             `<canvas class="prevista bicho" data-p="${m.id}" width="96" height="96"></canvas>` +
+             `<span>${m.nombre}</span>` +
+             (mio ? '<span class="tuyo">ya es tuya</span>'
+                  : `<span class="precio">🐚 ${m.precio}</span>`) + '</button>';
+    });
+
+    UI.abrir(`
+      <div class="quien">Ona, la de los bichos</div>
+      <div class="contador">Tienes 🐚 <b>${p.conchas}</b> conchas ·
+           tienes <b>${c.tengo}</b> bichos de los <b>${c.total}</b> que hay</div>
+      <div class="opciones">${fichas}</div>
+      <p class="pista" id="pistaBitxos">Los que ya son tuyos te esperan en el animalario.</p>
+      <div class="botones"><button class="btn gris" id="charlarOna">Hablar con Ona</button></div>
+    `);
+
+    UI.modal.querySelectorAll('.prevista.bicho').forEach(c => {
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      Avatar.dibujarMascota(ctx, c.width / 2, c.height - 16, 2.1, c.dataset.p, 1, 0);
+    });
+    UI.modal.querySelectorAll('.opcion').forEach(b =>
+      b.onclick = () => this.comprar(b.dataset.v));
+    document.getElementById('charlarOna').onclick = () => { Sonido.clic(); Juego.hablar({ charla: 'ona' }); };
+  },
+
+  comprar(id) {
+    const m = ROPA.mascotas.find(o => o.id === id);
+    const p = Estado.actual;
+    const pista = document.getElementById('pistaBitxos');
+
+    if (Estado.tieneMascota(id)) {
+      pista.textContent = 'Esa ya es tuya. Está en el animalario esperándote.';
+      return;
+    }
+    if (!Estado.puedePagar(m.precio)) {
+      Sonido.fallo();
+      pista.textContent = `${m.nombre} cuesta ${m.precio} conchas y tienes ${p.conchas}. ` +
+                          'Los raros son caros: hay que ganárselos.';
+      return;
+    }
+    UI.dialogo('Ona', `¿Te llevas <b>${m.nombre}</b> por <b>🐚 ${m.precio}</b> conchas?`, [
+      { texto: 'Sí, me la llevo', accion: () => {
+          p.conchas -= m.precio;
+          Estado.darMascota(m.id);
+          p.look.mascota = m.id;
+          Estado.guardar();
+          Sonido.fiesta();
+          UI.refrescarHud();
+          this.pintar();
+        } },
+      { texto: 'Mejor no', accion: () => this.pintar() },
+    ]);
+  },
+};
+
 /* ================================================== EL ANIMALARIO ======= */
 const Animalario = {
 
@@ -6561,8 +7307,8 @@ const Animalario = {
     if (!suyas.length) {
       return UI.dialogo('El animalario',
         'Una caseta con mantitas, cuencos y sitio de sobra… pero está vacía.<br><br>' +
-        '<b>Todavía no tienes ninguna mascota.</b> Por la isla hay animales que buscan a alguien. ' +
-        'Búscalos bien, que no salen a la primera.');
+        '<b>Todavía no tienes ninguna mascota.</b> Por la isla hay animales escondidos que buscan ' +
+        'a alguien, y en <b>la Casa dels Bitxos</b>, la tienda de Ona, hay más en venta.');
     }
 
     const fichas = suyas.map((m, i) => `
@@ -6700,60 +7446,157 @@ const Bano = {
   },
 };
 
-/* ==================================================== LA MOCHILA ======== */
+/* ==================================================== LA MOCHILA ========
+   Lo que lleva encima ahora mismo. Nada de lo que hay aquí es adorno: todo
+   es de alguien o va en algún sitio. */
 const Mochila = {
 
   abrir() {
-    const mias = RAREZAS.filter(r => Estado.tieneRareza(r.id));
-    const lista = mias.length
-      ? mias.map(r => `
-          <div class="rareza">
-            <span class="rareza-icono">${r.icono}</span>
-            <div><b>${r.nombre}</b><br><small>${r.texto}</small></div>
-          </div>`).join('')
-      : '<p class="pista">La mochila está vacía. Por la isla hay cosas raras escondidas: ' +
-        'cada partida las esconde en sitios distintos.</p>';
+    const piezas = MUNDO.piezas.filter(p => Estado.llevaPieza(p.id));
+    const objetos = RAREZAS.filter(r => Estado.tieneRareza(r.id) && !Estado.yaEntregado(r.id));
+
+    const lista = [
+      ...piezas.map(p => `
+        <div class="rareza">
+          <span class="rareza-icono">${p.icono}</span>
+          <div><b>${p.nombre}</b><br><small>🔧 ${p.pista}</small></div>
+        </div>`),
+      ...objetos.map(r => `
+        <div class="rareza">
+          <span class="rareza-icono">${r.icono}</span>
+          <div><b>${r.nombre}</b><br><small>${r.texto}</small></div>
+        </div>`),
+    ].join('');
 
     UI.abrir(`
-      <div class="quien">Tu mochila</div>
-      ${novedad('album') ? '<div class="botones"><button class="btn" id="verAlbum">📒 Mi álbum de problemas</button></div>' : ''}
-      <p class="contador">Llevas <b>${mias.length}</b> de <b>${RAREZAS.length}</b> rarezas</p>
-      <div class="rarezas">${lista}</div>
+      <div class="quien">🎒 Tu mochila</div>
+      ${lista || '<p class="pista">La mochila está vacía ahora mismo.<br><br>' +
+        'Por la isla hay <b>piezas</b> que arreglan cosas y <b>objetos</b> que son de alguien. ' +
+        'Cada partida los esconde en sitios distintos.</p>'}
+      ${lista ? '<p class="pista">Todo esto va a algún sitio o es de alguien. ' +
+        'Lee bien lo que pone: ahí está la pista.</p>' : ''}
+      <div class="botones"><button class="btn" id="verCuadernos">📔 Mis cuadernos</button></div>
     `);
-    const bAlbum = document.getElementById('verAlbum');
-    if (bAlbum) bAlbum.onclick = () => { Sonido.clic(); Album.abrir(); };
+    document.getElementById('verCuadernos').onclick = () => { Sonido.clic(); Cuadernos.abrir(); };
   },
 };
 
-/* ===================================================== EL ÁLBUM =========
-   Una pegatina por cada forma de problema resuelta. Un álbum a medias tira
-   mucho, y sus huecos son justo las formas que le falta practicar. */
-const Album = {
+/* ==================================================== LOS CUADERNOS =====
+   Tres cuadernos en uno, con pestañas, para que quepa en una sola cabeza:
+     🧠 Cabeza   → las formas de problema resueltas, y su regla
+     🔧 Manitas  → las cosas de la isla que ha puesto en marcha
+     🤝 Vecinos  → la gente a la que le ha devuelto lo suyo
+   Los tres funcionan igual: lo conseguido a color, lo que falta apagado y
+   con una pista. Un cuaderno a medias tira mucho más que uno vacío. */
+const Cuadernos = {
 
-  abrir() {
+  pestana: 'cabeza',
+
+  hojas: [
+    { id: 'cabeza',  titulo: '🧠 Cabeza' },
+    { id: 'manitas', titulo: '🔧 Manitas' },
+    { id: 'vecinos', titulo: '🤝 Vecinos' },
+  ],
+
+  abrir(cual) {
+    if (cual) this.pestana = cual;
+    const p = this['hoja_' + this.pestana]();
+    const pestanas = this.hojas.map(h =>
+      `<button class="pestana ${h.id === this.pestana ? 'activa' : ''}" data-s="${h.id}">${h.titulo}</button>`
+    ).join('');
+
+    UI.abrir(`
+      <div class="quien">📔 Mis cuadernos</div>
+      <div class="pestanas">${pestanas}</div>
+      <p class="contador">${p.cuenta}</p>
+      <div class="album">${p.fichas}</div>
+      <p class="pista">${p.pie}</p>
+      <div class="botones"><button class="btn gris" id="cerrarCuadernos">Cerrar</button></div>
+    `);
+
+    UI.modal.querySelectorAll('.pestana').forEach(b =>
+      b.onclick = () => { Sonido.clic(); this.abrir(b.dataset.s); });
+    document.getElementById('cerrarCuadernos').onclick = () => { Sonido.clic(); UI.cerrar(); };
+    if (p.despues) p.despues();
+  },
+
+  /* 🧠 LAS FORMAS DE PROBLEMA. Al tocar una pegatina conseguida sale su
+     regla: la teoría llega después de haberlo hecho, nunca antes. */
+  hoja_cabeza() {
     const hechos = Estado.actual.problemas || {};
-    const tipos = [...new Set((PROBLEMAS[Estado.actual.nivel] || []).map(p => p.tipo))];
+    const tipos = [...new Set((PROBLEMAS[Estado.actual.nivel] || []).map(x => x.tipo))];
     const tengo = tipos.filter(t => hechos[t]).length;
     const fichas = tipos.map(t => {
       const pg = PEGATINAS[t] || { icono: '⭐', nombre: t };
       const n = hechos[t] || 0;
-      if (!n) return '<div class="pegatina vacia"><span class="pegatina-icono">?</span><small>Aún no</small></div>';
-      const clase = n >= 6 ? 'oro' : n >= 3 ? 'plata' : '';
+      if (!n) return '<div class="cromo falta"><span class="cara">?</span>' +
+                     `<b>¿?</b><small>${pg.nombre}</small></div>`;
+      const clase = n >= 6 ? 'oro' : n >= 3 ? 'plata' : 'hecho';
       const cuenta = n >= 6 ? '🏅 ¡De oro!' : n >= 3 ? '⭐ ' + n + ' de 6 para el oro'
-                                                  : n + ' de 3 para la estrella';
-      return `<div class="pegatina ${clase}"><span class="pegatina-icono">${pg.icono}</span>
-              <b>${pg.nombre}</b><small>${cuenta}</small></div>`;
+                                                     : n + ' de 3 para la estrella';
+      return `<button class="cromo ${clase} regla" data-t="${t}">
+                <span class="cara">${pg.icono}</span>
+                <b>${pg.nombre}</b><small>${cuenta}</small></button>`;
     }).join('');
+    return {
+      cuenta: `Tienes <b>${tengo}</b> de <b>${tipos.length}</b> pegatinas`,
+      fichas,
+      pie: 'Cada forma de problema que resuelves te da su pegatina. ' +
+           '<b>Toca una que ya tengas</b> y te cuenta su regla.',
+      despues: () => UI.modal.querySelectorAll('.regla').forEach(b =>
+        b.onclick = () => {
+          Sonido.clic();
+          const pg = PEGATINAS[b.dataset.t];
+          UI.dialogo(pg.icono + ' ' + pg.nombre, pg.regla, [
+            { texto: '← Volver al cuaderno', accion: () => this.abrir('cabeza') },
+          ]);
+        }),
+    };
+  },
 
-    UI.abrir(`
-      <div class="quien">📒 Tu álbum de problemas</div>
-      <p class="contador">Tienes <b>${tengo}</b> de <b>${tipos.length}</b> pegatinas</p>
-      <div class="album">${fichas}</div>
-      <p class="pista">Cada forma de problema que resuelves te da su pegatina. Salen en el salón de Coco
-         y en las atracciones.</p>
-      <div class="botones"><button class="btn gris" id="volverMochila">← Volver a la mochila</button></div>
-    `);
-    document.getElementById('volverMochila').onclick = () => { Sonido.clic(); Mochila.abrir(); };
+  /* 🔧 LAS COSAS ARREGLADAS */
+  hoja_manitas() {
+    const hechos = MUNDO.piezas.filter(p => Estado.estaEncajado(p.encaja)).length;
+    const fichas = MUNDO.piezas.map(p => {
+      if (Estado.estaEncajado(p.encaja))
+        return `<div class="cromo hecho"><span class="cara">${p.icono}</span>
+                <b>${p.arreglo}</b><small>${p.nombre}</small></div>`;
+      if (Estado.llevaPieza(p.id))
+        return `<div class="cromo llevo"><span class="cara">${p.icono}</span>
+                <b>${p.nombre}</b><small>🎒 Lo llevas encima.<br>${p.pista}</small></div>`;
+      return `<div class="cromo falta"><span class="cara">🔩</span>
+              <b>¿?</b><small>${p.pista}</small></div>`;
+    }).join('');
+    return {
+      cuenta: `Has arreglado <b>${hechos}</b> de <b>${MUNDO.piezas.length}</b> cosas de la isla`,
+      fichas,
+      pie: 'Por la isla hay cosas rotas o paradas. La pieza que les falta está tirada en otro ' +
+           'sitio cualquiera: cógela y llévala donde toque. Para saber dónde va, <b>lee lo que ' +
+           'cuenta cada sitio</b>: ahí está la pista.',
+    };
+  },
+
+  /* 🤝 LA GENTE A LA QUE HA AYUDADO */
+  hoja_vecinos() {
+    const hechos = RAREZAS.filter(r => Estado.yaEntregado(r.id)).length;
+    const fichas = RAREZAS.map(r => {
+      const quien = (MUNDO.lugares.find(l => l.id === r.para) || {});
+      if (Estado.yaEntregado(r.id))
+        return `<div class="cromo hecho"><span class="cara">${r.icono}</span>
+                <b>${quien.personaje || quien.nombre || '¡Entregado!'}</b>
+                <small>${r.nombre}</small></div>`;
+      if (Estado.tieneRareza(r.id))
+        return `<div class="cromo llevo"><span class="cara">${r.icono}</span>
+                <b>${r.nombre}</b><small>🎒 Lo llevas encima.<br>${r.pista}</small></div>`;
+      return `<div class="cromo falta"><span class="cara">📦</span>
+              <b>¿?</b><small>${r.pista}</small></div>`;
+    }).join('');
+    return {
+      cuenta: `Has devuelto lo suyo a <b>${hechos}</b> de <b>${RAREZAS.length}</b> vecinos`,
+      fichas,
+      pie: 'Los objetos raros que encuentras <b>no son adornos: son de alguien</b>. Lee lo que ' +
+           'pone en cada uno y piensa a quién de la isla le pega. Al devolvérselo, pasa algo.',
+    };
   },
 };
 
@@ -7127,8 +7970,17 @@ const Tutorial = {
 
     { icono: '✋', titulo: 'Cosas para coger',
       texto: 'La mano ✋ es algo que puedes <b>llevarte</b>: el <b>espacio</b>.<br><br>' +
-             'Por la isla hay <b>rarezas escondidas</b> —una canica con niebla dentro, una brújula ' +
-             'que señala al revés— y en cada partida están en sitios distintos.' },
+             'Por la isla hay <b>piezas</b> (un aspa, una manecilla de reloj) y <b>objetos raros</b> ' +
+             '(una canica con niebla, una brújula al revés). En cada partida están en sitios ' +
+             'distintos.' },
+
+    { icono: '🔧🎁', titulo: 'Nada es un adorno',
+      texto: 'Todo lo que guardas en la mochila <b>sirve para algo</b>:<br><br>' +
+             '🔧 Las <b>piezas</b> arreglan sitios que están parados. El molino vuelve a girar, ' +
+             'el pozo saca agua, la estatua recupera la cabeza.<br><br>' +
+             '🎁 Los <b>objetos raros</b> son de alguien de la isla. Al devolvérselo, pasa algo.<br><br>' +
+             'Para saber adónde va cada cosa, <b>hay que leer</b>: la pista siempre está escrita, ' +
+             'en el objeto o en el sitio.' },
 
     { icono: '🐚', titulo: 'Conchas y cristales',
       texto: 'Las <b>conchas</b> 🐚 son el dinero: se ganan con los retos y se gastan en la tienda.<br><br>' +
@@ -7142,11 +7994,19 @@ const Tutorial = {
              '🛁 <b>El baño</b>: ducharse, lavarse los dientes, peinarse y desayunar. ' +
              'La primera vez de cada día dan conchas, y hacer las cuatro da propina.' },
 
-    { icono: '🛒🐾', titulo: 'La tienda y el animalario',
+    { icono: '🛒🐾', titulo: 'Las tiendas y el animalario',
       texto: 'En la <b>tienda de Mila</b> se compra ropa nueva con las conchas que ganas ' +
              'en los retos. Empiezas con poca ropa a propósito: lo bonito es conseguirla.<br><br>' +
-             'En el <b>animalario</b> eliges qué mascota te acompaña… cuando tengas alguna. ' +
-             'Por la isla hay animales que buscan a alguien.' },
+             'En la <b>Casa dels Bitxos</b>, la de Ona, se compran mascotas. Las corrientes ' +
+             'cuestan poco; las raras cuestan muchísimo, y por eso mola tenerlas.<br><br>' +
+             'En el <b>animalario</b> eliges cuál te acompaña hoy.' },
+
+    { icono: '📔', titulo: 'Tus cuadernos',
+      texto: 'El botón 📔 de arriba (o la tecla <b>L</b>) abre tus tres cuadernos:<br><br>' +
+             '🧠 <b>Cabeza</b>: las formas de problema que ya sabes. Toca una y te cuenta su regla.<br>' +
+             '🔧 <b>Manitas</b>: lo que has arreglado en la isla.<br>' +
+             '🤝 <b>Vecinos</b>: a quién le has devuelto lo suyo.<br><br>' +
+             'Lo que falta sale en gris, con una pista.' },
 
     { icono: '🗺️', titulo: 'Si te pierdes',
       texto: 'Abre el <b>mapa</b> con la tecla <b>M</b>. Los sitios que ya conoces salen con su ' +
@@ -7585,7 +8445,8 @@ const Pistas = {
     mapa:    { i: '🗺️', t: 'Vas encontrando sitios. Toca <b>🗺️</b> arriba (o la tecla <b>M</b>) para ver el <b>mapa</b>.' },
     mascota: { i: '🐾', t: '¡Tu primera mascota! En el <b>animalario</b> puedes elegir quién te acompaña.' },
     dormido: { i: '💤', t: 'Se ha ido a dormir. Ve al <b>salón de Coco</b>, juega una ronda y vuelve.' },
-    mochila: { i: '🎒', t: 'Lo raro que encuentres se guarda en tu <b>mochila</b>, arriba a la derecha.' },
+    mochila: { i: '🎒', t: 'Lo que encuentres se guarda en tu <b>mochila</b>, arriba a la derecha. ' +
+                          'Nada es un adorno: <b>todo es de alguien o va en algún sitio</b>.' },
     pantalla:{ i: '⛶', t: 'Con el botón <b>⛶</b> de arriba (o la tecla <b>P</b>) lo pones a <b>pantalla completa</b>.' },
   },
 
@@ -7671,7 +8532,7 @@ const Pistas = {
 const ICONOS = {
   armario: '👗', tienda: '🛒', animalario: '🐾', juego: '🎲',
   reto: '🔢', letras: '🔤', ver: '👁️', meta: '💎', coger: '✋',
-  hablar: '💬', montar: '🎠', cuidar: '🧽', paso: '🚧',
+  hablar: '💬', montar: '🎠', cuidar: '🧽', paso: '🚧', dar: '🎁', mascotas: '🐾',
 };
 
 /* UN SOLO BOTÓN PARA TODO: la barra espaciadora (y el botón verde).
@@ -7682,7 +8543,7 @@ const ICONOS = {
 const TECLAS = {
   ver: 'V', hablar: 'H', coger: 'C',
   armario: 'J', tienda: 'J', animalario: 'J', juego: 'J',
-  reto: 'J', letras: 'J', meta: 'J', montar: 'J', cuidar: 'J', paso: 'J',
+  reto: 'J', letras: 'J', meta: 'J', montar: 'J', cuidar: 'J', paso: 'J', mascotas: 'J',
 };
 
 const Juego = {
@@ -7747,8 +8608,8 @@ const Juego = {
   /* El lienzo ocupa toda la ventana y se ajusta si cambia de tamaño */
   ajustarLienzo() {
     const r = this.lienzo.getBoundingClientRect();
-    this.ANCHO = Math.max(640, Math.round(r.width));
-    this.ALTO = Math.max(400, Math.round(r.height));
+    this.ANCHO = Math.max(640, Math.round(r.width || window.innerWidth));
+    this.ALTO = Math.max(400, Math.round(r.height || window.innerHeight));
     this.lienzo.width = this.ANCHO;
     this.lienzo.height = this.ALTO;
   },
@@ -7798,6 +8659,7 @@ const Juego = {
         const k = e.key.toUpperCase();
         if (k === 'J' || k === 'C' || k === 'V' || k === 'H' || e.key === 'Enter') this.interactuar(k);
         if (k === 'M') Mapa.abrir();
+        if (k === 'L') Cuadernos.abrir();
         if (k === 'P') this.pantallaCompleta();
         if (k === 'T') Tutorial.abrir();
       }
@@ -7833,21 +8695,56 @@ const Juego = {
     document.getElementById('bMapa').onclick = () => Mapa.abrir();
     document.getElementById('bAyuda').onclick = () => Tutorial.abrir();
     document.getElementById('bMochila').onclick = () => Mochila.abrir();
+    document.getElementById('bCuadernos').onclick = () => Cuadernos.abrir();
     document.getElementById('bPantalla').onclick = () => this.pantallaCompleta();
     document.getElementById('bSonido').onclick = () => {
       Sonido.arrancar();
       Sonido.silenciar(Sonido.encendido);
       document.getElementById('bSonido').textContent = Sonido.encendido ? '🔊' : '🔇';
+      /* Si lo ha encendido y aun así el aparato no deja sonar, hay que decirlo:
+         si no, parece que el juego está roto. En el iPad casi siempre es el
+         interruptor de silencio, que es el de al lado del volumen. */
+      if (Sonido.encendido) setTimeout(() => {
+        if (!Sonido.estaSonando())
+          UI.dialogo('🔇 No se oye nada',
+            'El juego quiere sonar, pero la tableta no le deja.<br><br>' +
+            'Casi siempre es el <b>modo silencio</b>: mira el interruptor pequeño del lateral ' +
+            '(al lado de los botones de volumen) o la <b>campanita</b> del centro de control, ' +
+            'y quítalo.<br><br>Después vuelve a tocar el 🔊.');
+      }, 400);
     };
   },
 
+  /* PANTALLA COMPLETA
+     En el Mac y en Android se pide al navegador y ya está. En el iPad NO EXISTE
+     esa orden (ni en Safari ni en Chrome, que por dentro es Safari): el botón
+     no hacía nada y la barra de arriba iba y venía sola. Allí la única manera
+     de jugar sin barras es guardar el juego en la pantalla de inicio, y eso
+     es lo que se explica. (12-09-2026) */
+  sePuedePantallaCompleta() {
+    const d = document.documentElement;
+    return !!(d.requestFullscreen || d.webkitRequestFullscreen);
+  },
+
   pantallaCompleta() {
+    if (!this.sePuedePantallaCompleta()) return this.explicarPantallaIPad();
     const d = document.documentElement;
     if (!document.fullscreenElement) {
       if (d.requestFullscreen) d.requestFullscreen();
       else if (d.webkitRequestFullscreen) d.webkitRequestFullscreen();
     } else if (document.exitFullscreen) document.exitFullscreen();
     setTimeout(() => this.ajustarLienzo(), 400);
+  },
+
+  explicarPantallaIPad() {
+    UI.dialogo('⛶ Jugar a pantalla completa',
+      'En la tableta, el navegador no deja quitar la barra de arriba desde aquí: se va y vuelve ' +
+      'sola.<br><br>Hay una forma de que no vuelva nunca, y se hace una sola vez:<br><br>' +
+      '1. Abre el juego en <b>Safari</b> (no en Chrome).<br>' +
+      '2. Toca el botón de <b>compartir</b> ⬆️, el del cuadradito con la flecha.<br>' +
+      '3. Baja y elige <b>«Añadir a pantalla de inicio»</b>.<br><br>' +
+      'Aparecerá un icono del juego junto a las apps. Abriéndolo desde ahí <b>no hay barras</b>, ' +
+      'se ve la isla entera y ya no se sale al bajarse de una atracción.');
   },
 
   tocarEn(px, py) {
@@ -7983,14 +8880,23 @@ const Juego = {
       if (p) this.encajable = p;
     }
 
+    /* ¿y lleva algo que sea de quien vive aquí? Los objetos de la mochila no
+       son adornos: todos son de alguien, y se entregan con el mismo botón. */
+    this.entregable = null;
+    if (this.lugar) {
+      const r = RAREZAS.find(x => x.para === this.lugar.id &&
+        Estado.tieneRareza(x.id) && !Estado.yaEntregado(x.id));
+      if (r) this.entregable = r;
+    }
+
     /* El cartelito de "qué se hace aquí" se dibuja junto al objeto (ver
        carteles()). Lumi no repite eso: ella solo avisa de lo que hay que
        saber, y una sola vez por sitio. */
-    const hay = this.cogible || (this.lugar && this.lugar.accion);
+    const hay = this.cogible || this.entregable || (this.lugar && this.lugar.accion);
     const bot = document.getElementById('bAccion');
     if (!hay) { if (bot) bot.textContent = '⤴'; return; }
 
-    const accion = this.cogible ? 'coger' : this.lugar.accion;
+    const accion = this.cogible ? 'coger' : this.entregable ? 'dar' : this.lugar.accion;
     if (bot) bot.textContent = ICONOS[accion] || '✨';
     if (this.cogible) return;
 
@@ -8022,6 +8928,9 @@ const Juego = {
     this.golpes = (this.golpes || 0) + 1;
     if (this.golpes < 14) return;                 // que no salte al primer roce
     this.golpes = 0;
+    // si iba hacia un sitio y ha chocado, se suelta: si no, se queda
+    // empujando la roca sin avanzar hasta que suelte el ratón
+    this.destino = null; this.destinoLugar = null;
     const ahora = Date.now();
     if (ahora - (this.ultimoChoque || 0) < 9000) return;
     this.ultimoChoque = ahora;
@@ -8083,6 +8992,15 @@ const Juego = {
         if (p.requiere && !Estado.pasoAbierto(p.requiere)) return;
         if (Math.pow((x - p.x) / p.rx, 2) + Math.pow((y - p.y) / p.ry, 2) <= 1) pasa = true;
       });
+      // Sendas: un pasillo con esquinas, el mismo que se pinta. Así se anda
+      // por donde se ve el camino y no solo en línea recta (12-09-2026).
+      const sd = b.senda;
+      if (sd && (!sd.requiere || Estado.pasoAbierto(sd.requiere))) {
+        for (let k = 1; k < sd.puntos.length; k++) {
+          const a = sd.puntos[k - 1], c = sd.puntos[k];
+          if (this.distanciaASegmento(x, y, a[0], a[1], c[0], c[1]) <= sd.ancho / 2) pasa = true;
+        }
+      }
       if (pasa) continue;
       return false;
     }
@@ -8177,6 +9095,10 @@ const Juego = {
       return this.recogerRareza(this.cogible.dato);
     }
 
+    // Si lleva algo de quien vive aquí, lo primero es dárselo
+    if (this.entregable && (!tecla || tecla === 'C' || tecla === 'Enter'))
+      return this.entregarEncargo(this.entregable);
+
     // Si lleva la pieza que va aquí, lo primero es colocarla
     if (this.encajable && (!tecla || tecla === 'C' || tecla === 'Enter'))
       return this.colocarPieza(this.encajable);
@@ -8195,6 +9117,7 @@ const Juego = {
     if (l.accion === 'armario')    return Casa.abrir();
     if (l.accion === 'tienda')     return Tienda.abrir();
     if (l.accion === 'animalario') return Animalario.abrir();
+    if (l.accion === 'mascotas')   return Bitxos.abrir();
     if (l.accion === 'ver')        return this.mirar(l);
     if (l.accion === 'juego') {
       return UI.dialogo('Coco', TEXTOS.salonSaludo, [
@@ -8377,10 +9300,11 @@ const Juego = {
 
     if (v.tipo === 'tiovivo' || v.tipo === 'taza') {
       v.giro += v.tipo === 'taza' ? 0.055 : 0.028;
-      const r = v.tipo === 'taza' ? 52 : 74;
+      const r = v.tipo === 'taza' ? this.RADIO_TAZA : 74;
       j.x = this.centroTiovivo.x + Math.cos(v.giro) * r;
       j.y = this.centroTiovivo.y + Math.sin(v.giro) * r * 0.55;
-      j.z = 16 + Math.sin(v.giro * 4) * 14;
+      // en la taza va sentada dentro; en el tiovivo, subida al caballito
+      j.z = v.tipo === 'taza' ? 6 + Math.sin(v.giro * 4) * 4 : 16 + Math.sin(v.giro * 4) * 14;
       j.mirando = Math.sin(v.giro) > 0 ? 1 : -1;
       if (Math.floor(v.giro * 10) % 20 === 0) Sonido.nota(660, 0.2, 'triangle', 0.1);
       this.camX += ((this.centroTiovivo.x - this.ANCHO / 2) - this.camX) * 0.1;
@@ -8436,7 +9360,13 @@ const Juego = {
     if (!h) return;
     const nueva = Estado.leerHistoria(l.historia);
     if (nueva) Sonido.piedraBien();
-    UI.dialogo(h.titulo, h.texto);
+    /* Si el sitio ya está arreglado, cuenta lo de después. El texto de antes
+       es el que lleva escondida la pista de lo que le falta: por eso vale la
+       pena leerlos todos. */
+    const arreglado = Estado.estaEncajado(l.id) && h.arreglado;
+    const pieza = MUNDO.piezas.find(x => x.encaja === l.id);
+    UI.dialogo(arreglado && pieza ? pieza.arreglo : h.titulo,
+               arreglado ? '🔧 ' + h.arreglado : h.texto);
   },
 
   /* Coger una pieza suelta */
@@ -8467,6 +9397,26 @@ const Juego = {
     ]);
   },
 
+  /* ENTREGAR UN ENCARGO
+     El premio de verdad es lo que hace esa persona al recibirlo; las conchas
+     son pocas y a propósito. Se apunta en el Cuaderno de Vecinos. */
+  entregarEncargo(r) {
+    Estado.entregar(r.id);
+    Estado.darConchas(r.premio.conchas);
+    if (r.premio.prenda) Estado.dar(r.premio.prenda);
+    if (r.premio.mascota) Estado.darMascota(r.premio.mascota);
+    UI.refrescarHud();
+    Sonido.fiesta();
+    setTimeout(() => Sonido.moneda(), 500);
+    UI.dialogo('🎁 ' + r.nombre,
+      r.alDar + '<br><br>🐚 <b>+' + r.premio.conchas + ' conchas</b>', [
+      { texto: '¡Bien!', accion: () => {
+          UI.cerrar();
+          Hada.decir('Todo lo que llevas en la mochila <b>es de alguien</b>. ✨', 7);
+        } },
+    ]);
+  },
+
   recogerRareza(e) {
     const r = RAREZAS.find(x => x.id === e.id);
     Estado.guardarRareza(r.id);
@@ -8475,7 +9425,8 @@ const Juego = {
     Sonido.hallazgo();
     UI.dialogo('¡Vaya hallazgo!',
       `<div class="rareza-grande">${r.icono}</div><b>${r.nombre}</b><br><br>${r.texto}` +
-      '<br><br><small>Se guarda en tu mochila 🎒</small>');
+      '<br><br>🎒 Se guarda en tu mochila. <b>Esto es de alguien de la isla:</b> ' +
+      'lee bien lo que pone y sabrás de quién.');
   },
 
   recogerSecreto(s) {
@@ -8632,13 +9583,29 @@ const Juego = {
     MUNDO.matas.forEach(m => cosas.push({ y: m[1], f: () => this.mata(ctx, m[0], m[1]) }));
     MUNDO.palmeras.forEach(p =>
       cosas.push({ y: p[1], x: p[0], tapa: 110, f: () => this.palmera(ctx, p[0], p[1]) }));
+    /* Si va subiendo por un sendero o está en la meseta, lo que hay alrededor
+       se pinta ANTES que ella: si no, el monte (o el volcán de al lado) le
+       taparía el camino por el que va andando. */
+    const jug = this.jugador;
+    const dentro = (z) => z && Math.pow((jug.x - z.x) / z.rx, 2) + Math.pow((jug.y - z.y) / z.ry, 2) <= 1;
+    const enSenda = (sd) => {
+      if (!sd) return false;
+      for (let k = 1; k < sd.puntos.length; k++) {
+        const a = sd.puntos[k - 1], c = sd.puntos[k];
+        if (this.distanciaASegmento(jug.x, jug.y, a[0], a[1], c[0], c[1]) <= sd.ancho) return true;
+      }
+      return false;
+    };
+    const subiendo = MUNDO.bloqueos.filter(b =>
+      dentro(b.paso) || dentro(b.paso2) || dentro(b.hueco) || enSenda(b.senda));
+    const pegados = (a, b) =>
+      Math.abs(a.x - b.x) < a.rx + b.rx && Math.abs(a.y - b.y) < a.ry + b.ry;
     MUNDO.bloqueos.forEach(b => {
-      /* Si va subiendo por la escalera o está en la meseta, el monte se pinta
-         ANTES que ella: si no, la escalera la taparía. */
-      const jug = this.jugador;
-      const dentro = (z) => z && Math.pow((jug.x - z.x) / z.rx, 2) + Math.pow((jug.y - z.y) / z.ry, 2) <= 1;
-      const encima = dentro(b.paso) || dentro(b.paso2) || dentro(b.hueco);
-      cosas.push({ y: encima ? -9999 : b.y + b.ry, f: () => this.bloqueo(ctx, b) });
+      const suyo = subiendo.includes(b);                   // el monte que sube
+      const vecino = !suyo && subiendo.some(o => pegados(o, b));  // el de al lado
+      // primero el vecino, luego el monte (que pinta su sendero encima) y
+      // después ya viene ella, que va por el camino
+      cosas.push({ y: suyo ? -9990 : vecino ? -9999 : b.y + b.ry, f: () => this.bloqueo(ctx, b) });
     });
     MUNDO.lugares.forEach(l =>
       cosas.push({ y: l.y, x: l.x, tapa: 120, f: () => this.dibujarLugar(ctx, l) }));
@@ -8704,6 +9671,9 @@ const Juego = {
       const c = this.cogible.dato;
       x = c.x; y = c.y - 56; accion = 'coger';
       nombre = this.cogible.clase === 'pieza' ? c.nombre : '¡Algo!';
+    } else if (this.entregable && this.lugar) {
+      x = this.lugar.x; y = this.lugar.y - 140; accion = 'dar';
+      nombre = 'Dar ' + this.entregable.nombre.replace('Un ', '').replace('Una ', '');
     } else if (this.encajable && this.lugar) {
       x = this.lugar.x; y = this.lugar.y - 140; accion = 'coger';
       nombre = 'Poner ' + this.encajable.nombre.replace('Un ', '').replace('Una ', '');
@@ -8956,6 +9926,26 @@ const Juego = {
         ctx.lineTo(b.x + b.rx * (p[0] + p[2] * 0.5), b.y + b.ry * (p[1] + 0.45));
         ctx.closePath(); ctx.fill();
       });
+
+      /* EL SENDERO, pintado encima del monte: sube por la ladera este y arriba
+         gira al oeste hasta la meseta. Antes no se pintaba y, al acabarse los
+         escalones de abajo, no se sabía por dónde seguir (12-09-2026). */
+      const abierto = Estado.pasoAbierto('montana');
+      const c = abierto ? ['#E3CFA0', '#EFE2C4'] : ['#7E8494', '#949BAA'];
+      ctx.beginPath();                                  // la meseta de arriba
+      ctx.ellipse(b.hueco.x, b.hueco.y, b.hueco.rx, b.hueco.ry, 0, 0, 7);
+      ctx.fillStyle = c[1]; ctx.fill();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      const ruta = b.senda.puntos;                      // lo pintado = lo andable
+      [[c[0], b.senda.ancho], [c[1], b.senda.ancho - 22]].forEach(t => {
+        ctx.strokeStyle = t[0]; ctx.lineWidth = t[1];
+        ctx.beginPath(); ctx.moveTo(ruta[0][0], ruta[0][1]);
+        ruta.slice(1).forEach(q => ctx.lineTo(q[0], q[1]));
+        ctx.stroke();
+      });
+      ctx.fillStyle = c[0];                             // los peldaños
+      for (let yy = ruta[0][1] - 50; yy > ruta[1][1] + 50; yy -= 34)
+        ctx.fillRect(ruta[0][0] - 56, yy, 112, 9);
       ctx.restore(); return;
     }
 
@@ -9365,6 +10355,17 @@ const Juego = {
     ctx.fillStyle = '#7FA9C9'; ctx.beginPath(); ctx.arc(x + 44, y - 52, 9, 0, 7); ctx.fill();
     ctx.strokeStyle = '#7FA9C9'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(x + 44, y - 43); ctx.lineTo(x + 44, y); ctx.stroke();
+    if (Estado.estaEncajado('mirador')) {              // el catalejo, ya montado
+      ctx.save();
+      ctx.translate(x - 2, y - 52);
+      ctx.rotate(-0.5 + Math.sin(this.t * 0.5) * 0.18);
+      ctx.fillStyle = '#C9A227'; ctx.fillRect(0, -5, 34, 10);
+      ctx.fillStyle = '#E2C44F'; ctx.fillRect(30, -7, 14, 14);
+      ctx.fillStyle = '#6B5A2A'; ctx.fillRect(-6, -4, 8, 8);
+      ctx.restore();
+      ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 4;   // el trípode
+      ctx.beginPath(); ctx.moveTo(x - 2, y - 50); ctx.lineTo(x - 2, y - 22); ctx.stroke();
+    }
   },
 
   pintar_barca(ctx, x, y) {
@@ -9404,8 +10405,13 @@ const Juego = {
     ctx.fillStyle = '#EDE4D3'; ctx.beginPath(); ctx.arc(x + 2, y - 84, 20, 0, 7); ctx.fill();
     ctx.strokeStyle = '#8A837A'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(x + 2, y - 84, 20, 0, 7); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + 2, y - 84); ctx.lineTo(x + 13, y - 90); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + 2, y - 84); ctx.lineTo(x + 2, y - 96); ctx.stroke();
+    /* Con la manecilla puesta, el reloj anda. Sin ella sigue en las 7 y cuarto. */
+    const anda = Estado.estaEncajado('ruinas');
+    const min = anda ? this.t * 1.1 : 1.05, hor = anda ? this.t * 0.09 : 0.55;
+    ctx.beginPath(); ctx.moveTo(x + 2, y - 84);
+    ctx.lineTo(x + 2 + Math.sin(min) * 15, y - 84 - Math.cos(min) * 15); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 2, y - 84);
+    ctx.lineTo(x + 2 + Math.sin(hor) * 9, y - 84 - Math.cos(hor) * 9); ctx.stroke();
   },
 
   pintar_pozo(ctx, x, y) {
@@ -9425,7 +10431,18 @@ const Juego = {
     ctx.fillStyle = '#8D5A3B';
     ctx.beginPath(); ctx.moveTo(x - 30, y - 54); ctx.lineTo(x, y - 72); ctx.lineTo(x + 30, y - 54); ctx.fill();
     ctx.strokeStyle = '#5E3A24'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(x, y - 58); ctx.lineTo(x, y - 30); ctx.stroke();
+    const largo = Estado.estaEncajado('pozo')
+      ? 18 + Math.abs(Math.sin(this.t * 0.5)) * 26      // el cubo sube y baja
+      : 28;
+    ctx.beginPath(); ctx.moveTo(x, y - 58); ctx.lineTo(x, y - 58 + largo); ctx.stroke();
+    if (Estado.estaEncajado('pozo')) {
+      const cy = y - 58 + largo;
+      ctx.fillStyle = '#8D5A3B';
+      ctx.beginPath(); ctx.moveTo(x - 9, cy); ctx.lineTo(x + 9, cy);
+      ctx.lineTo(x + 7, cy + 13); ctx.lineTo(x - 7, cy + 13); ctx.fill();
+      ctx.fillStyle = '#4FB8D8';                         // el agua dentro
+      ctx.beginPath(); ctx.ellipse(x, cy + 1, 8, 2.6, 0, 0, 7); ctx.fill();
+    }
   },
 
   pintar_tronco(ctx, x, y) {
@@ -9452,7 +10469,16 @@ const Juego = {
     ctx.fillStyle = '#EDE4D3'; ctx.fillRect(x - 20, y - 62, 40, 12);   // el libro
     ctx.strokeStyle = '#B5AC98'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(x, y - 62); ctx.lineTo(x, y - 50); ctx.stroke();
-    ctx.fillStyle = '#C4BBAA'; ctx.fillRect(x - 13, y - 84, 26, 8);    // cuello sin cabeza
+    ctx.fillStyle = '#C4BBAA'; ctx.fillRect(x - 13, y - 84, 26, 8);    // el cuello
+    if (Estado.estaEncajado('estatua')) {               // …y su cabeza, ya puesta
+      ctx.fillStyle = '#DDD5C6';
+      ctx.beginPath(); ctx.arc(x, y - 98, 15, 0, 7); ctx.fill();
+      ctx.fillStyle = '#C4BBAA';
+      ctx.beginPath(); ctx.arc(x, y - 106, 15, 3.3, 6.1); ctx.fill();   // el pelo
+      ctx.fillStyle = '#8A837A';
+      ctx.beginPath(); ctx.arc(x - 5, y - 99, 1.8, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 5, y - 99, 1.8, 0, 7); ctx.fill();
+    }
   },
 
   pintar_claro(ctx, x, y) {
@@ -9462,10 +10488,22 @@ const Juego = {
       const dob = Math.sin(this.t + k) * 4;
       ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + dob, hy - 28); ctx.stroke();
     }
-    for (let k = 0; k < 5; k++) {
+    /* Con el farolillo colgado salen muchísimas más luciérnagas */
+    const encendido = Estado.estaEncajado('claro');
+    for (let k = 0; k < (encendido ? 18 : 5); k++) {
       const a = this.t * 0.7 + k * 1.6;
       ctx.fillStyle = 'rgba(255,235,120,' + (0.35 + Math.sin(this.t * 3 + k) * 0.3) + ')';
       ctx.beginPath(); ctx.arc(x + Math.cos(a) * 60, y - 34 + Math.sin(a * 1.3) * 24, 4, 0, 7); ctx.fill();
+    }
+    if (encendido) {
+      ctx.fillStyle = 'rgba(255,214,110,0.30)';
+      ctx.beginPath(); ctx.arc(x, y - 60, 46, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y - 96); ctx.lineTo(x, y - 78); ctx.stroke();
+      ctx.fillStyle = '#E8724C';
+      ctx.beginPath(); ctx.ellipse(x, y - 66, 13, 16, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFD76E';
+      ctx.beginPath(); ctx.ellipse(x, y - 66, 8, 11, 0, 0, 7); ctx.fill();
     }
   },
 
@@ -9513,8 +10551,22 @@ const Juego = {
     ctx.fillStyle = '#E8C33D';
     ctx.beginPath(); ctx.ellipse(x, y - 78, 20, 6, 0, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x, y - 82, 11, 7, 0, 0, 7); ctx.fill();
-    ctx.font = '13px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('🐦', x + 22, y - 74);
+    if (Estado.estaEncajado('espantapajaros')) {        // el molinillo: gira y espanta
+      const g = this.t * 3;
+      ctx.strokeStyle = '#8A6D3B'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 16, y - 84); ctx.lineTo(x + 16, y - 98); ctx.stroke();
+      ['#F26FA8', '#FFE066', '#5AA9DC', '#7FC97F'].forEach((col, k) => {
+        const a = g + k * 1.57;
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(x + 16, y - 98);
+        ctx.lineTo(x + 16 + Math.cos(a) * 11, y - 98 + Math.sin(a) * 11);
+        ctx.lineTo(x + 16 + Math.cos(a + 0.7) * 8, y - 98 + Math.sin(a + 0.7) * 8);
+        ctx.fill();
+      });
+    } else {
+      ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('🐦', x + 22, y - 74);
+    }
   },
 
   pintar_buzon(ctx, x, y) {
@@ -9813,25 +10865,95 @@ const Juego = {
     ctx.beginPath(); ctx.arc(x + 66, y + 32 + Math.sin(this.t * 2) * 3, 5, 0, 7); ctx.fill();
   },
 
+  /* LAS TAZAS (arreglado el 12-09-2026)
+     Antes el plato giraba por su cuenta y la jugadora daba vueltas al lado, en
+     el aire: parecía que montarse no funcionaba. Ahora, mientras hay paseo, las
+     tazas giran con ella y la suya (la rosa) va siempre justo debajo. */
+  RADIO_TAZA: 62,
+
   pintar_tazas(ctx, x, y) {
-    this.sombra(ctx, x, y + 4, 62, 0);
+    const v = this.vehiculo;
+    const montada = v && v.tipo === 'taza';
+    this.sombra(ctx, x, y + 4, 100, 0);
     ctx.fillStyle = '#C9A8E8';
-    ctx.beginPath(); ctx.ellipse(x, y, 70, 38, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x, y, 116, 62, 0, 0, 7); ctx.fill();
     ctx.fillStyle = '#DCC4F2';
-    ctx.beginPath(); ctx.ellipse(x, y - 5, 70, 36, 0, 0, 7); ctx.fill();
-    const g = this.t * 1.2;
+    ctx.beginPath(); ctx.ellipse(x, y - 6, 116, 60, 0, 0, 7); ctx.fill();
+    const g = montada ? v.giro : this.t * 1.2;
     for (let k = 0; k < 3; k++) {
       const a = g + k * 2.09;
-      const cx = x + Math.cos(a) * 42, cy = y - 8 + Math.sin(a) * 20;
+      const cx = x + Math.cos(a) * this.RADIO_TAZA;
+      const cy = y - 10 + Math.sin(a) * this.RADIO_TAZA * 0.55;
       ctx.fillStyle = ['#F26FA8', '#FFE066', '#5AA9DC'][k];
-      ctx.beginPath(); ctx.ellipse(cx, cy, 18, 13, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, cy, 24, 17, 0, 0, 7); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.beginPath(); ctx.ellipse(cx, cy - 4, 14, 8, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, cy - 5, 19, 11, 0, 0, 7); ctx.fill();
       ctx.strokeStyle = ['#F26FA8', '#FFE066', '#5AA9DC'][k]; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.arc(cx + 21, cy, 6, -1.2, 1.2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx + 27, cy, 8, -1.2, 1.2); ctx.stroke();
     }
     ctx.fillStyle = '#3C6E71'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText('TAZAS', x, y - 48);
+    ctx.fillText('TAZAS', x, y - 60);
+  },
+
+  /* Nit, el ratón del molino: pequeñísimo, que de eso va su historia */
+  pintar_raton(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 16, 0);
+    ctx.fillStyle = '#B5AC98';                            // su puertecita
+    ctx.beginPath(); ctx.moveTo(x - 20, y); ctx.lineTo(x - 20, y - 22);
+    ctx.quadraticCurveTo(x - 20, y - 34, x - 8, y - 34);
+    ctx.quadraticCurveTo(x + 4, y - 34, x + 4, y - 22); ctx.lineTo(x + 4, y); ctx.fill();
+    ctx.fillStyle = '#7A6A55';
+    ctx.beginPath(); ctx.moveTo(x - 17, y); ctx.lineTo(x - 17, y - 22);
+    ctx.quadraticCurveTo(x - 17, y - 31, x - 8, y - 31);
+    ctx.quadraticCurveTo(x + 1, y - 31, x + 1, y - 22); ctx.lineTo(x + 1, y); ctx.fill();
+    const b = Math.sin(this.t * 2) * 1.5;                 // y él, asomado
+    ctx.strokeStyle = '#A89A88'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x + 14, y - 8);
+    ctx.quadraticCurveTo(x + 24, y - 10 + b, x + 22, y - 18); ctx.stroke();
+    ctx.fillStyle = '#9B9186';
+    ctx.beginPath(); ctx.ellipse(x + 14, y - 10, 8, 6, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 21, y - 15, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#E8BFC8';                            // las orejotas
+    ctx.beginPath(); ctx.arc(x + 18, y - 20 + b * 0.3, 3.4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 24, y - 19 + b * 0.3, 3.4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#3A3A3A';
+    ctx.beginPath(); ctx.arc(x + 23, y - 16, 1.2, 0, 7); ctx.fill();
+    ctx.fillStyle = '#E8506B';
+    ctx.beginPath(); ctx.arc(x + 26, y - 14, 1.2, 0, 7); ctx.fill();
+  },
+
+  /* La Casa dels Bitxos: la tienda de mascotas de Ona */
+  pintar_casaBitxos(ctx, x, y) {
+    this.sombra(ctx, x, y + 4, 56, 0);
+    ctx.fillStyle = '#8FBF7A';                            // el seto de la entrada
+    [[-56, 6], [56, 6]].forEach(g => {
+      ctx.beginPath(); ctx.ellipse(x + g[0], y - g[1], 14, 11, 0, 0, 7); ctx.fill();
+    });
+    ctx.fillStyle = '#E8C9A0';                            // la casita
+    ctx.fillRect(x - 46, y - 62, 92, 62);
+    ctx.fillStyle = '#D8B387';
+    ctx.fillRect(x - 46, y - 62, 92, 8);
+    ctx.fillStyle = '#5AA9DC';                            // el tejado
+    ctx.beginPath(); ctx.moveTo(x - 58, y - 60); ctx.lineTo(x, y - 96);
+    ctx.lineTo(x + 58, y - 60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#7FC3E8';
+    ctx.beginPath(); ctx.moveTo(x - 58, y - 60); ctx.lineTo(x, y - 96);
+    ctx.lineTo(x, y - 60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#6B4E32';                            // la puerta
+    ctx.fillRect(x - 13, y - 40, 26, 40);
+    ctx.fillStyle = '#FFE066';
+    ctx.beginPath(); ctx.arc(x + 8, y - 20, 2.4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#B8ECDF';                            // las ventanas
+    [[-32, -46], [32, -46]].forEach(g => {
+      ctx.beginPath(); ctx.roundRect(x + g[0] - 11, y + g[1], 22, 20, 6); ctx.fill();
+    });
+    ctx.fillStyle = '#3C6E71';                            // el rótulo
+    ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('BITXOS', x, y - 66);
+    // dos bichos asomados a las ventanas, que se turnan
+    ctx.font = '15px system-ui';
+    ctx.fillText(['🦩', '🦜', '🐙'][Math.floor(this.t / 2) % 3], x - 32, y - 30);
+    ctx.fillText(['🦎', '🐧', '🦚'][Math.floor(this.t / 2 + 1) % 3], x + 32, y - 30);
   },
 
   pintar_tren(ctx, x, y) {
