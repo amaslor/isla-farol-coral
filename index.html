@@ -322,6 +322,49 @@
   .rareza-icono{font-size:32px}
   .rareza small{color:#7A736A}
   .rareza-grande{font-size:70px; line-height:1.1}
+
+  /* LA FIESTA DE LOS GLOBOS (el minijuego del salón de Coco) */
+  .globos-como{font-size:18px; max-width:26em}
+  .escalera{display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+            gap:4px; margin:10px 0}
+  .peldano{background:#EFE6D0; color:#8A837A; border-radius:12px; padding:3px 11px;
+           font-weight:bold; font-size:16px; min-width:34px}
+  .peldano.tengo{color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .peldano.dorado{box-shadow:0 0 0 3px #F2C14E}
+  .flecha{color:#C4BBAA; font-weight:bold}
+  .tablero{display:inline-grid; gap:6px; justify-items:center; align-items:center; margin:6px 0}
+  .globo{border:0; border-radius:50% 50% 48% 48%; color:#fff; font:inherit; font-weight:bold;
+         font-size:19px; cursor:pointer; box-shadow:inset -4px -6px 0 rgba(0,0,0,.10),
+         0 3px 0 rgba(0,0,0,.12); text-shadow:0 1px 2px rgba(0,0,0,.3);
+         transition:transform .12s}
+  .globo{position:relative}
+  .globo::after{content:''; position:absolute; left:50%; bottom:-5px; width:0; height:0;
+                transform:translateX(-50%);
+                border-left:5px solid transparent; border-right:5px solid transparent;
+                border-top:7px solid rgba(0,0,0,.18)}   /* el nudito del globo */
+  .globo:hover{transform:translateY(-2px)}
+  .globo.elegido{box-shadow:0 0 0 4px #2F2A28, inset -4px -6px 0 rgba(0,0,0,.10);
+                 transform:translateY(-4px)}
+  @media (max-width: 620px){
+    .globo{font-size:17px}
+    .tablero{gap:4px}
+  }
+
+  /* LO QUE LLEVA EN LA MOCHILA
+     Una ficha por cosa, con su chapa, su marco y aire entre ellas: antes salían
+     los textos sueltos y no se sabía dónde acababa uno y empezaba el otro. */
+  .cosas{display:flex; flex-direction:column; gap:12px; text-align:left; margin:12px 0}
+  .cosa{display:flex; gap:14px; align-items:flex-start; background:#fff;
+        border:3px solid #E3D9C0; border-radius:18px; padding:12px 16px}
+  .cosa.pieza{border-color:#9FCBE8; background:#F2F9FD}
+  .cosa.objeto{border-color:#F0B49F; background:#FFF6F2}
+  .cosa-icono{font-size:34px; line-height:1.2; width:48px; min-width:48px; height:48px;
+              display:flex; align-items:center; justify-content:center;
+              background:#fff; border-radius:50%; box-shadow:var(--sombra)}
+  .cosa-texto{display:flex; flex-direction:column; gap:2px}
+  .cosa-texto b{font-size:18px; line-height:1.35}
+  .cosa-eti{font-size:13px; font-weight:bold; color:#8A837A; letter-spacing:.3px}
+  .cosa small{color:#7A736A; font-size:15px; line-height:1.5; display:block; margin-top:2px}
   .opcion .tuyo{display:block; color:var(--verde); font-weight:bold; font-size:13px}
 
   /* El mapa */
@@ -465,6 +508,7 @@ const AJUSTES = {
   conchasPorRepetir: 4,      // y si se repiten
   conchasPorPaseo: 2,        // el reto corto de una atracción
   conchasPorRondaSalon: 1,   // tres preguntas rápidas del salón
+  conchasPorGlobos: 2,       // llegar al globo dorado en la fiesta de los globos
   conchasPorProblema: 3,     // un problema de los de leer y pensar
   conchasPorRutina: 1,       // ducharse, peinarse…
   conchasPorRutinasTodas: 3, // propina por hacer las cuatro
@@ -1020,7 +1064,7 @@ const MUNDO = {
          andar en línea recta, sin llegar a la meseta. Ahora el sendero es un
          PASILLO de verdad —los mismos puntos que se pintan, con su ancho— así
          que se puede andar justo por donde se ve el camino. */
-      senda: { requiere: 'montana', ancho: 170,
+      senda: { requiere: 'montana', ancho: 116,
                puntos: [[5180, 1660], [5180, 1130], [4790, 1130]] },
       // y la meseta de arriba, que es la recompensa
       hueco: { x: 4720, y: 1010, rx: 370, ry: 215 },
@@ -2458,8 +2502,8 @@ const TEXTOS = {
     'Una noche de tormenta se apagó, y sus cinco cristales salieron rodando.',
     'Los habitantes los han encontrado, pero andan liados. Échales una mano y te los darán.',
   ],
-  salonSaludo: '¡Squawk! Aquí siempre se juega. ¿Un <b>problema</b> de los de pensar, o ' +
-               '<b>preguntas rápidas</b> para calentar?',
+  salonSaludo: '¡Squawk! Aquí siempre se juega. ¿Un <b>problema</b> de los de pensar, ' +
+               '<b>preguntas rápidas</b> para calentar, o la <b>fiesta de los globos</b>?',
   salonDespierta: '¡Bien hecho! Seguro que ahora te lo sabes. Vuelve a verles.',
   cabana: 'Tu cabaña. Aquí están el espejo y la tienda.',
   farolApagado: 'El Farol de Coral, apagado. Le faltan sus cinco cristales.',
@@ -7455,26 +7499,34 @@ const Mochila = {
     const piezas = MUNDO.piezas.filter(p => Estado.llevaPieza(p.id));
     const objetos = RAREZAS.filter(r => Estado.tieneRareza(r.id) && !Estado.yaEntregado(r.id));
 
-    const lista = [
-      ...piezas.map(p => `
-        <div class="rareza">
-          <span class="rareza-icono">${p.icono}</span>
-          <div><b>${p.nombre}</b><br><small>🔧 ${p.pista}</small></div>
-        </div>`),
-      ...objetos.map(r => `
-        <div class="rareza">
-          <span class="rareza-icono">${r.icono}</span>
-          <div><b>${r.nombre}</b><br><small>${r.texto}</small></div>
-        </div>`),
-    ].join('');
+    /* Cada cosa, su ficha: la chapa con el dibujo a la izquierda, el nombre y
+       debajo la pista. Con el marco y el aire entre fichas se ve de un vistazo
+       dónde acaba una y empieza la otra. */
+    const ficha = (icono, clase, nombre, etiqueta, texto) => `
+      <div class="cosa ${clase}">
+        <span class="cosa-icono">${icono}</span>
+        <div class="cosa-texto">
+          <b>${nombre}</b>
+          <span class="cosa-eti">${etiqueta}</span>
+          <small>${texto}</small>
+        </div>
+      </div>`;
+
+    const lista =
+      piezas.map(p => ficha(p.icono, 'pieza', p.nombre, '🔧 Va en algún sitio', p.pista)).join('') +
+      objetos.map(r => ficha(r.icono, 'objeto', r.nombre, '🎁 Es de alguien', r.texto)).join('');
 
     UI.abrir(`
       <div class="quien">🎒 Tu mochila</div>
-      ${lista || '<p class="pista">La mochila está vacía ahora mismo.<br><br>' +
-        'Por la isla hay <b>piezas</b> que arreglan cosas y <b>objetos</b> que son de alguien. ' +
-        'Cada partida los esconde en sitios distintos.</p>'}
-      ${lista ? '<p class="pista">Todo esto va a algún sitio o es de alguien. ' +
-        'Lee bien lo que pone: ahí está la pista.</p>' : ''}
+      ${lista
+        ? `<p class="contador">Llevas <b>${piezas.length + objetos.length}</b>
+             ${piezas.length + objetos.length === 1 ? 'cosa' : 'cosas'} encima</p>
+           <div class="cosas">${lista}</div>
+           <p class="pista">Todo esto va a algún sitio o es de alguien.
+              <b>Lee bien lo que pone</b>: ahí está la pista.</p>`
+        : `<p class="pista">La mochila está vacía ahora mismo.<br><br>
+             Por la isla hay <b>piezas</b> que arreglan cosas paradas y <b>objetos</b> que son de
+             alguien. Cada partida los esconde en sitios distintos.</p>`}
       <div class="botones"><button class="btn" id="verCuadernos">📔 Mis cuadernos</button></div>
     `);
     document.getElementById('verCuadernos').onclick = () => { Sonido.clic(); Cuadernos.abrir(); };
@@ -7756,6 +7808,229 @@ const Pedidos = {
       try { navigator.clipboard.writeText(texto); ev.target.textContent = '¡Copiado!'; }
       catch (e) { ev.target.textContent = 'No se ha podido copiar'; }
     };
+  },
+};
+
+</script>
+<script>
+/* === motor/globos.js === */
+/* LA FIESTA DE LOS GLOBOS
+   El minijuego del salón de Coco. Se toca un globo y luego otro pegado con el
+   MISMO número: los dos se juntan en uno más gordo, que vale el doble. Con
+   cinco juntadas se llega al globo dorado y se acaba la partida.
+
+   Qué se aprende sin que lo parezca: los DOBLES y las series (3 → 6 → 12 →
+   24 → 48). A Gala le toca una serie de la tabla del 2, del 3 o del 5, que es
+   justo lo que le cuesta; a Inés, la serie fácil desde el 1.
+
+   Cómo está hecho: nada de dibujo ni de física. Cada globo es un botón de
+   verdad, así que funciona igual con el dedo, con el ratón y con el teclado,
+   y se lee con letra grande.
+
+   Las reglas de la casa que se respetan aquí:
+     · no hay reloj, ni vidas, ni sonido de error: equivocarse no rompe nada;
+     · no se puede quedar atascada (si no quedan parejas, entran globos nuevos);
+     · lo que paga tiene tope diario, como todo lo repetible sin fin.       */
+
+const Globos = {
+
+  FILAS: 6,
+  COLUMNAS: 5,
+  COLORES: ['#F26FA8', '#FFC04D', '#5AA9DC', '#7ED6A5', '#B58BE0', '#F2836F', '#3FC1C9'],
+
+  /* La serie de cada jugadora: cinco juntadas desde la base hasta el dorado */
+  serie() {
+    const base = Estado.actual.nivel === 'mayor'
+      ? [2, 3, 5][Math.floor(Math.random() * 3)]
+      : 1;
+    // cinco peldaños: cuatro juntadas hasta el dorado. Con más, los números se
+    // hacen grandes de golpe y la partida se alarga de más.
+    const s = [];
+    for (let k = 0; k < 5; k++) s.push(base * Math.pow(2, k));
+    return s;
+  },
+
+  abrir(alTerminar) {
+    this.alTerminar = alTerminar;
+    this.s = this.serie();
+    this.meta = this.s[this.s.length - 1];
+    this.mayor = this.s[0];                 // el globo más gordo conseguido
+    this.juntadas = 0;
+    this.elegido = null;
+    this.aviso = '';
+    this.tablero = [];
+    for (let f = 0; f < this.FILAS; f++) {
+      this.tablero.push([]);
+      for (let c = 0; c < this.COLUMNAS; c++) this.tablero[f].push(this.nuevoValor());
+    }
+    this.asegurarJugada();
+    this.pintar();
+  },
+
+  /* Los globos que entran son siempre de los dos primeros de la serie: si
+     entraran gordos, se ganaría de chiripa y no habría nada que pensar. */
+  nuevoValor() {
+    return Math.random() < 0.58 ? this.s[0] : this.s[1];
+  },
+
+  color(v) { return this.COLORES[this.s.indexOf(v) % this.COLORES.length]; },
+
+  /* El tamaño del globo crece con el número: se ve que 24 es más que 12 */
+  tamano(v) {
+    const paso = Math.max(0, this.s.indexOf(v));
+    return 54 + paso * 5;
+  },
+
+  pintar() {
+    const escalera = this.s.map(v =>
+      `<span class="peldano ${v <= this.mayor ? 'tengo' : ''} ${v === this.meta ? 'dorado' : ''}"
+             style="${v <= this.mayor ? 'background:' + this.color(v) : ''}">${v}</span>`
+    ).join('<span class="flecha">›</span>');
+
+    const celdas = this.tablero.map((fila, f) => fila.map((v, c) => {
+      const elegido = this.elegido && this.elegido.f === f && this.elegido.c === c;
+      return `<button class="globo ${elegido ? 'elegido' : ''}" data-f="${f}" data-c="${c}"
+                      style="background:${this.color(v)}; width:${this.tamano(v)}px;
+                             height:${this.tamano(v) + 6}px">${v}</button>`;
+    }).join('')).join('');
+
+    UI.abrir(`
+      <div class="quien">🎈 La fiesta de los globos</div>
+      <p class="dice globos-como">Toca dos globos <b>pegados</b> con el <b>mismo número</b>
+         y se juntan en uno que vale el <b>doble</b>.</p>
+      <div class="escalera">${escalera}</div>
+      <p class="contador">Busca el globo de <b>${this.meta}</b></p>
+      <div class="tablero" style="grid-template-columns:repeat(${this.COLUMNAS}, auto)">${celdas}</div>
+      <p class="pista" id="pistaGlobos">${this.aviso || '&nbsp;'}</p>
+      <div class="botones"><button class="btn gris" id="dejarGlobos">Dejarlo</button></div>
+    `, () => this.salir());
+
+    UI.modal.querySelectorAll('.globo').forEach(b =>
+      b.onclick = () => this.tocar(+b.dataset.f, +b.dataset.c));
+    document.getElementById('dejarGlobos').onclick = () => { Sonido.clic(); this.salir(); };
+  },
+
+  pegados(a, b) {
+    return Math.abs(a.f - b.f) + Math.abs(a.c - b.c) === 1;
+  },
+
+  tocar(f, c) {
+    const antes = this.elegido;
+    const valor = this.tablero[f][c];
+
+    // el mismo otra vez: se suelta
+    if (antes && antes.f === f && antes.c === c) {
+      this.elegido = null; this.aviso = ''; Sonido.clic(); return this.pintar();
+    }
+    // dos iguales y pegados: se juntan
+    if (antes && this.pegados(antes, { f, c }) && this.tablero[antes.f][antes.c] === valor)
+      return this.juntar(antes, { f, c }, valor);
+
+    /* Cualquier otra cosa no es un fallo: simplemente se elige este. Solo se
+       explica por qué, que para eso está la pista. */
+    this.elegido = { f, c };
+    this.aviso = antes && this.tablero[antes.f][antes.c] === valor
+      ? 'Esos dos son iguales, pero <b>no están pegados</b>. Tienen que tocarse.'
+      : antes ? 'Tienen que ser <b>el mismo número</b>.' : '';
+    Sonido.clic();
+    this.pintar();
+  },
+
+  juntar(uno, dos, valor) {
+    const doble = valor * 2;
+    this.tablero[dos.f][dos.c] = doble;
+    this.tablero[uno.f][uno.c] = null;          // queda el hueco
+    this.caer();
+    this.juntadas++;
+    this.elegido = null;
+    this.aviso = `${valor} y ${valor} son <b>${doble}</b>.`;
+    Sonido.acierto();
+
+    const nuevoGordo = doble > this.mayor;
+    if (nuevoGordo) this.mayor = doble;
+
+    if (doble === this.meta) return this.ganar();
+    this.asegurarJugada();
+    this.pintar();
+    if (nuevoGordo) {
+      Sonido.moneda();
+      document.getElementById('pistaGlobos').innerHTML =
+        `✨ ¡Tu primer globo de <b>${doble}</b>! ${valor} + ${valor} = ${doble}.`;
+    }
+  },
+
+  /* Los de arriba bajan a los huecos y entran nuevos por arriba */
+  caer() {
+    for (let c = 0; c < this.COLUMNAS; c++) {
+      const columna = [];
+      for (let f = this.FILAS - 1; f >= 0; f--)
+        if (this.tablero[f][c] !== null) columna.push(this.tablero[f][c]);
+      for (let f = this.FILAS - 1; f >= 0; f--) {
+        const v = columna[this.FILAS - 1 - f];
+        this.tablero[f][c] = v === undefined ? this.nuevoValor() : v;
+      }
+    }
+  },
+
+  hayJugada() {
+    for (let f = 0; f < this.FILAS; f++)
+      for (let c = 0; c < this.COLUMNAS; c++) {
+        const v = this.tablero[f][c];
+        if (c + 1 < this.COLUMNAS && this.tablero[f][c + 1] === v) return true;
+        if (f + 1 < this.FILAS && this.tablero[f + 1][c] === v) return true;
+      }
+    return false;
+  },
+
+  /* Quedarse sin poder hacer nada sería un castigo, y aquí no se castiga:
+     si no queda ninguna pareja, Coco sopla y entran globos nuevos. */
+  asegurarJugada() {
+    let vueltas = 0;
+    while (!this.hayJugada() && vueltas < 30) {
+      for (let c = 0; c < this.COLUMNAS; c++)
+        this.tablero[this.FILAS - 1][c] = this.nuevoValor();
+      vueltas++;
+      this.aviso = 'Coco sopla y entran <b>globos nuevos</b>.';
+    }
+    // y si con esas todavía no hubiera pareja (casi imposible, pero quedarse
+    // sin poder tocar nada sería lo peor que puede pasar aquí), se ponen dos
+    // iguales juntos a mano
+    if (!this.hayJugada()) {
+      this.tablero[this.FILAS - 1][0] = this.s[0];
+      this.tablero[this.FILAS - 1][1] = this.s[0];
+      this.aviso = 'Coco sopla y entran <b>globos nuevos</b>.';
+    }
+  },
+
+  ganar() {
+    const paga = Estado.darConchasConTope(AJUSTES.conchasPorGlobos);
+    UI.refrescarHud();
+    Sonido.fiesta();
+    setTimeout(() => Sonido.cristal(), 400);
+    UI.abrir(`
+      <div class="quien">🎈 ¡El globo dorado!</div>
+      <p class="cuenta-grande">${this.meta}</p>
+      <p class="dice">Has llegado al globo de <b>${this.meta}</b> juntando
+         <b>${this.juntadas}</b> veces.</p>
+      <div class="escalera">${this.s.map(v =>
+        `<span class="peldano tengo" style="background:${this.color(v)}">${v}</span>`)
+        .join('<span class="flecha">›</span>')}</div>
+      <p class="pista">Cada globo vale el <b>doble</b> que el anterior. Por eso la fila crece
+         tan deprisa: de ${this.s[0]} a ${this.meta} en cuatro saltos.</p>
+      <p class="contador">${paga ? '🐚 <b>+' + paga + ' conchas</b>'
+        : '<small>Por hoy ya has ganado aquí todas las conchas que se pueden ganar.</small>'}</p>
+      <div class="botones">
+        <button class="btn defecto" id="otraGlobos">Otra partida<span class="tecla">espacio</span></button>
+        <button class="btn gris" id="salirGlobos">Ya está bien</button>
+      </div>
+    `, () => this.salir());
+    document.getElementById('otraGlobos').onclick = () => { Sonido.clic(); this.abrir(this.alTerminar); };
+    document.getElementById('salirGlobos').onclick = () => { Sonido.clic(); this.salir(); };
+  },
+
+  salir() {
+    UI.cerrar();
+    if (this.alTerminar) this.alTerminar();
   },
 };
 
@@ -9123,6 +9398,7 @@ const Juego = {
       return UI.dialogo('Coco', TEXTOS.salonSaludo, [
         { texto: '🧠 Un problema', accion: () => Desafio.problema(Estado.actual.nivel, () => UI.refrescarHud()) },
         { texto: '⚡ Preguntas rápidas', accion: () => Salon.abrir(() => UI.refrescarHud()) },
+        { texto: '🎈 La fiesta de los globos', accion: () => Globos.abrir(() => UI.refrescarHud()) },
       ]);
     }
     if (l.accion === 'meta') return this.farol();
@@ -9944,8 +10220,9 @@ const Juego = {
         ctx.stroke();
       });
       ctx.fillStyle = c[0];                             // los peldaños
-      for (let yy = ruta[0][1] - 50; yy > ruta[1][1] + 50; yy -= 34)
-        ctx.fillRect(ruta[0][0] - 56, yy, 112, 9);
+      const peldano = b.senda.ancho * 0.62;
+      for (let yy = ruta[0][1] - 50; yy > ruta[1][1] + 50; yy -= 32)
+        ctx.fillRect(ruta[0][0] - peldano / 2, yy, peldano, 8);
       ctx.restore(); return;
     }
 
