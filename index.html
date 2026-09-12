@@ -166,6 +166,14 @@
              border:3px solid #E3D9C0; border-radius:14px; padding:12px 0; cursor:pointer}
   .tecla-num.borrar{background:#F6E7D0}
 
+  /* La norma de ortografía y sus colores: naranja a/o/u, azul e/i */
+  .norma{background:#FFF9EC; border:3px solid #E3D9C0; border-radius:16px;
+         padding:12px 16px; margin:10px 0; text-align:left; line-height:1.6}
+  .voc-forta{color:#D2691E; font-weight:bold}
+  .voc-fluixa{color:#2E86AB; font-weight:bold}
+  .btn .voc-forta{color:#FFC87A}
+  .btn .voc-fluixa{color:#9FE3FF}
+
   /* El hueco de las palabras */
   .hueco{display:inline-block; min-width:34px; background:#FFF3C4; border-bottom:4px solid #F2C14E;
          border-radius:6px; color:#B8860B; text-align:center}
@@ -424,11 +432,16 @@ const AJUSTES = {
   conchasPorLimpiar: 7,
   conchasPorLimpiarRepe: 2,
 
-  /* --- Un reto al día --------------------------------------------------
-     Cada reto (granja y atracciones incluidas) se cobra una sola vez al día.
-     Y cada día solo unos cuantos sitios tienen reto: se sortean por la
-     mañana. Los retos de cristal que aún no ha ganado están siempre abiertos. */
-  retosPorDia: 8,
+  /* --- TODO ABIERTO, SIEMPRE (12-09-2026) ------------------------------
+     Ya no se sortean los sitios: todos tienen reto todos los días, para que
+     nunca lleguen a una atracción y esté apagada. Lo que cambia para que no
+     se lo aprendan de memoria son los números, la variante y el orden.
+     Repetir un reto que ya se ha ganado hoy se puede (para volver a montar),
+     pero NO paga nada: así no se vive de repetir lo mismo.
+     En la recámara: poner un número en retosPorDia (p. ej. 8) vuelve a
+     sortear qué sitios tienen reto cada día. */
+  retosPorDia: 0,            // 0 = todos los sitios abiertos siempre
+  conchasPorRepetirHoy: 0,   // repetir hoy un reto ya ganado hoy: no paga
 
   /* --- Para que lea antes de elegir ------------------------------------
      Las tarjetas de «¿Qué hay que hacer?» tardan unos segundos en salir, y
@@ -2406,6 +2419,17 @@ const PALABRAS = [
     frase: 'A l\'hivern porto una ___ al coll.', grupo: 'b/v', nivel: 'mayor',
     pista: 'Amb b.' },
 
+  // ⚠️ NUEVAS (12-09-2026, las pidió la mujer de Antonio): PENDIENTES DE VALIDAR
+  { inicio: '', opciones: ['b', 'v'], correcta: 'v', fin: 'erd',
+    frase: 'L\'herba del prat és ___.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Com "verdura": amb v.' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'v', fin: 'eure',
+    frase: 'Vull ___ la posta de sol des del far.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Mirar és VEURE, com "vista": amb v.' },
+  { inicio: '', opciones: ['b', 'v'], correcta: 'b', fin: 'eure',
+    frase: 'Tinc set: vull ___ aigua fresca.', grupo: 'b/v', nivel: 'pequena',
+    pista: 'Empassar-se l\'aigua és BEURE, com "beguda": amb b.' },
+
   // --- G / J ---------------------------------------------------------
   { inicio: '', opciones: ['g', 'j'], correcta: 'g', fin: 'irafa',
     frase: 'La ___ té el coll llarguíssim.', grupo: 'g/j', nivel: 'pequena',
@@ -2490,6 +2514,76 @@ const PALABRAS = [
     frase: 'El ___ fa cadires de fusta.', grupo: '-r final', nivel: 'mayor', dificil: true,
     pista: 'Com "fusteria": porta r.' },
 ];
+
+/* LAS NORMAS DE ORTOGRAFÍA
+   Una sola idea vale para tres grupos (g/j, tg/tj, ç): manda la VOCAL que va
+   detrás. Por eso las vocales van siempre del mismo color en todo el juego:
+     e, i  → azul   → g, tg, c
+     a, o, u → naranja → j, tj, ç
+   Antes de las palabras se enseña la norma y hay que aplicarla para pasar;
+   al final se vuelve a preguntar. */
+
+/* Pinta lo que va entre llaves: {a} {o} {u} {j} {tj} {ç} en naranja,
+   {e} {i} {g} {tg} {c} en azul. Así el color siempre dice lo mismo. */
+const NARANJA = ['a', 'o', 'u', 'j', 'tj', 'ç', 'a, o, u'];
+function colorear(t) {
+  return t.replace(/\{([^}]+)\}/g, (_, v) =>
+    '<span class="' + (NARANJA.includes(v) ? 'voc-forta' : 'voc-fluixa') + '">' + v + '</span>');
+}
+
+const REGLAS = {
+  'g/j': {
+    titulo: 'La norma de la g y la j',
+    texto: 'Mira la <b>vocal que viene detrás</b>:<br><br>' +
+           'g{e}lat, g{i}rafa → delante de <b>{e}</b> y <b>{i}</b>, casi siempre <b>g</b><br>' +
+           'j{u}gar, menj{a}r → delante de <b>{a}</b>, <b>{o}</b>, <b>{u}</b>, siempre <b>j</b>',
+    comprueba: { pregunta: 'Pues entonces… ¿cómo se escribe?',
+                 opciones: ['men{j}ar', 'men{g}ar'], correcta: 0 },
+    recuerda: { pregunta: 'Antes de irte: delante de <b>e</b> y de <b>i</b>, ¿qué va?',
+                opciones: ['g', 'j'], correcta: 0 },
+  },
+  'tg/tj': {
+    titulo: 'La norma de tg y tj',
+    texto: 'Es la misma norma de la g y la j, con una t delante:<br><br>' +
+           'forma{tg}e, via{tg}e → delante de <b>{e}</b> (y de <b>{i}</b>) va <b>tg</b><br>' +
+           'pla{tj}a, mi{tj}ó → delante de <b>{a}</b>, <b>{o}</b>, <b>{u}</b> va <b>tj</b>',
+    comprueba: { pregunta: 'Pues entonces… ¿cómo se escribe?',
+                 opciones: ['via{tg}e', 'via{tj}e'], correcta: 0 },
+    recuerda: { pregunta: 'Antes de irte: delante de <b>a</b>, <b>o</b>, <b>u</b>, ¿qué va?',
+                opciones: ['tj', 'tg'], correcta: 0 },
+  },
+  'ç': {
+    titulo: 'La norma de la ç',
+    texto: 'Otra vez manda la vocal de detrás. Para el sonido de <i>ssss</i> fuerte:<br><br>' +
+           'pla{ç}a, can{ç}ó → delante de <b>{a}</b>, <b>{o}</b>, <b>{u}</b> va <b>ç</b><br>' +
+           'c{e}l, c{i}nc → delante de <b>{e}</b> y <b>{i}</b> va <b>c</b> (sin cola)<br>' +
+           'bra<b>ç</b>, feli<b>ç</b> → y al final de palabra, también <b>ç</b>',
+    comprueba: { pregunta: 'Pues entonces… ¿cómo se escribe?',
+                 opciones: ['can{ç}ó', 'can{c}ó'], correcta: 0 },
+    recuerda: { pregunta: 'Antes de irte: delante de <b>a</b>, <b>o</b>, <b>u</b>, ¿qué va?',
+                opciones: ['ç', 'c'], correcta: 0 },
+  },
+  'b/v': {
+    titulo: 'El truco de la b y la v',
+    texto: 'Aquí no hay vocal que mande: hay que pensar en una <b>palabra de la ' +
+           'familia</b>, que es la que te lo chiva.<br><br>' +
+           '«ca<b>v</b>all» va con v como «<b>v</b>aca».<br>' +
+           '«tre<b>b</b>allar» va con b como «tre<b>b</b>all».<br>' +
+           'Y una que no falla: <b>detrás de m siempre b</b> (bo<b>mb</b>olla), ' +
+           'y <b>delante de l y de r siempre b</b> (<b>bl</b>au, <b>br</b>aç).',
+    comprueba: { pregunta: 'Pues entonces… ¿cómo se escribe?',
+                 opciones: ['<b>bl</b>au', '<b>vl</b>au'], correcta: 0 },
+    recuerda: { pregunta: 'Antes de irte: delante de <b>l</b> y de <b>r</b>, ¿qué va?',
+                opciones: ['b', 'v'], correcta: 0 },
+  },
+};
+
+/* Qué norma toca hoy: una al azar de las que tienen palabras para su nivel */
+function grupoConNorma(nivel) {
+  const hay = Object.keys(REGLAS).filter(g =>
+    PALABRAS.some(p => p.grupo === g && (nivel === 'mayor' || p.nivel === 'pequena')));
+  return hay[Math.floor(Math.random() * hay.length)];
+}
 
 /* Saca las palabras que le tocan a esta jugadora, mezclando fáciles y
    difíciles para que no vayan todas seguidas del mismo tipo. */
@@ -3569,6 +3663,7 @@ const Estado = {
      siempre al que le resulta fácil. Los de cristal sin ganar, siempre. */
   retosDeHoy() {
     const p = this.actual;
+    if (!AJUSTES.retosPorDia) return this.todosLosRetos();   // todo abierto
     if (p.retosDelDia && p.retosDelDia.dia === this.hoy()) return p.retosDelDia.ids;
     const todos = MUNDO.lugares.map(l => this.retoDeLugar(l)).filter(id => id && RETOS[id]);
     const pendientes = todos.filter(id => !RETOS[id].trabajo && !RETOS[id].paseo && !this.tieneCristal(id));
@@ -3578,7 +3673,11 @@ const Estado = {
     return p.retosDelDia.ids;
   },
 
-  abiertoHoy(id) { return this.retosDeHoy().includes(id); },
+  todosLosRetos() {
+    return MUNDO.lugares.map(l => this.retoDeLugar(l)).filter(id => id && RETOS[id]);
+  },
+
+  abiertoHoy(id) { return !AJUSTES.retosPorDia || this.retosDeHoy().includes(id); },
 
   apuntarRutina(id) {
     if (this.hizoRutina(id)) return false;
@@ -3665,13 +3764,16 @@ const Estado = {
     this.guardar();
   },
 
-  /* Se ha superado un reto: cristal la primera vez, y conchas siempre */
-  superarReto(id) {
+  /* Se ha superado un reto: cristal la primera vez, y conchas siempre.
+     yaHoy = hoy ya lo había ganado: se puede repetir, pero paga poco. */
+  superarReto(id, yaHoy) {
     const primeraVez = !this.tieneCristal(id);
     if (primeraVez) this.actual.cristales.push(id);
     this.actual.veces[id] = this.vecesHecho(id) + 1;
     delete this.actual.dormidos[id];
-    const conchas = primeraVez ? AJUSTES.conchasPorRetoNuevo : AJUSTES.conchasPorRepetir;
+    const conchas = primeraVez ? AJUSTES.conchasPorRetoNuevo
+                  : yaHoy      ? AJUSTES.conchasPorRepetirHoy
+                               : AJUSTES.conchasPorRepetir;
     this.actual.conchas += conchas;
     this.guardar();
     return { primeraVez, conchas };
@@ -5318,15 +5420,13 @@ const Desafio = {
     this.fallos = 0;
     const info = RETOS[id];
 
+    // Los sitios ya no se sortean: siempre hay reto. Pero si se falla tres
+    // veces, el personaje se duerme (no se acierta a base de probar), y
+    // repetir un reto ya ganado hoy no paga (12-09-2026).
     if (Estado.estaDormido(id)) {
       UI.dialogo(this.quien(id), info.dormido +
         '<br><br><b>Ve al salón de juegos con Coco</b> y juega una ronda para despertarle.',
         [{ texto: 'Vale', accion: () => UI.cerrar() }]);
-      return;
-    }
-
-    if (Estado.hechoHoy(id)) {
-      UI.dialogo(this.quien(id), TEXTOS.yaHechoHoy, [{ texto: 'Vale', accion: () => UI.cerrar() }]);
       return;
     }
 
@@ -5784,17 +5884,59 @@ const Desafio = {
     };
   },
 
-  /* LAS PALABRAS DIFÍCILES: una frase, un hueco y dos maneras de escribirlo */
+  /* LAS PALABRAS DIFÍCILES: primero la norma, luego las palabras.
+     Cada visita toca UNA norma: se enseña, hay que aplicarla para pasar, las
+     palabras son todas de esa norma, las falladas vuelven al final y antes de
+     salir se pregunta la norma otra vez. Los colores siempre dicen lo mismo:
+     naranja a/o/u → j, tj, ç;  azul e/i → g, tg, c. */
   mecanicaPalabras() {
     const r = this.reto;
-    const lista = palabrasPara(Estado.actual.nivel, r.cuantas || 3, r.faciles, r.grupo);
-    let i = 0;
+    const nivel = Estado.actual.nivel;
+    const grupo = r.grupo || grupoConNorma(nivel);
+    let lista = palabrasPara(nivel, r.cuantas || 3, r.faciles, grupo);
+    if (!lista.length) lista = palabrasPara(nivel, r.cuantas || 3, r.faciles);
+    const regla = REGLAS[grupo];
+    const falladas = [];
+    let i = 0, repescando = false;
 
+    // 1) La norma, y no se pasa sin usarla
+    const tarjeta = (insiste) => {
+      UI.abrir(`
+        <div class="quien">Pau</div>
+        <p class="dice"><b>${regla.titulo}</b></p>
+        <div class="norma">${colorear(regla.texto)}</div>
+        ${insiste ? '<p class="pista">💭 Vuelve a mirarlo arriba, que ahí está.</p>' : ''}
+        <p class="pregunta">${regla.comprueba.pregunta}</p>
+        <div class="botones grandes">
+          ${regla.comprueba.opciones.map((o, n) =>
+            `<button class="btn num" data-n="${n}">${colorear(o)}</button>`).join('')}
+        </div>
+      `);
+      UI.modal.querySelectorAll('.num').forEach(bt => {
+        bt.onclick = () => {
+          if (+bt.dataset.n === regla.comprueba.correcta) {
+            bt.classList.add('bien'); Sonido.acierto();
+            setTimeout(siguiente, 800);
+          } else {
+            bt.classList.add('mal'); Sonido.fallo();
+            setTimeout(() => tarjeta(true), 700);
+          }
+        };
+      });
+    };
+
+    // 2) Las palabras de esa norma
     const siguiente = () => {
-      if (i >= lista.length) return this.exito();
+      if (i >= lista.length) {
+        if (!repescando && falladas.length) {      // las falladas, otra vez
+          repescando = true; lista = falladas.slice(); i = 0;
+        } else return regla ? recordar() : this.exito();
+      }
       const p = lista[i];
       const hueco = '<span class="hueco">?</span>';
-      const palabra = p.inicio + hueco + p.fin;
+      // la vocal de detrás va en color: es la que manda
+      const palabra = p.inicio + hueco + colorear(p.fin.replace(/^([aeiou])/, '{$1}'));
+      const color = (i === 0 && !repescando);      // el color solo al principio
 
       UI.abrir(`
         <div class="quien">Pau</div>
@@ -5802,9 +5944,10 @@ const Desafio = {
         <div class="altavoz" id="zonaVoz"></div>
         <p class="pregunta">Quina lletra hi falta?</p>
         <div class="botones grandes">
-          ${p.opciones.map(o => `<button class="btn num" data-v="${o}">${o === '' ? 'res' : o}</button>`).join('')}
+          ${p.opciones.map(o => `<button class="btn num" data-v="${o}">${
+            o === '' ? 'res' : (color ? colorear('{' + o + '}') : o)}</button>`).join('')}
         </div>
-        <p class="contador">${i + 1} de ${lista.length} · ${p.grupo}</p>
+        <p class="contador">${i + 1} de ${lista.length} · ${repescando ? 'otra vez' : p.grupo}</p>
         <p class="pista" id="pista"></p>
       `);
       UI.prepararAltavoz(p.frase.replace('___', p.inicio + p.correcta + p.fin));
@@ -5821,13 +5964,40 @@ const Desafio = {
           } else {
             b.classList.add('mal'); b.disabled = true;
             Sonido.fallo();
+            if (!repescando && !falladas.includes(p)) falladas.push(p);
             document.getElementById('pista').textContent = '💭 ' + p.pista;
             this.sumarFallo();
           }
         };
       });
     };
-    siguiente();
+
+    // 3) Antes de salir, la norma otra vez
+    const recordar = () => {
+      const q = regla.recuerda;
+      UI.abrir(`
+        <div class="quien">Pau</div>
+        <p class="dice">${q.pregunta}</p>
+        <div class="botones grandes">
+          ${q.opciones.map((o, n) =>
+            `<button class="btn num" data-n="${n}">${colorear('{' + o + '}')}</button>`).join('')}
+        </div>
+        <p class="pista" id="pista"></p>
+      `);
+      UI.modal.querySelectorAll('.num').forEach(bt => {
+        bt.onclick = () => {
+          if (+bt.dataset.n === q.correcta) {
+            bt.classList.add('bien'); Sonido.acierto();
+            setTimeout(() => this.exito(), 800);
+          } else {
+            bt.classList.add('mal'); bt.disabled = true; Sonido.fallo();
+            document.getElementById('pista').innerHTML = colorear(regla.texto);
+          }
+        };
+      });
+    };
+
+    if (regla) tarjeta(false); else siguiente();
   },
 
   /* LA CERRADURA: se teclea el número en un teclado de pantalla */
@@ -5909,11 +6079,12 @@ const Desafio = {
     const id = this.parada;
     const p = Estado.actual;
     if (p.facilitados) delete p.facilitados[id];
-    Estado.marcarHechoHoy(id);                  // hasta mañana no se repite
+    const yaHoy = Estado.hechoHoy(id);          // hoy ya lo ganó: paga poco
+    Estado.marcarHechoHoy(id);
 
     // Premio a leer: si eligió bien la operación sin probar
     let extra = '';
-    if (this.reto.operacion && this.fallosLeer === 0 && AJUSTES.conchasALaPrimera) {
+    if (!yaHoy && this.reto.operacion && this.fallosLeer === 0 && AJUSTES.conchasALaPrimera) {
       Estado.darConchas(AJUSTES.conchasALaPrimera);
       extra = '<br>⭐ <b>+' + AJUSTES.conchasALaPrimera + '</b> por leerlo bien a la primera';
     }
@@ -5922,7 +6093,7 @@ const Desafio = {
       extra += '<br>📒 <b>¡Pegatina nueva!</b> Mírala en la mochila 🎒';
 
     // El cofre: a veces, y solo si lo ha leído bien a la primera
-    if (this.reto.operacion && this.fallosLeer === 0 && Cofre.toca()) {
+    if (!yaHoy && this.reto.operacion && this.fallosLeer === 0 && Cofre.toca()) {
       const seguir = this.alTerminar;
       this.alTerminar = (bien) => Cofre.abrir(() => { UI.cerrar(); if (seguir) seguir(bien); });
     }
@@ -5932,12 +6103,13 @@ const Desafio = {
 
     // Los retos de las atracciones tampoco: lo que dan es el paseo
     if (RETOS[id].paseo) {
-      Estado.darConchas(AJUSTES.conchasPorPaseo);
+      const pago = yaHoy ? AJUSTES.conchasPorRepetirHoy : AJUSTES.conchasPorPaseo;
+      Estado.darConchas(pago);
       Sonido.fiesta();
       UI.refrescarHud();
       const m = this.reto.moralejaPropia || RETOS[id].moraleja;
       return UI.dialogo(this.quien(id),
-        RETOS[id].exito + '<br><br>🐚 <b>+' + AJUSTES.conchasPorPaseo + ' conchas</b>' + extra, [
+        RETOS[id].exito + '<br><br>' + this.cobro(pago) + extra, [
         { texto: m ? '¿Y qué he hecho?' : '¡Vamos allá!', accion: () => {
             if (m) return this.explicar(m);
             UI.cerrar();
@@ -5946,9 +6118,9 @@ const Desafio = {
       ]);
     }
 
-    const premio = Estado.superarReto(id);
+    const premio = Estado.superarReto(id, yaHoy);
 
-    let texto = RETOS[id].exito + '<br><br>🐚 <b>+' + premio.conchas + ' conchas</b>' + extra;
+    let texto = RETOS[id].exito + '<br><br>' + this.cobro(premio.conchas) + extra;
     if (premio.primeraVez) {
       texto += '<br>💎 <b>' + TEXTOS.cristalGanado + '</b>';
       // la primera vez también se lleva una prenda
@@ -5975,6 +6147,14 @@ const Desafio = {
         } },
     ]);
     UI.refrescarHud();
+  },
+
+  /* Lo que se cobra. Si hoy ya se había ganado, se puede repetir pero no paga:
+     repetir sirve para volver a montar, no para hacer caja (12-09-2026). */
+  cobro(conchas) {
+    if (conchas > 0) return '🐚 <b>+' + conchas + ' conchas</b>';
+    return '<small>Hoy ya lo habías conseguido, así que esta vez no hay conchas. ' +
+           'Mañana vuelve a pagar.</small>';
   },
 
   /* El jornal de la granja: bien la primera vez de cada día, menos después */
@@ -8008,11 +8188,6 @@ const Juego = {
 
     if (l.accion === 'hablar') return this.hablar(l);
 
-    // Hoy aquí no hay reto: se sortean cada mañana
-    const rid = Estado.retoDeLugar(l);
-    if (rid && !Estado.abiertoHoy(rid) && !Estado.hechoHoy(rid))
-      return UI.dialogo(Desafio.quien(rid), TEXTOS.cerradoHoy);
-
     if (l.accion === 'cuidar') return Desafio.abrir(l.id + 'Reto', () => UI.refrescarHud());
     if (l.accion === 'paso') return this.abrirPaso(l);
     if (l.accion === 'montar') return this.atraccion(l);
@@ -8121,11 +8296,15 @@ const Juego = {
   atraccion(l) {
     const p = MUNDO.paseos[l.id];
     if (!p) return;
-    // Si hoy ya se lo ganó, puede repetir vuelta (sin cobrar). Si hoy no hay
-    // reto aquí, la atracción está cerrada: montar es el premio de leer.
+    // Si hoy ya se lo ganó puede montar libre, o repetir el reto (otros
+    // números, otra variante). Repetir ya no paga: el paseo es el premio.
     if (Estado.hechoHoy(p.reto)) {
       return UI.dialogo(p.personaje, TEXTOS.paseoLibre, [
         { texto: '¡Vamos!', accion: () => { UI.cerrar(); this.montar(l.id); } },
+        { texto: 'Otro reto', accion: () => {
+            UI.cerrar();
+            Desafio.abrir(p.reto, (bien) => { UI.refrescarHud(); if (bien) this.montar(l.id); });
+          } },
         { texto: 'Ahora no', accion: () => UI.cerrar() },
       ]);
     }
@@ -8964,13 +9143,13 @@ const Juego = {
     let color = colores[l.accion] || '150,170,190';
     let icono = ICONOS[l.accion] || '';
 
-    // Los retos: dormido, hecho hoy, o apagado porque hoy no toca
+    // Todos los sitios tienen reto siempre: solo se apagan si el personaje
+    // se ha dormido (tres fallos). El ✅ dice que hoy ya lo ganó.
     const rid = Estado.retoDeLugar(l);
-    let apagado = false;
+    const apagado = false;
     if (rid) {
       if (Estado.estaDormido(rid)) { color = '150,150,150'; icono = '💤'; }
       else if (Estado.hechoHoy(rid)) { color = '120,205,150'; icono = '✅'; }
-      else if (!Estado.abiertoHoy(rid)) { color = '150,170,190'; icono = ''; apagado = true; }
     }
     if (l.accion === 'meta' && Estado.actual.cristales.length >= 5) icono = '✨';
 
