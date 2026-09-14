@@ -132,6 +132,34 @@
   .tarjeta.bien{border-color:var(--verde); background:#E7F6E4}
   .tarjeta.mal{border-color:#DDD6CC; opacity:.55}
   .tarjetas.esperando{visibility:hidden}
+  /* Revisión pedagógica (14-09-2026): tarjetas de texto, barras, subrayado, paquetes e informe */
+  .tarjeta.tarjeta-texto{max-width:15em; font-size:18px; line-height:1.4; text-align:left}
+  .tarjetas.dibujos .tarjeta{width:min(320px, 100%); padding:10px}
+  mark, .marcado{background:#FFF1A8; padding:0 3px; border-radius:4px; box-shadow:0 0 0 2px #F2C14E}
+  .bm{display:flex; flex-direction:column; gap:5px; width:100%; max-width:340px; margin:10px auto}
+  .bm-fila{display:flex; gap:3px}
+  .bm-seg{box-sizing:border-box; min-width:22px; min-height:34px; display:flex; align-items:center; justify-content:center;
+          background:#BFE3EC; border:2px solid var(--turquesa); border-radius:8px; font-weight:bold; font-size:17px; color:var(--tinta)}
+  .bm-total{background:#FFE2B8; border-color:#E0A04A}
+  .bm-dif{background:#F9D3CB; border-color:var(--coral)}
+  .bm-sobra{background:#EEE; border-color:#AAA; font-size:14px}
+  .bm-puntos{background:none; border-color:transparent}
+  .bm-seg.hueco{background:#fff; border-style:dashed; color:var(--coral); font-size:20px}
+  .bm-pie{font-size:15px; color:#7A736A; text-align:center}
+  .bm-seg.bm-g{min-width:0; overflow:hidden}
+  @media (max-width:500px){ .bm-seg.bm-g{font-size:14px} }
+  .hueco-txt{color:var(--coral)}
+  .nota-teo{background:#FFFBEA; border:2px dashed #E3C77A; border-radius:14px; padding:10px 16px; text-align:left}
+  .mesa{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:560px; margin:8px auto}
+  .pegatina{font:inherit; width:64px; height:64px; display:flex; align-items:center; justify-content:center;
+            background:#fff; border:3px solid #E3D9C0; border-radius:14px; cursor:pointer}
+  .pegatina.dentro{border-color:var(--verde); background:#E7F6E4; box-shadow:0 0 0 3px #BFE6B8}
+  .pegatina.fuera{opacity:.45}
+  .informe{text-align:left; max-height:60vh; overflow:auto}
+  .informe-tabla{overflow-x:auto}
+  .informe table{border-collapse:collapse; width:100%; font-size:15px; margin:8px 0}
+  .informe th, .informe td{border-bottom:1px solid #E3D9C0; padding:6px; vertical-align:top}
+  .informe td small{color:#7A736A}
 
   /* El álbum de pegatinas */
   .album{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin:10px 0}
@@ -509,6 +537,7 @@ const AJUSTES = {
   conchasPorPaseo: 2,        // el reto corto de una atracción
   conchasPorRondaSalon: 1,   // tres preguntas rápidas del salón
   conchasPorGlobos: 2,       // llegar al globo dorado en la fiesta de los globos
+  conchasPorPaquete: 2,      // un paquete de Teo bien hecho (con el tope diario)
   conchasPorProblema: 3,     // un problema de los de leer y pensar
   conchasPorRutina: 1,       // ducharse, peinarse…
   conchasPorRutinasTodas: 3, // propina por hacer las cuatro
@@ -557,7 +586,26 @@ const AJUSTES = {
     album:         'ya',          // álbum de pegatinas de problemas, en la mochila
     calentamiento: 'ya',          // mini reto antes de cada rutina del baño
     cofre:         '2026-09-15',  // cofre sorpresa al leer bien a la primera
+    // --- revisión pedagógica del 14-09-2026 (REVISION-PEDAGOGICA.md) ---
+    escena:        '2026-09-18',  // primero la historia sin números: ¿qué buscamos?
+    porque:        '2026-09-22',  // al acertar, ¿por qué había que hacer eso?
+    barras:        '2026-09-25',  // elegir el dibujo con barras del problema
+    estimar:       '2026-09-29',  // ¿saldrá más o menos que…? antes de calcular
+    faltaDato:     '2026-10-02',  // problemas a los que les falta un dato (solo Gala)
+    paquetes:      '2026-10-06',  // los paquetes de Teo: leer instrucciones y cumplirlas
   },
+
+  /* --- LEER PARA ENTENDER (revisión pedagógica del 14-09-2026) ---------
+     Cuántas veces sale cada paso cuando no es obligatorio. Los pasos que
+     salen o no según lo bien que le va cada forma de problema están
+     explicados arriba de motor/problema.js. */
+  probEstimar: 0.35,                 // «¿saldrá más o menos que…?», con las formas que ya saca
+  probPorque: 0.4,                   // «¿por qué?» cuando lo ha hecho todo bien a la primera
+  otraPreguntaMismaHistoria: 0.5,    // tras un problema de una familia, otra pregunta de la misma historia
+  /* Si toca una tarjeta antes de este tiempo por palabra, no ha podido leerlo
+     entero (se marca como «con prisa» en el informe). Es una estimación: 0,25
+     segundos por palabra es leer muy deprisa para cualquier niña de 10 años. */
+  segundosPorPalabraMinimo: 0.25,
 
   // --- Cuándo se cansa un personaje ------------------------------------
   fallosParaDormirse: 3,     // fallos seguidos antes de que se vaya a dormir
@@ -1247,8 +1295,8 @@ const MUNDO = {
 const OPERACIONES = {
   juntar:      { icono: '🧺➕🧺', texto: 'Juntarlo todo',
                  tecnico: 'Sumar', pista: 'juntar es sumar' },
-  quitar:      { icono: '🧺➖',   texto: 'Quitar una parte',
-                 tecnico: 'Restar', pista: 'quitar es restar' },
+  quitar:      { icono: '🧺➖',   texto: 'Quitar o buscar la diferencia',
+                 tecnico: 'Restar', pista: 'quitar o buscar la diferencia es restar' },
   multiplicar: { icono: '🧺🧺🧺', texto: 'Lo mismo, varias veces',
                  tecnico: 'Multiplicar', pista: 'lo mismo varias veces es multiplicar' },
   repartir:    { icono: '🍎✂️',   texto: 'Repartir en partes iguales',
@@ -1257,6 +1305,8 @@ const OPERACIONES = {
                  tecnico: 'Comparar', pista: 'para comparar dos cantidades, se restan' },
   dosPasos:    { icono: '1️⃣2️⃣',  texto: 'Dos cosas, una detrás de otra',
                  tecnico: 'Dos operaciones', pista: 'este problema pide dos operaciones seguidas' },
+  falta:       { icono: '🤷',     texto: 'Falta un dato',
+                 tecnico: 'No se puede saber', pista: 'sin ese dato no se puede calcular' },
 };
 
 const RETOS = {
@@ -1322,8 +1372,8 @@ const RETOS = {
           vars: () => { const p = AZ(3, 4), c = AZ(3, 5), y = AZ(2, 5);
                         return { p, c, y, t: p * c, sol: p * c - y, total: p * c - y + 6 }; },
           enunciado: 'Quiero {p} pulseras de {c} conchas. Ya tengo {y} conchas. ¿Cuántas me faltan?',
-          operacion: 'dosPasos',
-          opciones: ['multiplicar', 'quitar', 'dosPasos'],
+          operacion: 'dosPasos', pasos: ['multiplicar', 'quitar'],
+          opciones: ['multiplicar', 'quitar', 'juntar'],
           explica: {
             multiplicar: '{p} × {c} = {t} es lo que necesito en total. Pero ya tengo {y}…',
             quitar: 'Antes de quitar, hay que saber cuántas necesito: {p} pulseras de {c}.',
@@ -1472,7 +1522,7 @@ const RETOS = {
         { vars: () => { const c = AZ(3, 4), q = AZ(3, 4), t = c * q, b = AZ(3, t - 4);
                         return { c, q, t, b, a: t - b, sol: q, s: AZ(2, 5) }; },
           enunciado: 'Tenía {a} manzanas y me traen {b} más. Las reparto todas en {c} cestas iguales. ¿Cuántas van en cada cesta?',
-          operacion: 'dosPasos', opciones: ['juntar', 'repartir', 'dosPasos'],
+          operacion: 'dosPasos', pasos: ['juntar', 'repartir'], opciones: ['juntar', 'repartir', 'multiplicar'],
           explica: { juntar: 'Juntar {a} y {b} es solo el primer paso: luego hay que repartir.',
                      repartir: 'Repartir es el segundo paso: antes hay que juntar {a} y {b}.' },
           mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{s}',
@@ -1480,7 +1530,7 @@ const RETOS = {
         { vars: () => { const c = AZ(3, 4), q = AZ(2, 4), t = c * q, m = AZ(2, 5);
                         return { c, q, t, m, a: t + m, sol: q }; },
           enunciado: 'Tenía {a} peras, pero {m} estaban malas y las tiro. Las buenas van en {c} cestas iguales. ¿Cuántas van en cada cesta?',
-          operacion: 'dosPasos', opciones: ['quitar', 'repartir', 'dosPasos'],
+          operacion: 'dosPasos', pasos: ['quitar', 'repartir'], opciones: ['quitar', 'repartir', 'juntar'],
           explica: { quitar: 'Quitar las malas es solo el primer paso: luego hay que repartir.',
                      repartir: 'Antes de repartir, hay que quitar las {m} malas.' },
           mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{m}',
@@ -1832,7 +1882,7 @@ const RETOS = {
         { vars: () => { const c = AZ(3, 4), q = AZ(2, 4), m = AZ(2, 4);
                         return { c, q, m, t: c * q, a: c * q + m, sol: q }; },
           enunciado: 'Traigo {a} zanahorias, pero {m} son para Neus. Las demás, para {c} caballos a partes iguales. ¿Cuántas le tocan a cada caballo?',
-          operacion: 'dosPasos', opciones: ['quitar', 'repartir', 'dosPasos'],
+          operacion: 'dosPasos', pasos: ['quitar', 'repartir'], opciones: ['quitar', 'repartir', 'juntar'],
           explica: { quitar: 'Quitar las de Neus es solo el primer paso.',
                      repartir: 'Antes de repartir, aparta las {m} de Neus.' },
           mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{m}',
@@ -2787,34 +2837,119 @@ function palabrasPara(nivel, cuantas, soloFaciles, grupo) {
    resta. Por eso los problemas no están ordenados por operación, sino por
    FORMA DE PRESENTARSE, que es lo que hay que aprender a reconocer.
 
-   LOS NÚMEROS CAMBIAN CADA VEZ. Cada problema trae una función 'vars' que los
-   sortea, y el texto lleva marcadores {a}, {b}, {sol}… que se rellenan al
-   vuelo. Así el mismo problema nunca sale dos veces igual.
+   CÓMO ES UN PROBLEMA (revisión pedagógica del 14-09-2026)
+   · vars      → sortea los números. 'sol' es siempre la respuesta.
+   · textos    → VARIAS HISTORIAS para la misma forma. Gala tiene muy buena
+                 memoria visual: si la frase fuese siempre la misma, la
+                 reconocería sin leerla. Cada historia trae:
+                   con   el enunciado con números
+                   sin   el mismo SIN NÚMEROS (lo primero que se ve: sin números
+                         no hay nada que coger ni que probar; hay que entenderlo)
+                   marca el trozo que se subraya en la primera pista
+                   quien, quien2, cosas → para las preguntas sobre la escena
+                   dir   'mas' / 'menos': si al final hay más o menos que al principio
+                   mas   'quien' / 'quien2': quién tiene más, al comparar
+                   busca qué se busca, si cambia de una historia a otra
+                   datos, sobra → en los de un dato que sobra
+   · operacion → la tarjeta buena. 'falta' = no se puede saber.
+   · pasos     → en los de dos pasos, qué va primero y qué después.
+   · pistas    → NUNCA dan la cuenta hecha: devuelven al texto.
+   · barras    → el dibujo del problema (método de Singapur); barrasMal, dos
+                 dibujos que se equivocan como se equivoca un niño.
+                 '?{sol}' es el hueco que se busca.
+   · clave     → lo que había que ver. Sale al final.
 
-   Para escribir uno nuevo:
-     vars: () => { const a = AZ(4, 9); return { a, b: a + 3, sol: 3 }; }
-     enunciado: 'Tenía {a} conchas y ahora tiene {b}. ¿Cuántas ha encontrado?'
-   AZ(4, 9) da un número al azar entre 4 y 9, los dos incluidos.
-   'sol' es siempre la respuesta.
+   Las historias con el mismo 'familia' comparten escena y cambian la pregunta:
+   así se aprende que lo que manda es LA PREGUNTA, no la historia.
 
-   Las formas (el campo 'tipo'):
-     cambio        · tenía, pasa algo, ahora tiene
-     cambio-medio  · sé lo de antes y lo de ahora, ¿qué pasó? ← se resta aunque parezca sumar
-     cambio-inicio · sé lo que pasó y lo de ahora, ¿qué había? ← la más difícil
-     combina       · dos partes que forman un todo
-     parte         · el todo y una parte, falta la otra
-     compara       · ¿cuántos más tiene uno que otro?
-     compara-menos · «tiene 3 menos que» ← ojo, a veces se suma
-     iguala        · ¿cuántos le faltan para tener los mismos?
-     grupos        · tantos grupos de tantos → multiplicar
-     reparto       · reparto entre tantos → dividir
-     agrupa        · de tantos en tantos, ¿cuántos grupos? → dividir (la otra división)
-     compara-mult  · el doble, el triple
-     combina-mult  · tantas camisetas con tantas faldas
-     rejilla       · filas y columnas
-     dos-pasos     · hay que hacer dos cosas seguidas
-     sobra         · hay un dato que no hace falta
-     resto         · la división no es exacta: hay que pensar qué se hace con lo que sobra */
+   AZ(4, 9) da un número al azar entre 4 y 9, los dos incluidos. */
+
+/* ¿QUÉ BUSCAMOS? Las tres o cuatro piezas de cada clase de problema. Las
+   opciones no repiten palabras de la historia: no se puede acertar buscando
+   la misma palabra, hay que entender qué papel tiene cada cantidad. */
+const ROLES = {
+  cambio:  ['Cuánto había al principio', 'Cuánto llegó o se fue por el camino', 'Cuánto hay al final'],
+  partes:  ['Una de las partes', 'El total, todo junto', 'Cuánto más hay de una parte que de la otra'],
+  compara: ['La cantidad más grande', 'La cantidad más pequeña', 'La diferencia entre las dos'],
+  grupos:  ['Cuántos grupos hay', 'Cuántos van en cada grupo', 'Cuántos hay en total'],
+  veces:   ['La cantidad pequeña', 'La cantidad grande', 'Cuántas veces es más grande'],
+};
+
+/* Qué piezas tiene cada forma y cuál se busca (null = lo dice cada historia) */
+const ESQUEMA = {
+  'cambio':        { roles: 'cambio',  busca: 2, pregunta: 'dir' },
+  'cambio-medio':  { roles: 'cambio',  busca: 1, pregunta: 'dir' },
+  'cambio-inicio': { roles: 'cambio',  busca: 0, pregunta: 'dir' },
+  'combina':       { roles: 'partes',  busca: 1 },
+  'parte':         { roles: 'partes',  busca: 0 },
+  'compara':       { roles: 'compara', busca: 2, pregunta: 'mas' },
+  'iguala':        { roles: 'compara', busca: 2, pregunta: 'mas' },
+  'compara-menos': { roles: 'compara', busca: null, pregunta: 'mas' },
+  'grupos':        { roles: 'grupos',  busca: 2 },
+  'rejilla':       { roles: 'grupos',  busca: 2 },
+  'reparto':       { roles: 'grupos',  busca: 1 },
+  'agrupa':        { roles: 'grupos',  busca: 0 },
+  'resto':         { roles: 'grupos',  busca: null },
+  'compara-mult':  { roles: 'veces',   busca: 1, pregunta: 'mas' },
+  'sobra':         { sobra: true },
+  // combina-mult, dos-pasos y falta no llevan escena: se leen enteros
+};
+
+/* ¿POR QUÉ? Una razón buena y dos que fallan como fallan los niños: fijarse en
+   una palabra suelta o en los números sin mirar la historia. Cada razón mala
+   trae su «no», que es lo que se le explica si la elige. Es lo que el cole
+   marca como su gran reto en mates: explicar el razonamiento. */
+const MALA = {
+  numeros: { t: 'Porque hay dos números, y con dos números se hace siempre eso.',
+             no: 'Con dos números se puede sumar, restar, multiplicar o dividir. Lo que decide es la historia, no cuántos números hay.' },
+  orden:   { t: 'Porque el número más grande sale el primero en el problema.',
+             no: 'El orden en que salen los números no dice qué hay que hacer.' },
+  todos:   { t: 'Porque en un problema hay que usar todos los números que salen.',
+             no: 'No siempre: a veces hay un número que no sirve para nada.' },
+};
+/* Las razones buenas y las malas miden más o menos lo mismo: si la buena
+   fuese siempre la más larga, se acertaría eligiendo la más larga sin leer
+   (lo comprueba probar.js). */
+const POR_QUE = {
+  'cambio': { buenas: ['Porque había unas cuantas y luego llegaron o se fueron.'],
+    malas: [{ t: 'Porque en la pregunta sale la palabra «quedan».', no: 'Una palabra suelta engaña. Lo que importa es qué pasa en la historia: si llegan o si se van.' }, MALA.numeros] },
+  'cambio-medio': { buenas: ['Porque sé el principio y el final, y busco lo de en medio.',
+                             'Porque busco la diferencia entre el principio y el final.'],
+    malas: [{ t: 'Porque al final tiene más, y tener más es sumar.', no: 'Tiene más, sí. Pero no buscamos cuánto tiene: buscamos lo que llegó por el camino, y eso es la diferencia.' }, MALA.numeros] },
+  'cambio-inicio': { buenas: ['Porque al principio estaba todo: lo que se fue y lo que queda.'],
+    malas: [{ t: 'Porque se fueron algunas, y cuando se van se resta.', no: 'Si buscaras lo que queda, sí. Pero buscas lo que había al principio, cuando todavía no se había ido nada.' }, MALA.numeros] },
+  'combina': { buenas: ['Porque son dos partes y busco cuánto hay entre las dos.'],
+    malas: [{ t: 'Porque en el problema sale la letra «y» varias veces.', no: 'La «y» sale en todos los problemas. Lo que importa es que buscas el total de dos partes.' }, MALA.orden] },
+  'parte': { buenas: ['Porque ya sé el total y una parte, y busco la otra.'],
+    malas: [{ t: 'Porque pone «las demás», y eso siempre es quitar.', no: 'La palabra no manda. Lo que manda es que ya sabes el total y buscas un trozo de él.' }, MALA.numeros] },
+  'compara': { buenas: ['Porque busco cuánto le saca una cantidad a la otra.'],
+    malas: [{ t: 'Porque pregunta «cuántos más», y «más» es sumar.', no: 'Pregunta cuántos más, pero no quiere juntarlos: quiere saber cuánto le saca uno al otro.' }, MALA.orden] },
+  'iguala': { buenas: ['Porque lo que le falta es lo que le saca el otro.'],
+    malas: [{ t: 'Porque sale la palabra «faltan», y faltar es quitar.', no: 'La palabra ayuda, pero no basta. Lo que importa es que buscas lo que separa las dos cantidades.' }, MALA.numeros] },
+  'compara-menos': { buenas: ['Porque primero miro quién tiene menos de los dos.'],
+    malas: [{ t: 'Porque pone «menos», y «menos» siempre es restar.', no: '«Menos» a veces es restar y a veces sumar. Depende de quién es el que tiene menos.' }, MALA.numeros] },
+  'grupos': { buenas: ['Porque hay varios grupos iguales y busco el total.'],
+    malas: [{ t: 'Porque sale la palabra «cada», y «cada» es multiplicar.', no: '«Cada» también sale al dividir. Lo que importa es si buscas el total de grupos iguales.' }, MALA.numeros] },
+  'rejilla': { buenas: ['Porque las filas son iguales, como grupos iguales.'],
+    malas: [{ t: 'Porque sale la palabra «filas», y las filas se multiplican.', no: 'Lo que importa no es la palabra: es que todas las filas tienen lo mismo y buscas el total.' }, MALA.numeros] },
+  'reparto': { buenas: ['Porque reparto el total en partes iguales.'],
+    malas: [{ t: 'Porque sale la palabra «reparte» en la historia.', no: 'Hay repartos que no son dividir. Lo que importa es que las partes sean IGUALES y sepas cuántas son.' }, MALA.orden] },
+  'agrupa': { buenas: ['Porque sé cuántos van en cada grupo y busco cuántos grupos.'],
+    malas: [MALA.orden, MALA.numeros] },
+  'compara-mult': { buenas: ['Porque «el doble» o «el triple» es lo mismo varias veces.'],
+    malas: [{ t: 'Porque «el doble» quiere decir que hay que sumar dos.', no: 'El doble de 7 no es 7 + 2: es 7 y otros 7, dos veces.' }, MALA.numeros] },
+  'combina-mult': { buenas: ['Porque cada cosa de un grupo va con cada una del otro.'],
+    malas: [{ t: 'Porque quiero saber cuántas cosas hay en total entre las dos.', no: 'Eso sería contar las cosas. Aquí se cuentan las maneras de combinarlas.' }, MALA.numeros] },
+  'dos-pasos': { buenas: ['Porque pasan dos cosas y la segunda usa lo de la primera.'],
+    malas: [{ t: 'Porque en este problema hay tres números en vez de dos.', no: 'Hay problemas con tres números y una sola cuenta, porque un número sobra. Lo que importa es si pasan dos cosas seguidas.' }, MALA.orden] },
+  'sobra': { buenas: ['Porque solo sirven los números de lo que preguntan.'],
+    malas: [MALA.todos, MALA.orden] },
+  'resto': { buenas: ['Porque no sale exacto y hay que ver qué pasa con lo que sobra.'],
+    malas: [{ t: 'Porque lo que sobra al repartir no cuenta nunca para nada.', no: 'A veces no cuenta y a veces hace falta uno más. Depende de lo que pregunten.' }, MALA.numeros] },
+  'falta': { buenas: ['Porque falta un dato y sin él no se puede calcular.'],
+    malas: [{ t: 'Porque este problema es demasiado difícil para hacerlo.', no: 'No es difícil: es que le falta información. Si te la dieran, se podría hacer.' },
+            { t: 'Porque tiene muy pocos números para poder hacer una cuenta.', no: 'Hay problemas con un solo número que sí se pueden hacer, como «el doble de 5». Lo que importa es si falta algo.' }] },
+};
 
 const PROBLEMAS = {
 
@@ -2822,352 +2957,871 @@ const PROBLEMAS = {
   mayor: [
 
     // --- las que engañan con la palabra ----------------------------------
-    { tipo: 'cambio-medio',
+    { tipo: 'cambio-medio', operacion: 'quitar',
       vars: () => { const a = AZ(5, 14), d = AZ(4, 11); return { a, b: a + d, sol: d, mal: a + a + d }; },
-      enunciado: 'Nube tenía {a} conchas. Después de buscar por la playa tiene {b}. ¿Cuántas ha encontrado?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar', 'multiplicar'],
-      explica: { juntar: '{a} y {b} son {mal}, y ella solo tiene {b}. Buscamos lo que apareció en medio.',
-                 multiplicar: 'Aquí no hay grupos iguales.' },
-      pistas: ['De {a} hasta {b}, ¿cuánto hay?', 'Cuenta desde {a} hasta llegar a {b}.'],
-      clave: 'Dice «ahora tiene más» y aun así <b>se resta</b>. Lo de ahora menos lo de antes.' },
+      textos: [
+        { quien: 'Nube', cosas: 'conchas', dir: 'mas',
+          con: 'Nube tenía {a} conchas. Después de buscar por la playa tiene {b}. ¿Cuántas ha encontrado?',
+          sin: 'Nube tenía unas conchas. Después de buscar por la playa tiene más. ¿Cuántas ha encontrado?',
+          marca: 'Después de buscar por la playa tiene {b}' },
+        { quien: 'Bruno', cosas: 'manzanas', dir: 'mas',
+          con: 'Por la mañana, en el puesto de Bruno había {a} manzanas. Por la tarde le trajeron más y ahora hay {b}. ¿Cuántas le trajeron?',
+          sin: 'Por la mañana, en el puesto de Bruno había unas manzanas. Por la tarde le trajeron más. ¿Cuántas le trajeron?',
+          marca: 'le trajeron más y ahora hay {b}' },
+        { quien: 'Pau', cosas: 'cromos', dir: 'mas',
+          con: '¿Cuántos cromos le regalaron a Pau en su cumpleaños? Antes de la fiesta tenía {a} y ahora tiene {b}.',
+          sin: '¿Cuántos cromos le regalaron a Pau en su cumpleaños? Antes de la fiesta tenía unos cuantos y ahora tiene más.',
+          marca: 'Antes de la fiesta tenía {a}' },
+        { quien: 'Mila', cosas: 'conchas', dir: 'mas',
+          con: 'Mila empezó el día con {a} conchas. Ha vendido lazos y, al cerrar la tienda, tiene {b}. ¿Cuántas conchas ha ganado hoy?',
+          sin: 'Mila empezó el día con unas conchas. Ha vendido lazos y, al cerrar la tienda, tiene más. ¿Cuántas conchas ha ganado hoy?',
+          marca: 'al cerrar la tienda, tiene {b}' },
+        { quien: 'Tomeu', cosas: 'peces', dir: 'mas',
+          con: 'En el cubo de Tomeu había {a} peces. Ha pescado toda la tarde y ahora hay {b}. ¿Cuántos peces ha pescado esta tarde?',
+          sin: 'En el cubo de Tomeu había unos peces. Ha pescado toda la tarde y ahora hay más. ¿Cuántos peces ha pescado esta tarde?',
+          marca: 'ahora hay {b}' },
+      ],
+      explica: { juntar: 'Si juntas {a} y {b} salen {mal}, y al final solo hay {b}. Lo que buscas es lo que llegó por el camino.' },
+      pistas: ['¿Qué buscas: lo que había, lo que llegó por el camino o lo que hay al final?',
+               'Lo del principio y lo del final ya los sabes. Te falta lo de en medio.'],
+      barras: { forma: 'partes', total: '{b}', partes: ['{a}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{a}', '{b}'] },
+                  { forma: 'grupos', grupos: '{a}', cada: '{b}', total: '?' }],
+      clave: 'Sabías cómo empezó ({a}) y cómo acabó ({b}). Lo que pasó por el camino es <b>la diferencia</b>: {b} − {a} = {sol}. Aunque al final haya más, <b>se resta</b>.' },
 
-    { tipo: 'cambio-inicio',
-      vars: () => { const v = AZ(6, 14), q = AZ(4, 12); return { v, q, sol: v + q }; },
-      enunciado: 'Bruno ha vendido {v} manzanas esta mañana y le quedan {q}. ¿Cuántas tenía al empezar?',
-      operacion: 'juntar', opciones: ['juntar', 'quitar', 'repartir'],
-      explica: { quitar: 'Si restas te sales: al empezar tenía MÁS que ahora.',
-                 repartir: 'No se reparte nada entre nadie.' },
-      pistas: ['Las vendidas siguen contando: tenía las de ahora y las que se fueron.', '{v} y {q}.'],
-      clave: 'Dice «ha vendido» y aun así <b>se suma</b>: lo que queda más lo que se fue.' },
+    { tipo: 'cambio-inicio', operacion: 'juntar',
+      vars: () => { const v = AZ(8, 15), q = AZ(3, v - 3); return { v, q, sol: v + q, resta: v - q }; },
+      textos: [
+        { quien: 'Bruno', cosas: 'manzanas', dir: 'menos',
+          con: 'Bruno ha vendido {v} manzanas esta mañana y le quedan {q}. ¿Cuántas tenía al empezar?',
+          sin: 'Bruno ha vendido unas manzanas esta mañana y le quedan algunas. ¿Cuántas tenía al empezar?',
+          marca: 'le quedan {q}' },
+        { quien: 'Nube', cosas: 'plumas', dir: 'menos',
+          con: 'Nube ha regalado {v} plumas a sus amigas. Ahora le quedan {q}. ¿Cuántas plumas tenía antes de regalarlas?',
+          sin: 'Nube ha regalado unas plumas a sus amigas. Ahora le quedan algunas. ¿Cuántas plumas tenía antes de regalarlas?',
+          marca: 'antes de regalarlas' },
+        { quien: 'la caja', cosas: 'galletas', dir: 'menos',
+          con: '¿Cuántas galletas había en la caja? Pau se ha comido {v} y en la caja quedan {q}.',
+          sin: '¿Cuántas galletas había en la caja? Pau se ha comido unas cuantas y en la caja quedan otras.',
+          marca: '¿Cuántas galletas había en la caja?' },
+        { quien: 'Mila', cosas: 'conchas', dir: 'menos',
+          con: 'Después de gastarse {v} conchas en la tienda, a Mila le quedan {q}. ¿Cuántas llevaba al entrar?',
+          sin: 'Después de gastarse unas conchas en la tienda, a Mila le quedan pocas. ¿Cuántas llevaba al entrar?',
+          marca: '¿Cuántas llevaba al entrar?' },
+        { quien: 'el tren', cosas: 'personas', dir: 'menos',
+          con: 'En la estación se han bajado {v} personas del tren. Dentro siguen {q}. ¿Cuántas personas iban en el tren antes de parar?',
+          sin: 'En la estación se han bajado unas personas del tren. Dentro siguen otras. ¿Cuántas personas iban en el tren antes de parar?',
+          marca: 'antes de parar' },
+      ],
+      explica: { quitar: 'Restando te sale {resta}, menos de lo que hay ahora. Pero al principio había MÁS: todavía no se había ido nada.' },
+      pistas: ['¿Al principio había más o menos que ahora?',
+               'Al principio estaba todo junto: lo que se fue y lo que quedó.'],
+      barras: { forma: 'partes', total: '?{sol}', partes: ['{v}', '{q}'] },
+      barrasMal: [{ forma: 'partes', total: '{v}', partes: ['{q}', '?{resta}'] },
+                  { forma: 'grupos', grupos: '{q}', cada: '{v}', total: '?' }],
+      clave: 'Lo que había al principio es <b>lo que se fue más lo que quedó</b>: {v} + {q} = {sol}. Aunque se fueran algunas, <b>se suma</b>, porque vas hacia atrás.' },
 
-    { tipo: 'compara-menos',
-      vars: () => { const c = AZ(3, 9), d = AZ(2, 7); return { c, d, sol: c + d }; },
-      enunciado: 'Coco tiene {c} plumas. Coco tiene {d} plumas menos que Tomeu. ¿Cuántas tiene Tomeu?',
-      operacion: 'juntar', opciones: ['juntar', 'quitar'],
-      explica: { quitar: 'Lee otra vez: el que tiene menos es Coco. Tomeu tiene MÁS.' },
-      pistas: ['¿Quién tiene menos, Coco o Tomeu?', 'Si Coco tiene {d} menos, Tomeu tiene {d} más que {c}.'],
-      clave: 'Pone «menos» y <b>hay que sumar</b>. Lo importante no es la palabra: es <b>quién tiene menos</b>.' },
+    { tipo: 'cambio', operacion: 'quitar',
+      vars: () => { const a = AZ(12, 24), q = AZ(3, 9); return { a, q, sol: a - q, mal: a + q }; },
+      textos: [
+        { quien: 'el árbol', cosas: 'cerezas', dir: 'menos',
+          con: 'En el árbol había {a} cerezas. Los pájaros se han comido {q}. ¿Cuántas cerezas quedan en el árbol?',
+          sin: 'En el árbol había unas cerezas. Los pájaros se han comido algunas. ¿Cuántas cerezas quedan en el árbol?',
+          marca: 'se han comido {q}' },
+        { quien: 'Ona', cosas: 'bichos', dir: 'menos',
+          con: 'Ona tenía {a} bichos en la tienda y esta semana ha vendido {q}. ¿Cuántos bichos tiene ahora?',
+          sin: 'Ona tenía unos bichos en la tienda y esta semana ha vendido algunos. ¿Cuántos bichos tiene ahora?',
+          marca: 'ha vendido {q}' },
+        { quien: 'Coco', cosas: 'globos', dir: 'menos',
+          con: '¿Cuántos globos le quedan a Coco? Tenía {a} atados a la silla y se le han escapado {q}.',
+          sin: '¿Cuántos globos le quedan a Coco? Tenía unos atados a la silla y se le han escapado algunos.',
+          marca: 'se le han escapado {q}' },
+      ],
+      explica: { juntar: 'Sumando salen {mal}, y eso es más de lo que había. Si se van, queda menos.' },
+      pistas: ['¿Llegan cosas o se van?', 'Busca lo que hay al final, después de lo que pasó.'],
+      barras: { forma: 'partes', total: '{a}', partes: ['{q}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{a}', '{q}'] },
+                  { forma: 'grupos', grupos: '{q}', cada: '{a}', total: '?' }],
+      clave: 'Había {a} y se fueron {q}: lo que queda <b>se resta</b>. {a} − {q} = {sol}.' },
 
-    { tipo: 'compara-menos',
-      vars: () => { const p = AZ(8, 18), d = AZ(3, 7); return { p, d, sol: p - d }; },
-      enunciado: 'Pau tiene {p} cartas. Mila tiene {d} cartas menos que Pau. ¿Cuántas tiene Mila?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'Mila tiene MENOS, así que no puede salir un número más grande.' },
-      pistas: ['La que tiene menos es Mila.', '{p} menos {d}.'],
-      clave: 'Aquí «menos que» sí es restar. Fíjate siempre en <b>quién tiene menos</b>, no en la palabra.' },
+    { tipo: 'compara-menos', operacion: 'juntar',
+      vars: () => { const c = AZ(6, 12), d = AZ(2, 5); return { c, d, sol: c + d, resta: c - d }; },
+      textos: [
+        { quien: 'Coco', quien2: 'Tomeu', cosas: 'plumas', mas: 'quien2', busca: 0,
+          con: 'Coco tiene {c} plumas. Coco tiene {d} plumas menos que Tomeu. ¿Cuántas tiene Tomeu?',
+          sin: 'Coco tiene unas plumas. Coco tiene menos plumas que Tomeu. ¿Cuántas tiene Tomeu?',
+          marca: 'Coco tiene {d} plumas menos que Tomeu' },
+        { quien: 'Nit', quien2: 'Bruno', cosas: 'granos', mas: 'quien2', busca: 0,
+          con: 'Nit, el ratón del molino, ha guardado {c} granos de trigo. Son {d} menos que los que ha guardado Bruno. ¿Cuántos granos ha guardado Bruno?',
+          sin: 'Nit, el ratón del molino, ha guardado unos granos de trigo. Son menos que los que ha guardado Bruno. ¿Cuántos granos ha guardado Bruno?',
+          marca: 'Son {d} menos que los que ha guardado Bruno' },
+        { quien: 'Mila', quien2: 'Pau', cosas: 'saltos', mas: 'quien2', busca: 0,
+          con: '¿Cuántos saltos ha dado Pau? Mila ha dado {c}, que son {d} menos que Pau.',
+          sin: '¿Cuántos saltos ha dado Pau? Mila ha dado unos cuantos, que son menos que Pau.',
+          marca: 'que son {d} menos que Pau' },
+        { quien: 'la barca azul', quien2: 'la barca roja', cosas: 'niñas', mas: 'quien2', busca: 0,
+          con: 'La barca azul lleva {c} niñas, {d} menos que la barca roja. ¿Cuántas niñas lleva la barca roja?',
+          sin: 'La barca azul lleva unas niñas, menos que la barca roja. ¿Cuántas niñas lleva la barca roja?',
+          marca: '{d} menos que la barca roja' },
+      ],
+      explica: { quitar: 'Lee otra vez quién tiene menos. Si el que tiene menos es el que ya sabes, el otro tiene MÁS.' },
+      pistas: ['¿Quién tiene menos?', 'Si ese tiene menos, el otro tiene lo mismo y un poco más.'],
+      barras: { forma: 'compara', grande: '?{sol}', pequena: '{c}', dif: '{d}' },
+      barrasMal: [{ forma: 'compara', grande: '{c}', pequena: '?{resta}', dif: '{d}' },
+                  { forma: 'grupos', grupos: '{d}', cada: '{c}', total: '?' }],
+      clave: 'Pone «menos» y <b>hay que sumar</b>. El que tiene menos es el que ya sabías, así que el otro tiene <b>{d} más</b>: {c} + {d} = {sol}.' },
+
+    { tipo: 'compara-menos', operacion: 'quitar',
+      vars: () => { const p = AZ(8, 18), d = AZ(3, 7); return { p, d, sol: p - d, mal: p + d }; },
+      textos: [
+        { quien: 'Pau', quien2: 'Mila', cosas: 'cartas', mas: 'quien', busca: 1,
+          con: 'Pau tiene {p} cartas. Mila tiene {d} cartas menos que Pau. ¿Cuántas tiene Mila?',
+          sin: 'Pau tiene unas cartas. Mila tiene menos cartas que Pau. ¿Cuántas tiene Mila?',
+          marca: 'Mila tiene {d} cartas menos que Pau' },
+        { quien: 'Ona', quien2: 'Nit', cosas: 'bichos', mas: 'quien', busca: 1,
+          con: 'Ona ha dado de comer a {p} bichos. Nit ha dado de comer a {d} bichos menos que Ona. ¿A cuántos bichos ha dado de comer Nit?',
+          sin: 'Ona ha dado de comer a unos bichos. Nit ha dado de comer a menos bichos que Ona. ¿A cuántos bichos ha dado de comer Nit?',
+          marca: 'Nit ha dado de comer a {d} bichos menos que Ona' },
+        { quien: 'Nube', quien2: 'Tomeu', cosas: 'peces', mas: 'quien', busca: 1,
+          con: '¿Cuántos peces ha pescado Tomeu? Nube ha pescado {p}, y Tomeu ha pescado {d} menos que ella.',
+          sin: '¿Cuántos peces ha pescado Tomeu? Nube ha pescado unos cuantos, y Tomeu ha pescado menos que ella.',
+          marca: 'Tomeu ha pescado {d} menos que ella' },
+        { quien: 'la torre de Bruno', quien2: 'la torre de Coco', cosas: 'piezas', mas: 'quien', busca: 1,
+          con: 'La torre de Bruno tiene {p} piezas. La de Coco tiene {d} piezas menos. ¿Cuántas piezas tiene la torre de Coco?',
+          sin: 'La torre de Bruno tiene unas piezas. La de Coco tiene menos. ¿Cuántas piezas tiene la torre de Coco?',
+          marca: 'La de Coco tiene {d} piezas menos' },
+      ],
+      explica: { juntar: 'Sumando salen {mal}. Pero el que buscas es el que tiene MENOS: no puede salir un número más grande.' },
+      pistas: ['¿Quién tiene menos?', 'El que buscas, ¿tiene más o menos que el otro?'],
+      barras: { forma: 'compara', grande: '{p}', pequena: '?{sol}', dif: '{d}' },
+      barrasMal: [{ forma: 'compara', grande: '?{mal}', pequena: '{p}', dif: '{d}' },
+                  { forma: 'partes', total: '?{mal}', partes: ['{p}', '{d}'] }],
+      clave: 'Aquí «menos que» sí es restar, porque el que buscas es <b>el que tiene menos</b>: {p} − {d} = {sol}. Fíjate siempre en quién tiene menos, no en la palabra.' },
 
     // --- parte, todo y comparación ---------------------------------------
-    { tipo: 'parte',
+    { tipo: 'parte', operacion: 'quitar',
       vars: () => { const t = AZ(12, 22), m = AZ(4, 9); return { t, m, sol: t - m, mal: t + m }; },
-      enunciado: 'En el cesto hay {t} frutas. {m} son manzanas y las demás peras. ¿Cuántas peras hay?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar', 'repartir'],
-      explica: { juntar: '{t} y {m} son {mal}, y en el cesto solo hay {t} en total.' },
-      pistas: ['Del total, quita las manzanas.', '{t} menos {m}.'],
-      clave: 'Cuando sabes <b>el total y una parte</b>, la otra sale restando.' },
+      textos: [
+        { con: 'En el cesto hay {t} frutas. {m} son manzanas y las demás, peras. ¿Cuántas peras hay?',
+          sin: 'En el cesto hay unas frutas. Unas son manzanas y las demás, peras. ¿Cuántas peras hay?',
+          marca: 'En el cesto hay {t} frutas' },
+        { con: 'En el salón de Coco hay {t} niñas. {m} juegan a los globos y las demás, a las cartas. ¿Cuántas juegan a las cartas?',
+          sin: 'En el salón de Coco hay unas niñas. Unas juegan a los globos y las demás, a las cartas. ¿Cuántas juegan a las cartas?',
+          marca: 'En el salón de Coco hay {t} niñas' },
+        { con: 'Ona tiene {t} bichos en la tienda. {m} son escarabajos y el resto, mariquitas. ¿Cuántas mariquitas tiene?',
+          sin: 'Ona tiene unos bichos en la tienda. Unos son escarabajos y el resto, mariquitas. ¿Cuántas mariquitas tiene?',
+          marca: 'Ona tiene {t} bichos en la tienda' },
+        { con: '¿Cuántas conchas no son rosas? En la caja de Mila hay {t} conchas y {m} son rosas.',
+          sin: '¿Cuántas conchas no son rosas? En la caja de Mila hay unas conchas y algunas son rosas.',
+          marca: 'hay {t} conchas' },
+      ],
+      explica: { juntar: '{t} y {m} son {mal}, pero en total solo hay {t}. Lo que buscas está dentro de esas {t}.' },
+      pistas: ['¿Qué número es el de todo junto?', 'Lo que buscas es un trozo del total.'],
+      barras: { forma: 'partes', total: '{t}', partes: ['{m}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{t}', '{m}'] },
+                  { forma: 'grupos', grupos: '{m}', cada: '{t}', total: '?' }],
+      clave: 'Sabías <b>el total</b> ({t}) y <b>una parte</b> ({m}). La otra parte sale restando: {t} − {m} = {sol}.' },
 
-    { tipo: 'compara',
+    { tipo: 'compara', operacion: 'quitar',
       vars: () => { const g = AZ(11, 24), n = AZ(4, 10); return { g, n, sol: g - n, mal: g + n }; },
-      enunciado: 'Gala tiene {g} conchas y Nube {n}. ¿Cuántas conchas tiene Gala más que Nube?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar', 'compara'],
-      explica: { juntar: 'Juntarlas da {mal}, que es lo que hay entre las dos, no la diferencia.' },
-      pistas: ['La diferencia entre las dos.', '{g} menos {n}.'],
-      clave: 'Cuando preguntan <b>«cuántas más»</b>, se restan las dos cantidades.' },
+      textos: [
+        { quien: 'Gala', quien2: 'Nube', cosas: 'conchas', mas: 'quien',
+          con: 'Gala tiene {g} conchas y Nube {n}. ¿Cuántas conchas tiene Gala más que Nube?',
+          sin: 'Gala tiene muchas conchas y Nube, pocas. ¿Cuántas conchas tiene Gala más que Nube?',
+          marca: '¿Cuántas conchas tiene Gala más que Nube?' },
+        { quien: 'el tren', quien2: 'el tiovivo', cosas: 'vueltas', mas: 'quien',
+          con: 'Hoy el tren ha dado {g} vueltas y el tiovivo, {n}. ¿Cuántas vueltas más ha dado el tren?',
+          sin: 'Hoy el tren ha dado muchas vueltas y el tiovivo, menos. ¿Cuántas vueltas más ha dado el tren?',
+          marca: '¿Cuántas vueltas más ha dado el tren?' },
+        { quien: 'la gallina blanca', quien2: 'la gallina negra', cosas: 'huevos', mas: 'quien',
+          con: '¿Cuántos huevos más ha puesto la gallina blanca que la negra? La blanca ha puesto {g} y la negra, {n}.',
+          sin: '¿Cuántos huevos más ha puesto la gallina blanca que la negra? La blanca ha puesto muchos y la negra, menos.',
+          marca: '¿Cuántos huevos más' },
+        { quien: 'Tomeu', quien2: 'Bruno', cosas: 'peces', mas: 'quien2',
+          con: 'Tomeu ha pescado {n} peces y Bruno, {g}. ¿Cuántos peces menos ha pescado Tomeu que Bruno?',
+          sin: 'Tomeu ha pescado unos peces y Bruno, más. ¿Cuántos peces menos ha pescado Tomeu que Bruno?',
+          marca: '¿Cuántos peces menos' },
+      ],
+      explica: { juntar: 'Juntándolos salen {mal}: eso es lo que hay entre los dos, no lo que le saca uno al otro.' },
+      pistas: ['¿Te preguntan cuánto hay entre los dos, o cuánto le saca uno al otro?',
+               'Imagina los dos montones uno al lado del otro. ¿Qué trozo sobresale?'],
+      barras: { forma: 'compara', grande: '{g}', pequena: '{n}', dif: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{g}', '{n}'] },
+                  { forma: 'grupos', grupos: '{n}', cada: '{g}', total: '?' }],
+      clave: 'Preguntan <b>la diferencia</b> entre las dos cantidades: la grande menos la pequeña. {g} − {n} = {sol}.' },
 
-    { tipo: 'iguala',
-      vars: () => { const i = AZ(8, 18), d = AZ(4, 11); return { i, g: i + d, sol: d }; },
-      enunciado: 'Inés tiene {i} cromos y Gala {g}. ¿Cuántos le faltan a Inés para tener los mismos?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar', 'repartir'],
-      explica: { juntar: 'Si los juntas sale un montón, y no es eso lo que se pregunta.' },
-      pistas: ['De {i} hasta {g}.', '{g} menos {i}.'],
-      clave: '«Cuántos le faltan para tener los mismos» también <b>se resta</b>.' },
+    { tipo: 'iguala', operacion: 'quitar',
+      vars: () => { const i = AZ(8, 18), d = AZ(4, 11); return { i, g: i + d, sol: d, mal: i + i + d }; },
+      textos: [
+        { quien: 'Inés', quien2: 'Gala', cosas: 'cromos', mas: 'quien2',
+          con: 'Inés tiene {i} cromos y Gala {g}. ¿Cuántos le faltan a Inés para tener los mismos?',
+          sin: 'Inés tiene unos cromos y Gala, más. ¿Cuántos le faltan a Inés para tener los mismos?',
+          marca: 'para tener los mismos' },
+        { quien: 'la torre de Pau', quien2: 'la torre de Bruno', cosas: 'piezas', mas: 'quien2',
+          con: 'La torre de Pau tiene {i} piezas y la de Bruno, {g}. ¿Cuántas piezas tiene que poner Pau para que su torre sea igual de alta?',
+          sin: 'La torre de Pau tiene unas piezas y la de Bruno, más. ¿Cuántas piezas tiene que poner Pau para que su torre sea igual de alta?',
+          marca: 'igual de alta' },
+        { quien: 'Ona', quien2: 'Mila', cosas: 'sellos', mas: 'quien2',
+          con: '¿Cuántos sellos le faltan a Ona para tener tantos como Mila? Ona tiene {i} y Mila, {g}.',
+          sin: '¿Cuántos sellos le faltan a Ona para tener tantos como Mila? Ona tiene unos cuantos y Mila, más.',
+          marca: 'para tener tantos como Mila' },
+      ],
+      explica: { juntar: 'Juntándolos salen {mal}, muchísimos más. Solo quiere llegar a tener los mismos que el otro.' },
+      pistas: ['¿Quién tiene más? ¿Cuánto tiene que crecer el otro para alcanzarle?',
+               'Lo que le falta es el trozo que le saca el grande al pequeño.'],
+      barras: { forma: 'compara', grande: '{g}', pequena: '{i}', dif: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{i}', '{g}'] },
+                  { forma: 'grupos', grupos: '{i}', cada: '{g}', total: '?' }],
+      clave: '«Cuánto le falta para tener los mismos» es <b>la diferencia</b> entre los dos: {g} − {i} = {sol}.' },
 
-    { tipo: 'combina',
-      vars: () => { const a = AZ(9, 19), b = AZ(5, 12); return { a, b, sol: a + b }; },
-      enunciado: 'En el salón de Coco hay {a} niñas jugando y llegan {b} más. ¿Cuántas hay ahora?',
-      operacion: 'juntar', opciones: ['juntar', 'quitar', 'multiplicar'],
-      explica: { quitar: 'Llegan más, así que hay más.' },
-      pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'],
-      clave: 'El más fácil de todos: si llegan más, <b>se suma</b>.' },
+    { tipo: 'combina', operacion: 'juntar',
+      vars: () => { const a = AZ(10, 19), b = AZ(4, 9); return { a, b, sol: a + b, resta: a - b }; },
+      textos: [
+        { con: 'En el corral hay {a} ovejas blancas y {b} ovejas negras. ¿Cuántas ovejas hay en el corral?',
+          sin: 'En el corral hay unas ovejas blancas y unas ovejas negras. ¿Cuántas ovejas hay en el corral?',
+          marca: '¿Cuántas ovejas hay en el corral?' },
+        { con: 'Hoy Mila ha vendido {a} lazos rojos y {b} lazos azules. ¿Cuántos lazos ha vendido?',
+          sin: 'Hoy Mila ha vendido unos lazos rojos y unos lazos azules. ¿Cuántos lazos ha vendido?',
+          marca: '¿Cuántos lazos ha vendido?' },
+        { con: '¿Cuántos libros hay en la estantería? Arriba hay {a} y abajo hay {b}.',
+          sin: '¿Cuántos libros hay en la estantería? Arriba hay unos cuantos y abajo, otros.',
+          marca: '¿Cuántos libros hay en la estantería?' },
+        { con: 'En la feria hay {a} niñas en la noria y {b} en los coches. ¿Cuántas niñas hay montadas?',
+          sin: 'En la feria hay unas niñas en la noria y otras en los coches. ¿Cuántas niñas hay montadas?',
+          marca: '¿Cuántas niñas hay montadas?' },
+      ],
+      explica: { quitar: 'Restando salen {resta}, pero no se va nada: son dos grupos que hay que contar juntos.' },
+      pistas: ['¿Se va algo, o hay dos grupos que se cuentan juntos?', 'Buscas cuánto hay entre las dos partes.'],
+      barras: { forma: 'partes', total: '?{sol}', partes: ['{a}', '{b}'] },
+      barrasMal: [{ forma: 'compara', grande: '{a}', pequena: '{b}', dif: '?{resta}' },
+                  { forma: 'grupos', grupos: '{b}', cada: '{a}', total: '?' }],
+      clave: 'Dos partes que no cambian, y buscas <b>el total</b>: se suman. {a} + {b} = {sol}.' },
 
     // --- multiplicar y dividir, en sus distintas formas -------------------
-    { tipo: 'grupos',
+    { tipo: 'grupos', operacion: 'multiplicar',
       vars: () => { const c = AZ(3, 8), n = AZ(4, 9); return { c, n, sol: c * n, mal: c + n }; },
-      enunciado: 'En el mercado hay {c} cajas y en cada caja van {n} naranjas. ¿Cuántas naranjas hay?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
-      explica: { juntar: '{c} y {n} son {mal}, pero es que hay {n} en CADA una de las {c} cajas.' },
-      pistas: ['{c} cajas iguales, de {n}.', 'La tabla del {n}.'],
-      clave: 'Cuando pone <b>«en cada»</b> y los grupos son iguales, se multiplica.' },
+      textos: [
+        { con: 'En el mercado hay {c} cajas y en cada caja van {n} naranjas. ¿Cuántas naranjas hay?',
+          sin: 'En el mercado hay unas cajas y en cada caja van las mismas naranjas. ¿Cuántas naranjas hay?',
+          marca: 'en cada caja van {n} naranjas' },
+        { con: 'Ona tiene {c} peceras. En todas nadan {n} peces. ¿Cuántos peces tiene?',
+          sin: 'Ona tiene unas peceras. En todas nadan los mismos peces. ¿Cuántos peces tiene?',
+          marca: 'En todas nadan {n} peces' },
+        { con: '¿Cuántos globos lleva la feria? Hay {c} carritos y cada carrito lleva {n} globos.',
+          sin: '¿Cuántos globos lleva la feria? Hay unos carritos y cada carrito lleva los mismos globos.',
+          marca: 'cada carrito lleva {n} globos' },
+        { con: 'Tomeu pesca {n} peces al día. ¿Cuántos pesca en {c} días?',
+          sin: 'Tomeu pesca unos peces al día, siempre los mismos. ¿Cuántos pesca en unos días?',
+          marca: '{n} peces al día' },
+      ],
+      explica: { juntar: '{c} y {n} son {mal}, pero no hay un {n} solo: hay {n} en CADA uno de los {c}.' },
+      pistas: ['¿Hay grupos que tengan todos lo mismo?', '¿Cuántos grupos hay, y cuánto tiene cada uno?'],
+      barras: { forma: 'grupos', grupos: '{c}', cada: '{n}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{c}', '{n}'] },
+                  { forma: 'grupos', grupos: '{c}', cada: '?', total: '{n}' }],
+      clave: 'Hay <b>{c} grupos iguales</b>, de {n} cada uno: se multiplica. {c} × {n} = {sol}.' },
 
-    { tipo: 'reparto',
+    { tipo: 'reparto', operacion: 'repartir',
       vars: () => { const n = AZ(3, 6), c = AZ(3, 8); return { n, t: n * c, sol: c, mal: n * c * n }; },
-      enunciado: 'Hay {t} galletas para {n} niñas, todas igual. ¿Cuántas le tocan a cada una?',
-      operacion: 'repartir', opciones: ['multiplicar', 'repartir', 'quitar'],
-      explica: { multiplicar: '{t} para cada una serían {mal} galletas.' },
-      pistas: ['{t} entre {n}.', '¿Qué número por {n} da {t}?'],
-      clave: 'Sabes <b>cuántos grupos</b> hay y buscas cuánto va en cada uno: eso es dividir.' },
+      textos: [
+        { con: 'Hay {t} galletas para {n} niñas, todas igual. ¿Cuántas le tocan a cada una?',
+          sin: 'Hay unas galletas para unas niñas, todas igual. ¿Cuántas le tocan a cada una?',
+          marca: 'para {n} niñas, todas igual' },
+        { con: 'Bruno pone {t} manzanas en {n} cestas, las mismas en cada una. ¿Cuántas manzanas van en cada cesta?',
+          sin: 'Bruno pone unas manzanas en unas cestas, las mismas en cada una. ¿Cuántas manzanas van en cada cesta?',
+          marca: 'las mismas en cada una' },
+        { con: '¿Cuántas conchas le tocan a cada amiga? Hay {t} conchas para {n} amigas, y a todas les toca lo mismo.',
+          sin: '¿Cuántas conchas le tocan a cada amiga? Hay unas conchas para unas amigas, y a todas les toca lo mismo.',
+          marca: 'a todas les toca lo mismo' },
+        { con: 'Coco guarda {t} semillas en {n} botes iguales. ¿Cuántas semillas van en cada bote?',
+          sin: 'Coco guarda unas semillas en unos botes iguales. ¿Cuántas semillas van en cada bote?',
+          marca: 'en {n} botes iguales' },
+      ],
+      explica: { multiplicar: '{t} para cada uno serían {mal}: muchísimos más de los que hay.' },
+      pistas: ['¿Sabes cuántos hay en total? ¿Y entre cuántos se reparten?', 'Buscas lo que va en cada uno.'],
+      barras: { forma: 'grupos', grupos: '{n}', cada: '?{sol}', total: '{t}' },
+      barrasMal: [{ forma: 'grupos', grupos: '{n}', cada: '{t}', total: '?' },
+                  { forma: 'partes', total: '{t}', partes: ['{n}', '?'] }],
+      clave: 'Sabías <b>el total</b> y <b>entre cuántos</b> se reparte; buscabas lo que va en cada uno: <b>se divide</b>. {t} : {n} = {sol}.' },
 
-    { tipo: 'agrupa',
+    { tipo: 'agrupa', operacion: 'repartir',
       vars: () => { const c = AZ(3, 6), r = AZ(3, 7); return { c, t: c * r, sol: r }; },
-      enunciado: 'Tengo {t} flores y hago ramos de {c} flores. ¿Cuántos ramos me salen?',
-      operacion: 'repartir', opciones: ['multiplicar', 'repartir', 'juntar'],
-      explica: { multiplicar: 'Eso daría muchísimas más flores de las que tengo.' },
-      pistas: ['De {c} en {c} hasta {t}.', 'Cuenta: {c}, {c}+{c}… ¿cuántas veces?'],
-      clave: 'Esta también es dividir, pero al revés: sabes <b>cuánto va en cada grupo</b> y buscas cuántos grupos salen.' },
+      textos: [
+        { con: 'Tengo {t} flores y hago ramos de {c} flores. ¿Cuántos ramos me salen?',
+          sin: 'Tengo unas flores y hago ramos, todos con las mismas flores. ¿Cuántos ramos me salen?',
+          marca: 'ramos de {c} flores' },
+        { con: 'Mila tiene {t} lazos y los mete en bolsitas de {c}. ¿Cuántas bolsitas llena?',
+          sin: 'Mila tiene unos lazos y los mete en bolsitas, todas con los mismos. ¿Cuántas bolsitas llena?',
+          marca: 'en bolsitas de {c}' },
+        { con: '¿Cuántas barcas salen? Hay {t} niñas, en cada barca suben {c} y todas las barcas van llenas.',
+          sin: '¿Cuántas barcas salen? Hay unas niñas, en todas las barcas suben las mismas y van llenas.',
+          marca: 'en cada barca suben {c}' },
+        { con: 'Nit guarda {t} granos en montoncitos de {c}. ¿Cuántos montoncitos hace?',
+          sin: 'Nit guarda unos granos en montoncitos, todos iguales. ¿Cuántos montoncitos hace?',
+          marca: 'en montoncitos de {c}' },
+      ],
+      explica: { multiplicar: 'Eso daría muchísimas más cosas de las que hay.' },
+      pistas: ['¿Sabes cuántos van en cada grupo? ¿Y cuántos hay en total?', 'Buscas cuántos grupos salen.'],
+      barras: { forma: 'grupos', grupos: '?{sol}', cada: '{c}', total: '{t}' },
+      barrasMal: [{ forma: 'grupos', grupos: '{c}', cada: '{t}', total: '?' },
+                  { forma: 'partes', total: '{t}', partes: ['{c}', '?'] }],
+      clave: 'Sabías el total y <b>cuántos van en cada grupo</b>; buscabas <b>cuántos grupos</b> salen: también se divide. {t} : {c} = {sol}.' },
 
-    { tipo: 'compara-mult',
+    { tipo: 'compara-mult', operacion: 'multiplicar',
       vars: () => { const p = AZ(3, 9), v = AZ(2, 4);
-                    return { p, v, palabra: ['', '', 'el doble', 'el triple', 'el cuádruple'][v], sol: p * v }; },
-      enunciado: 'Nube ha pescado {p} peces. Tomeu ha pescado {palabra}. ¿Cuántos ha pescado Tomeu?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
-      explica: { juntar: '«{palabra}» no es sumar: es varias veces lo que tiene el otro.' },
-      pistas: ['{palabra} son {v} veces.', '{p}, {v} veces.'],
-      clave: '<b>El doble</b> es dos veces y <b>el triple</b> tres veces. Son multiplicaciones.' },
+                    return { p, v, palabra: ['', '', 'el doble', 'el triple', 'el cuádruple'][v], sol: p * v, mal: p + v }; },
+      textos: [
+        { quien: 'Nube', quien2: 'Tomeu', cosas: 'peces', mas: 'quien2',
+          con: 'Nube ha pescado {p} peces. Tomeu ha pescado {palabra}. ¿Cuántos peces ha pescado Tomeu?',
+          sin: 'Nube ha pescado unos peces. Tomeu ha pescado {palabra}. ¿Cuántos peces ha pescado Tomeu?',
+          marca: 'Tomeu ha pescado {palabra}' },
+        { quien: 'Bruno', quien2: 'Mila', cosas: 'sandías', mas: 'quien2',
+          con: 'En el puesto de Bruno hay {p} sandías. En el de Mila hay {palabra}. ¿Cuántas sandías hay en el puesto de Mila?',
+          sin: 'En el puesto de Bruno hay unas sandías. En el de Mila hay {palabra}. ¿Cuántas sandías hay en el puesto de Mila?',
+          marca: 'En el de Mila hay {palabra}' },
+        { quien: 'Ona', quien2: 'Pau', cosas: 'vueltas', mas: 'quien2',
+          con: '¿Cuántas vueltas al lago ha dado Pau? Ona ha dado {p} y Pau ha dado {palabra}.',
+          sin: '¿Cuántas vueltas al lago ha dado Pau? Ona ha dado unas cuantas y Pau ha dado {palabra}.',
+          marca: 'Pau ha dado {palabra}' },
+      ],
+      explica: { juntar: '«{palabra}» no es sumar {v}: salen {mal}. Es {v} veces lo que tiene el otro.' },
+      pistas: ['¿Qué quiere decir «{palabra}»?', '{palabra} es la misma cantidad varias veces.'],
+      barras: { forma: 'grupos', grupos: '{v}', cada: '{p}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{p}', '{v}'] },
+                  { forma: 'grupos', grupos: '{v}', cada: '?', total: '{p}' }],
+      clave: '<b>{palabra}</b> es {v} veces lo mismo: {p} × {v} = {sol}.' },
 
-    { tipo: 'combina-mult',
+    { tipo: 'combina-mult', operacion: 'multiplicar',
       vars: () => { const c = AZ(2, 5), f = AZ(3, 6); return { c, f, sol: c * f, mal: c + f }; },
-      enunciado: 'Tengo {c} camisetas y {f} faldas. ¿De cuántas maneras distintas me puedo vestir?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
-      explica: { juntar: '{mal} es cuántas prendas tienes, pero la pregunta es cuántas COMBINACIONES salen.' },
-      pistas: ['Con cada camiseta puedes ponerte las {f} faldas.', '{f} maneras, {c} veces.'],
-      clave: 'Para saber cuántas <b>combinaciones</b> salen, se multiplica.' },
+      textos: [
+        { con: 'Tengo {c} camisetas y {f} faldas. ¿De cuántas maneras distintas me puedo vestir?',
+          marca: '¿De cuántas maneras distintas' },
+        { con: 'En la heladería de la feria hay {c} sabores y {f} clases de cucurucho. ¿Cuántos helados distintos se pueden pedir?',
+          marca: '¿Cuántos helados distintos' },
+        { con: '¿De cuántas maneras se puede ir de la cabaña al Farol? De la cabaña al pozo hay {c} caminos y del pozo al Farol hay {f}.',
+          marca: '¿De cuántas maneras' },
+      ],
+      explica: { juntar: '{mal} es cuántas cosas hay, pero la pregunta es cuántas COMBINACIONES salen.' },
+      pistas: ['Coge solo una cosa del primer grupo. ¿Con cuántas del segundo la puedes juntar?',
+               'Y eso pasa con cada una de las del primer grupo.'],
+      barras: { forma: 'grupos', grupos: '{c}', cada: '{f}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{c}', '{f}'] },
+                  { forma: 'compara', grande: '{f}', pequena: '{c}', dif: '?' }],
+      clave: 'Con <b>cada</b> una de las {c} cosas valen las {f} del otro grupo: se multiplica. {c} × {f} = {sol}.' },
 
-    { tipo: 'rejilla',
+    { tipo: 'rejilla', operacion: 'multiplicar',
       vars: () => { const f = AZ(3, 7), l = AZ(4, 9); return { f, l, sol: f * l, mal: f + l }; },
-      enunciado: 'El huerto tiene {f} filas de lechugas y {l} lechugas en cada fila. ¿Cuántas lechugas hay?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+      textos: [
+        { con: 'El huerto tiene {f} filas de lechugas y {l} lechugas en cada fila. ¿Cuántas lechugas hay?',
+          sin: 'El huerto tiene unas filas de lechugas y en todas las filas hay las mismas. ¿Cuántas lechugas hay?',
+          marca: '{l} lechugas en cada fila' },
+        { con: 'En el cine de la feria hay {f} filas de sillas, con {l} sillas cada una. ¿Cuántas sillas hay?',
+          sin: 'En el cine de la feria hay unas filas de sillas, todas con las mismas sillas. ¿Cuántas sillas hay?',
+          marca: 'con {l} sillas cada una' },
+        { con: '¿Cuántas baldosas tiene el suelo de la cabaña? Hay {f} filas y en cada fila caben {l}.',
+          sin: '¿Cuántas baldosas tiene el suelo de la cabaña? Hay unas filas y en todas caben las mismas.',
+          marca: 'en cada fila caben {l}' },
+        { con: 'La caja de bombones tiene {f} filas de {l} bombones. ¿Cuántos bombones hay en la caja?',
+          sin: 'La caja de bombones tiene unas filas, todas con los mismos bombones. ¿Cuántos bombones hay en la caja?',
+          marca: '{f} filas de {l} bombones' },
+      ],
       explica: { juntar: '{mal} no: cada una de las {f} filas tiene {l}.' },
-      pistas: ['{f} filas iguales de {l}.', 'La tabla del {l}.'],
-      clave: 'Las cosas puestas en <b>filas iguales</b> se cuentan multiplicando.' },
+      pistas: ['¿Todas las filas tienen lo mismo?', 'Las filas iguales son grupos iguales.'],
+      barras: { forma: 'grupos', grupos: '{f}', cada: '{l}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{f}', '{l}'] },
+                  { forma: 'grupos', grupos: '{f}', cada: '?', total: '{l}' }],
+      clave: 'Las cosas puestas en <b>filas iguales</b> se cuentan multiplicando: {f} × {l} = {sol}.' },
 
     // --- dos pasos --------------------------------------------------------
-    { tipo: 'dos-pasos',
+    { tipo: 'dos-pasos', operacion: 'dosPasos', pasos: ['multiplicar', 'quitar'],
       vars: () => { const b = AZ(3, 6), c = AZ(4, 8), q = AZ(2, 6);
                     return { b, c, q, medio: b * c, sol: b * c - q }; },
-      enunciado: 'Compro {b} bolsas de {c} caramelos y me como {q}. ¿Cuántos caramelos me quedan?',
-      operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
-      explica: { multiplicar: 'Eso es solo el principio: falta quitar los que te has comido.',
-                 quitar: 'Antes de quitar hay que saber cuántos había.' },
-      pistas: ['Primero cuántos había: {b} bolsas de {c}.', '{medio} menos {q}.'],
-      clave: 'Pide <b>dos cosas seguidas</b>: multiplicar y después restar. Muchos problemas son así.' },
+      textos: [
+        { con: 'Compro {b} bolsas de {c} caramelos y me como {q}. ¿Cuántos caramelos me quedan?',
+          marca: '{b} bolsas de {c} caramelos' },
+        { con: 'Ona compra {b} paquetes de {c} hojas para los bichos, y los bichos se comen {q}. ¿Cuántas hojas quedan?',
+          marca: '{b} paquetes de {c} hojas' },
+        { con: '¿Cuántas conchas le quedan a Mila? Tenía {b} cajas con {c} conchas cada una y ha vendido {q}.',
+          marca: '{b} cajas con {c} conchas cada una' },
+      ],
+      explicaPasos: { quitar: 'Para quitar primero hay que saber cuántos había, y eso todavía no lo sabes.' },
+      pistas: ['¿Qué necesitas saber antes de poder quitar?', 'Primero: ¿cuántos había al principio?'],
+      clave: 'Pide <b>dos cosas seguidas</b>: primero cuántos había ({b} × {c} = {medio}) y después quitar los que se fueron ({medio} − {q} = {sol}).' },
 
-    { tipo: 'dos-pasos',
+    { tipo: 'dos-pasos', operacion: 'dosPasos', pasos: ['juntar', 'multiplicar'], tambienVale: ['multiplicar'],
       vars: () => { const c = AZ(3, 6), z = AZ(2, 4); return { c, z, medio: c + z, sol: (c + z) * 2 }; },
-      enunciado: 'En el tiovivo hay {c} caballos y {z} carrozas. En cada uno caben 2 niñas. ¿Cuántas niñas caben?',
-      operacion: 'dosPasos', opciones: ['juntar', 'multiplicar', 'dosPasos'],
-      explica: { juntar: 'Eso son los sitios que hay, pero en cada sitio caben 2.',
-                 multiplicar: '¿Multiplicar qué? Primero hay que saber cuántos sitios hay.' },
-      pistas: ['Primero: ¿cuántos sitios hay en total?', '{medio} sitios, con 2 en cada uno.'],
-      clave: 'Primero se juntan las dos clases de sitios y después se multiplica. <b>Dos pasos.</b>' },
+      textos: [
+        { con: 'En el tiovivo hay {c} caballos y {z} carrozas. En cada uno caben 2 niñas. ¿Cuántas niñas caben?',
+          marca: 'En cada uno caben 2 niñas' },
+        { con: 'En la granja hay {c} gallinas y {z} patos. Cada uno come 2 puñados de grano. ¿Cuántos puñados hay que preparar?',
+          marca: 'Cada uno come 2 puñados' },
+        { con: '¿Cuántos faroles hay en la feria? Hay {c} coches rojos y {z} coches azules, y cada coche lleva 2 faroles.',
+          marca: 'cada coche lleva 2 faroles' },
+      ],
+      explicaPasos: { multiplicar: 'Se puede, pero tendrías que multiplicar dos veces. Más corto: ¿cuántos hay entre las dos clases?' },
+      pistas: ['¿Cuántos hay entre las dos clases?', 'Primero júntalos; después piensa en lo que va en cada uno.'],
+      clave: 'Primero se juntan las dos clases ({c} + {z} = {medio}) y después se multiplica por lo que va en cada uno ({medio} × 2 = {sol}). <b>Dos pasos.</b>' },
 
-    { tipo: 'dos-pasos',
+    { tipo: 'dos-pasos', operacion: 'dosPasos', pasos: ['quitar', 'juntar'], ordenLibre: true,
       vars: () => { const t = AZ(20, 40), g = AZ(8, 15), n = AZ(3, 9);
                     return { t, g, n, medio: t - g, sol: t - g + n }; },
-      enunciado: 'Tenía {t} conchas, me he gastado {g} y luego he ganado {n}. ¿Cuántas tengo?',
-      operacion: 'dosPasos', opciones: ['juntar', 'quitar', 'dosPasos'],
-      explica: { quitar: 'Solo restar se olvida de las {n} que has ganado después.',
-                 juntar: 'Primero se han ido {g}: eso hay que quitarlo.' },
-      pistas: ['Primero quita {g} de {t}.', '{medio} y luego {n} más.'],
-      clave: 'Cuando pasan <b>dos cosas seguidas</b>, se hacen en orden: primero una y luego la otra.' },
+      textos: [
+        { con: 'Tenía {t} conchas, me he gastado {g} y luego he ganado {n}. ¿Cuántas tengo?',
+          marca: 'me he gastado {g} y luego he ganado {n}' },
+        { con: 'En el tren iban {t} personas. En la parada se bajan {g} y suben {n}. ¿Cuántas personas van ahora?',
+          marca: 'se bajan {g} y suben {n}' },
+        { con: '¿Cuántos peces hay ahora en la pecera de Ona? Había {t}, ha vendido {g} y le han traído {n} nuevos.',
+          marca: 'ha vendido {g} y le han traído {n}' },
+      ],
+      pistas: ['¿Cuántas cosas pasan, una detrás de otra?', 'Haz la primera y, con lo que salga, la segunda.'],
+      clave: 'Pasan <b>dos cosas seguidas</b>, y se hacen una detrás de otra: {t} − {g} = {medio}, y {medio} + {n} = {sol}.' },
 
     // --- datos que sobran -------------------------------------------------
-    { tipo: 'sobra',
-      vars: () => { const e = AZ(4, 9), p = AZ(3, 8), c = AZ(2, 6); return { e, p, c, sol: e + p }; },
-      enunciado: 'En el corral hay {e} elefantes, {p} ponis y {c} cubos de agua. ¿Cuántos animales hay?',
-      operacion: 'juntar', opciones: ['juntar', 'multiplicar', 'repartir'],
+    { tipo: 'sobra', operacion: 'juntar',
+      vars: () => { const e = AZ(4, 9), p = AZ(3, 8), c = AZ(2, 6); return { e, p, c, sol: e + p, mal: e + p + c }; },
+      textos: [
+        { datos: ['los elefantes', 'los ponis', 'los cubos de agua'], sobra: 'los cubos de agua',
+          con: 'En el corral hay {e} elefantes, {p} ponis y {c} cubos de agua. ¿Cuántos animales hay?',
+          sin: 'En el corral hay unos elefantes, unos ponis y unos cubos de agua. ¿Cuántos animales hay?',
+          marca: '¿Cuántos animales hay?' },
+        { datos: ['los gorros', 'las bufandas', 'los espejos'], sobra: 'los espejos',
+          con: 'En la tienda de Mila hay {e} gorros, {p} bufandas y {c} espejos. ¿Cuántas prendas de ropa hay?',
+          sin: 'En la tienda de Mila hay unos gorros, unas bufandas y unos espejos. ¿Cuántas prendas de ropa hay?',
+          marca: '¿Cuántas prendas de ropa hay?' },
+        { datos: ['los gorriones', 'las palomas', 'los nidos'], sobra: 'los nidos',
+          con: '¿Cuántos pájaros hay en el árbol? Hay {e} gorriones, {p} palomas y {c} nidos.',
+          sin: '¿Cuántos pájaros hay en el árbol? Hay unos gorriones, unas palomas y unos nidos.',
+          marca: '¿Cuántos pájaros hay en el árbol?' },
+      ],
       explica: { multiplicar: 'No hay grupos iguales que multiplicar.' },
-      pistas: ['Cuidado: los cubos no son animales.', 'Solo elefantes y ponis: {e} y {p}.'],
-      clave: 'Los {c} cubos <b>no hacían falta</b>. En los problemas a veces sobran datos: hay que mirar qué preguntan.' },
+      pistas: ['¿Todos los números son de lo que te preguntan?', 'Mira bien qué te preguntan y quita lo que no es eso.'],
+      barras: { forma: 'partes', total: '?{sol}', partes: ['{e}', '{p}'] },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{e}', '{p}', '{c}'] },
+                  { forma: 'grupos', grupos: '{p}', cada: '{e}', total: '?' }],
+      clave: 'Había un dato que <b>no hacía falta</b>: {sobra}. Que un número esté en el problema no quiere decir que haya que usarlo.' },
 
-    { tipo: 'sobra',
+    { tipo: 'sobra', operacion: 'multiplicar',
       vars: () => { const l = AZ(3, 8), p = AZ(2, 6), h = AZ(8, 11); return { l, p, h, sol: l * p, mal: l + p }; },
-      enunciado: 'Mila vende {l} lazos a {p} conchas cada uno. La tienda abre a las {h}. ¿Cuánto gana Mila?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'quitar'],
-      explica: { juntar: '{mal} no: cada uno de los {l} lazos vale {p}.' },
-      pistas: ['La hora de abrir no sirve para nada aquí.', '{l} lazos de {p} conchas.'],
-      clave: 'La hora <b>sobraba</b>. Que un número esté en el problema no quiere decir que haya que usarlo.' },
+      textos: [
+        { datos: ['cuántos lazos vende', 'lo que vale cada lazo', 'la hora de abrir'], sobra: 'la hora de abrir',
+          con: 'Mila vende {l} lazos a {p} conchas cada uno. La tienda abre a las {h}. ¿Cuántas conchas gana Mila?',
+          sin: 'Mila vende unos lazos, todos al mismo precio. La tienda abre a una hora. ¿Cuántas conchas gana Mila?',
+          marca: '¿Cuántas conchas gana Mila?' },
+        { datos: ['cuántos días pesca', 'los peces de cada día', 'la hora de salir'], sobra: 'la hora de salir',
+          con: 'Tomeu sale a pescar a las {h}. Pesca {l} días y cada día saca {p} peces. ¿Cuántos peces saca en total?',
+          sin: 'Tomeu sale a pescar a una hora. Pesca unos días y cada día saca los mismos peces. ¿Cuántos peces saca en total?',
+          marca: '¿Cuántos peces saca en total?' },
+        { datos: ['cuántos helados compra', 'lo que vale cada helado', 'los sabores que hay'], sobra: 'los sabores que hay',
+          con: '¿Cuántas conchas cuestan {l} helados, si cada uno vale {p} conchas? La heladería tiene {h} sabores.',
+          sin: '¿Cuántas conchas cuestan unos helados, si todos valen lo mismo? La heladería tiene unos cuantos sabores.',
+          marca: 'si cada uno vale {p} conchas' },
+      ],
+      explica: { juntar: '{mal} no: cada uno de los {l} vale {p}.' },
+      pistas: ['¿Todos los números sirven para lo que te preguntan?', '¿Hay grupos iguales?'],
+      barras: { forma: 'grupos', grupos: '{l}', cada: '{p}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{l}', '{p}', '{h}'] },
+                  { forma: 'partes', total: '?{mal}', partes: ['{l}', '{p}'] }],
+      clave: '{sobra} <b>sobraba</b>. Que un número esté en el problema no quiere decir que haya que usarlo.' },
 
     // --- división que no es exacta ---------------------------------------
-    { tipo: 'resto',
+    { tipo: 'resto', operacion: 'repartir',
       vars: () => { const c = AZ(3, 5), g = AZ(2, 4), s = AZ(1, c - 1);
                     return { c, n: c * g + s, entero: g, sol: g + 1, sobran: s }; },
-      enunciado: 'Hay {n} niñas y en cada barca caben {c}. ¿Cuántas barcas hacen falta para que suban todas?',
-      operacion: 'repartir', opciones: ['multiplicar', 'repartir', 'juntar'],
+      textos: [
+        { busca: 0,
+          con: 'Hay {n} niñas y en cada barca caben {c}. ¿Cuántas barcas hacen falta para que suban todas?',
+          sin: 'Hay unas niñas y en todas las barcas caben las mismas. ¿Cuántas barcas hacen falta para que suban todas?',
+          marca: 'para que suban todas' },
+        { busca: 0,
+          con: 'Hay {n} huevos y en cada caja caben {c}. ¿Cuántas cajas hacen falta para guardarlos todos?',
+          sin: 'Hay unos huevos y en todas las cajas caben los mismos. ¿Cuántas cajas hacen falta para guardarlos todos?',
+          marca: 'para guardarlos todos' },
+        { busca: 0,
+          con: '¿Cuántos viajes tiene que hacer el tren para llevar a {n} personas, si en cada viaje caben {c}?',
+          sin: '¿Cuántos viajes tiene que hacer el tren para llevar a unas personas, si en todos los viajes caben las mismas?',
+          marca: 'para llevar a {n} personas' },
+      ],
       explica: { multiplicar: 'Eso daría muchísimos más sitios de los que hacen falta.' },
-      pistas: ['De {c} en {c}: con {entero} barcas se quedan {sobran} fuera.', 'Hace falta una barca más.'],
-      clave: '{n} entre {c} son {entero} y sobran {sobran}. Como <b>nadie se queda en tierra</b>, hace falta una barca más: <b>{sol}</b>.' },
+      pistas: ['Con los grupos llenos, ¿queda alguien fuera?', 'Si queda alguien fuera, ¿qué hace falta?'],
+      barras: { forma: 'grupos', grupos: '?{entero}', cada: '{c}', total: '{n}', sobran: '{sobran}' },
+      barrasMal: [{ forma: 'grupos', grupos: '{n}', cada: '{c}', total: '?' },
+                  { forma: 'partes', total: '{n}', partes: ['{c}', '?'] }],
+      clave: '{n} : {c} son {entero} y sobran {sobran}. Como <b>no puede quedarse nada fuera</b>, hace falta uno más: <b>{sol}</b>.' },
 
-    { tipo: 'resto',
+    { tipo: 'resto', operacion: 'repartir',
       vars: () => { const a = AZ(4, 6), g = AZ(2, 4), s = AZ(1, a - 1);
                     return { a, n: a * g + s, sol: g, sobran: s }; },
-      enunciado: 'Tengo {n} galletas y las reparto entre {a} amigas, todas igual. ¿Cuántas le tocan a cada una?',
-      operacion: 'repartir', opciones: ['multiplicar', 'repartir', 'quitar'],
-      explica: { multiplicar: 'Eso serían muchísimas más galletas de las que hay.' },
-      pistas: ['De {a} en {a}, sin pasarse de {n}.', 'Le tocan {sol} y quedan {sobran} en el plato.'],
-      clave: 'Le tocan <b>{sol}</b> y sobran {sobran}. Aquí lo que sobra se queda fuera; en el de las barcas había que añadir una. <b>Depende de lo que pregunten.</b>' },
+      textos: [
+        { busca: 1,
+          con: 'Tengo {n} galletas y las reparto entre {a} amigas, a todas las mismas. ¿Cuántas le tocan a cada una?',
+          sin: 'Tengo unas galletas y las reparto entre unas amigas, a todas las mismas. ¿Cuántas le tocan a cada una?',
+          marca: 'a todas las mismas' },
+        { busca: 0,
+          con: 'Bruno tiene {n} manzanas y hace bolsas de {a} para vender. ¿Cuántas bolsas llenas puede vender?',
+          sin: 'Bruno tiene unas manzanas y hace bolsas, todas iguales, para vender. ¿Cuántas bolsas llenas puede vender?',
+          marca: '¿Cuántas bolsas llenas' },
+        { busca: 1,
+          con: '¿Cuántos cromos le tocan a cada amiga? Pau reparte {n} cromos entre {a} amigas, a todas los mismos, y se guarda los que sobran.',
+          sin: '¿Cuántos cromos le tocan a cada amiga? Pau reparte unos cromos entre unas amigas, a todas los mismos, y se guarda los que sobran.',
+          marca: 'se guarda los que sobran' },
+      ],
+      explica: { multiplicar: 'Eso serían muchísimas más de las que hay.' },
+      pistas: ['¿Sale exacto, o sobra algo?', 'Lo que sobra, ¿cuenta para lo que preguntan?'],
+      barras: { forma: 'grupos', grupos: '{a}', cada: '?{sol}', total: '{n}', sobran: '{sobran}' },
+      barrasMal: [{ forma: 'grupos', grupos: '{a}', cada: '{n}', total: '?' },
+                  { forma: 'partes', total: '{n}', partes: ['{a}', '?'] }],
+      clave: 'Salen <b>{sol}</b> y sobran {sobran}. Aquí lo que sobra se queda fuera; en el de las barcas hacía falta una más. <b>Depende de lo que pregunten.</b>' },
 
-    { tipo: 'grupos',
-      vars: () => { const d = AZ(3, 7); return { d, sol: d * 4 }; },
-      enunciado: 'Cada día hago las 4 rutinas del baño y cada una da 1 concha. En {d} días, ¿cuántas conchas gano?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
-      explica: { juntar: 'Cada uno de los {d} días ganas 4, no una sola vez.' },
-      pistas: ['4 conchas cada día, {d} días.', 'La tabla del 4.'],
-      clave: 'Cuando algo se repite <b>igual todos los días</b>, se multiplica.' },
+    // --- problemas a los que les falta un dato ---------------------------
+    // Solo salen cuando está encendida la novedad 'faltaDato'
+    { tipo: 'falta', operacion: 'falta',
+      vars: () => ({ e: AZ(4, 9), p: AZ(2, 6), a: AZ(5, 12), t: AZ(12, 24) }),
+      textos: [
+        { con: 'En el corral hay {e} elefantes y algunos ponis. ¿Cuántos animales hay?',
+          marca: 'algunos ponis', clave: 'No se puede saber: <b>no dice cuántos ponis hay</b>. Antes de calcular, mira si tienes todos los datos.' },
+        { con: 'Mila vende lazos a {p} conchas cada uno. ¿Cuántas conchas gana hoy?',
+          marca: 'vende lazos', clave: 'No se puede saber: <b>no dice cuántos lazos ha vendido</b>.' },
+        { con: 'Nube tenía {a} conchas y ha encontrado más en la playa. ¿Cuántas tiene ahora?',
+          marca: 'ha encontrado más', clave: 'No se puede saber: <b>no dice cuántas ha encontrado</b>.' },
+        { con: 'Hay {t} galletas para repartir entre unas amigas, a todas las mismas. ¿Cuántas le tocan a cada una?',
+          marca: 'entre unas amigas', clave: 'No se puede saber: <b>no dice entre cuántas amigas</b>.' },
+      ],
+      pistas: ['¿Tienes todos los números que necesitas?', '¿Hay algo que el problema no dice?'],
+      clave: 'No se puede saber: falta un dato.' },
 
-    { tipo: 'cambio-medio',
-      vars: () => { const a = AZ(5, 15), d = AZ(8, 20); return { a, b: a + d, sol: d }; },
-      enunciado: 'Empecé el día con {a} conchas y ahora tengo {b}. ¿Cuántas he ganado hoy?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar', 'multiplicar'],
-      explica: { juntar: 'Sumarlas da más de las que tengo.' },
-      pistas: ['De {a} hasta {b}.', '{b} menos {a}.'],
-      clave: 'Otra vez: dice «he ganado» y <b>se resta</b>, porque buscamos lo que pasó en medio.' },
+    // --- LA MISMA HISTORIA, OTRA PREGUNTA ---------------------------------
+    // Comparten 'familia' y escena. Lo que cambia es la pregunta, y con ella la cuenta.
+    { tipo: 'cambio', familia: 'lazos', operacion: 'quitar',
+      vars: () => { const a = AZ(18, 30), v = AZ(8, 14), h = AZ(3, v - 2); return { a, v, h, sol: a - v, mal: a + v }; },
+      textos: [
+        { quien: 'Mila', cosas: 'lazos', dir: 'menos',
+          con: 'Mila tenía {a} lazos. Por la mañana vendió {v} y por la tarde hizo {h} nuevos. ¿Cuántos lazos tenía a mediodía?',
+          sin: 'Mila tenía unos lazos. Por la mañana vendió unos cuantos y por la tarde hizo algunos nuevos. ¿Cuántos lazos tenía a mediodía?',
+          marca: '¿Cuántos lazos tenía a mediodía?' },
+      ],
+      explica: { juntar: 'A mediodía ya había vendido: tenía menos, no más.' },
+      pistas: ['¿Qué había pasado ya a mediodía? ¿Y qué no había pasado todavía?', 'Lo de la tarde aún no había pasado.'],
+      barras: { forma: 'partes', total: '{a}', partes: ['{v}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{a}', '{v}', '{h}'] },
+                  { forma: 'partes', total: '?{mal}', partes: ['{a}', '{v}'] }],
+      clave: 'A mediodía solo había pasado lo de la mañana: {a} − {v} = {sol}. <b>Los de la tarde sobraban</b> para esta pregunta.' },
+
+    { tipo: 'dos-pasos', familia: 'lazos', operacion: 'dosPasos', pasos: ['quitar', 'juntar'], ordenLibre: true,
+      vars: () => { const a = AZ(18, 30), v = AZ(8, 14), h = AZ(3, v - 2); return { a, v, h, medio: a - v, sol: a - v + h }; },
+      textos: [
+        { con: 'Mila tenía {a} lazos. Por la mañana vendió {v} y por la tarde hizo {h} nuevos. ¿Cuántos lazos tiene por la noche?',
+          marca: '¿Cuántos lazos tiene por la noche?' },
+      ],
+      pistas: ['¿Qué ha pasado entre la mañana y la noche?', 'Han pasado dos cosas. Hazlas en orden.'],
+      clave: 'Por la noche ya han pasado <b>las dos cosas</b>: {a} − {v} = {medio}, y {medio} + {h} = {sol}.' },
+
+    { tipo: 'compara', familia: 'lazos', operacion: 'quitar',
+      vars: () => { const a = AZ(18, 30), v = AZ(8, 14), h = AZ(3, v - 2); return { a, v, h, sol: v - h, mal: v + h }; },
+      textos: [
+        {
+          con: 'Mila tenía {a} lazos. Por la mañana vendió {v} y por la tarde hizo {h} nuevos. ¿Cuántos lazos vendió de más de los que hizo?',
+          sin: 'Mila tenía unos lazos. Por la mañana vendió unos cuantos y por la tarde hizo algunos nuevos. ¿Cuántos lazos vendió de más de los que hizo?',
+          marca: '¿Cuántos lazos vendió de más de los que hizo?' },
+      ],
+      explica: { juntar: 'Juntándolos salen {mal}. Pero no preguntan cuántos entre los dos: preguntan cuántos de más.' },
+      pistas: ['¿Qué dos cantidades se comparan?', 'Los lazos del principio, ¿sirven para esta pregunta?'],
+      barras: { forma: 'compara', grande: '{v}', pequena: '{h}', dif: '?{sol}' },
+      barrasMal: [{ forma: 'compara', grande: '{a}', pequena: '{v}', dif: '?' },
+                  { forma: 'partes', total: '?{mal}', partes: ['{v}', '{h}'] }],
+      clave: 'Solo se comparaban <b>los vendidos y los hechos</b>: {v} − {h} = {sol}. Los {a} del principio sobraban.' },
+
+    { tipo: 'rejilla', familia: 'huerto', operacion: 'multiplicar',
+      vars: () => { const f = AZ(3, 6), l = AZ(4, 8), r = AZ(3, 9); return { f, l, r, sol: f * l, mal: f * l - r }; },
+      textos: [
+        { con: 'En el huerto de Bruno hay {f} filas con {l} lechugas cada una. Esta mañana ha recogido {r}. ¿Cuántas lechugas había plantadas?',
+          sin: 'En el huerto de Bruno hay unas filas, todas con las mismas lechugas. Esta mañana ha recogido algunas. ¿Cuántas lechugas había plantadas?',
+          marca: '¿Cuántas lechugas había plantadas?' },
+      ],
+      explica: { quitar: 'Pregunta cuántas había plantadas, antes de recoger: lo de esta mañana no cuenta.' },
+      pistas: ['¿Pregunta por antes o por después de recoger?', 'Las filas iguales son grupos iguales.'],
+      barras: { forma: 'grupos', grupos: '{f}', cada: '{l}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{f}', '{l}', '{r}'] },
+                  { forma: 'grupos', grupos: '{f}', cada: '?', total: '{l}' }],
+      clave: 'Pregunta por <b>antes de recoger</b>: {f} × {l} = {sol}. Las {r} recogidas sobraban.' },
+
+    { tipo: 'dos-pasos', familia: 'huerto', operacion: 'dosPasos', pasos: ['multiplicar', 'quitar'],
+      vars: () => { const f = AZ(3, 6), l = AZ(4, 8), r = AZ(3, 9); return { f, l, r, medio: f * l, sol: f * l - r }; },
+      textos: [
+        { con: 'En el huerto de Bruno hay {f} filas con {l} lechugas cada una. Esta mañana ha recogido {r}. ¿Cuántas lechugas le quedan por recoger?',
+          marca: '¿Cuántas lechugas le quedan por recoger?' },
+      ],
+      explicaPasos: { quitar: 'Para quitar las recogidas primero hay que saber cuántas había.' },
+      pistas: ['¿Qué necesitas saber antes de quitar las recogidas?', 'Primero, cuántas había plantadas.'],
+      clave: 'Primero las plantadas ({f} × {l} = {medio}) y después quitar las recogidas ({medio} − {r} = {sol}). <b>Dos pasos.</b>' },
   ],
 
   // ==================================================== INÉS (7-8 años) ====
   pequena: [
 
-    { tipo: 'combina',
+    { tipo: 'cambio', operacion: 'juntar', opciones: ['juntar', 'quitar'],
       vars: () => { const a = AZ(4, 9), b = AZ(3, 8); return { a, b, sol: a + b }; },
-      enunciado: 'Tengo {a} conchas y encuentro {b} más. ¿Cuántas tengo ahora?',
-      operacion: 'juntar', opciones: ['juntar', 'quitar'],
-      explica: { quitar: 'He encontrado más, así que tengo más.' },
-      pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'],
-      clave: 'Si llegan más, <b>se suma</b>.' },
+      textos: [
+        { quien: 'yo', cosas: 'conchas', dir: 'mas',
+          con: 'Tengo {a} conchas y encuentro {b} más. ¿Cuántas tengo ahora?',
+          sin: 'Tengo unas conchas y encuentro más. ¿Cuántas tengo ahora?', marca: 'encuentro {b} más' },
+        { quien: 'Coco', cosas: 'globos', dir: 'mas',
+          con: 'Coco tiene {a} globos. Le regalan {b}. ¿Cuántos globos tiene ahora?',
+          sin: 'Coco tiene unos globos. Le regalan más. ¿Cuántos globos tiene ahora?', marca: 'Le regalan {b}' },
+        { quien: 'el cesto', cosas: 'huevos', dir: 'mas',
+          con: '¿Cuántos huevos hay en el cesto? Había {a} y la gallina pone {b} más.',
+          sin: '¿Cuántos huevos hay en el cesto? Había unos y la gallina pone más.', marca: 'la gallina pone {b} más' },
+      ],
+      explica: { quitar: 'Llegan más, así que al final hay más.' },
+      pistas: ['¿Llegan más o se van?', 'Si llegan más, al final hay más.'],
+      barras: { forma: 'partes', total: '?{sol}', partes: ['{a}', '{b}'] },
+      barrasMal: [{ forma: 'partes', total: '{a}', partes: ['{b}', '?'] }],
+      clave: 'Si llegan más, <b>se suma</b>. {a} + {b} = {sol}.' },
 
-    { tipo: 'cambio',
+    { tipo: 'cambio', operacion: 'quitar', opciones: ['juntar', 'quitar'],
       vars: () => { const a = AZ(8, 16), q = AZ(3, 7); return { a, q, sol: a - q }; },
-      enunciado: 'Había {a} galletas y me he comido {q}. ¿Cuántas quedan?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'Si las junto hay más, y yo me he comido unas cuantas.' },
-      pistas: ['{a} menos {q}.', 'Cuenta hacia atrás desde {a}.'],
-      clave: 'Si se van, <b>se resta</b>.' },
+      textos: [
+        { quien: 'el plato', cosas: 'galletas', dir: 'menos',
+          con: 'Había {a} galletas y me he comido {q}. ¿Cuántas quedan?',
+          sin: 'Había unas galletas y me he comido algunas. ¿Cuántas quedan?', marca: 'me he comido {q}' },
+        { quien: 'el árbol', cosas: 'hojas', dir: 'menos',
+          con: 'El árbol tenía {a} hojas. El viento se lleva {q}. ¿Cuántas hojas le quedan?',
+          sin: 'El árbol tenía unas hojas. El viento se lleva algunas. ¿Cuántas hojas le quedan?', marca: 'El viento se lleva {q}' },
+        { quien: 'la charca', cosas: 'ranas', dir: 'menos',
+          con: '¿Cuántas ranas quedan en la charca? Había {a} y se van saltando {q}.',
+          sin: '¿Cuántas ranas quedan en la charca? Había unas y se van saltando algunas.', marca: 'se van saltando {q}' },
+      ],
+      explica: { juntar: 'Si se van, quedan menos, no más.' },
+      pistas: ['¿Llegan o se van?', 'Si se van, quedan menos.'],
+      barras: { forma: 'partes', total: '{a}', partes: ['{q}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{a}', '{q}'] }],
+      clave: 'Si se van, <b>se resta</b>. {a} − {q} = {sol}.' },
 
-    { tipo: 'cambio-medio',
+    { tipo: 'cambio-medio', operacion: 'quitar', opciones: ['juntar', 'quitar'],
       vars: () => { const a = AZ(3, 9), d = AZ(2, 6); return { a, b: a + d, sol: d }; },
-      enunciado: 'Tenía {a} cromos y ahora tengo {b}. ¿Cuántos me han dado?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'Sumar da más de los que tengo.' },
-      pistas: ['De {a} hasta {b}.', 'Cuenta con los dedos desde {a}.'],
-      clave: 'Aunque tengas <b>más</b> que antes, para saber cuántos te han dado hay que <b>restar</b>.' },
+      textos: [
+        { quien: 'yo', cosas: 'cromos', dir: 'mas',
+          con: 'Tenía {a} cromos y ahora tengo {b}. ¿Cuántos me han dado?',
+          sin: 'Tenía unos cromos y ahora tengo más. ¿Cuántos me han dado?', marca: 'ahora tengo {b}' },
+        { quien: 'Tomeu', cosas: 'peces', dir: 'mas',
+          con: 'Tomeu tenía {a} peces. Ha pescado y ahora tiene {b}. ¿Cuántos ha pescado?',
+          sin: 'Tomeu tenía unos peces. Ha pescado y ahora tiene más. ¿Cuántos ha pescado?', marca: 'ahora tiene {b}' },
+        { quien: 'la hucha', cosas: 'monedas', dir: 'mas',
+          con: '¿Cuántas monedas he metido en la hucha? Antes había {a} y ahora hay {b}.',
+          sin: '¿Cuántas monedas he metido en la hucha? Antes había unas y ahora hay más.', marca: 'ahora hay {b}' },
+      ],
+      explica: { juntar: 'Sumando sale más de lo que hay al final.' },
+      pistas: ['¿Buscas lo de antes, lo de ahora o lo que llegó?', 'Cuenta desde lo de antes hasta lo de ahora.'],
+      barras: { forma: 'partes', total: '{b}', partes: ['{a}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{a}', '{b}'] }],
+      clave: 'Aunque ahora haya <b>más</b>, para saber cuántos llegaron hay que <b>restar</b>: {b} − {a} = {sol}.' },
 
-    { tipo: 'parte',
+    { tipo: 'parte', operacion: 'quitar', opciones: ['juntar', 'quitar'],
       vars: () => { const t = AZ(8, 14), m = AZ(3, 6); return { t, m, sol: t - m }; },
-      enunciado: 'En la cesta hay {t} frutas. {m} son manzanas y las demás peras. ¿Cuántas peras hay?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'En la cesta solo hay {t} en total.' },
-      pistas: ['Del total quita las manzanas.', '{t} menos {m}.'],
-      clave: 'Si sabes <b>el total y una parte</b>, la otra sale restando.' },
+      textos: [
+        { con: 'En la cesta hay {t} frutas. {m} son manzanas y las demás, peras. ¿Cuántas peras hay?',
+          sin: 'En la cesta hay unas frutas. Unas son manzanas y las demás, peras. ¿Cuántas peras hay?', marca: 'En la cesta hay {t} frutas' },
+        { con: 'En el corral hay {t} animales. {m} son ovejas y los demás, cabras. ¿Cuántas cabras hay?',
+          sin: 'En el corral hay unos animales. Unos son ovejas y los demás, cabras. ¿Cuántas cabras hay?', marca: 'En el corral hay {t} animales' },
+        { con: '¿Cuántos lápices no son rojos? En el bote hay {t} lápices y {m} son rojos.',
+          sin: '¿Cuántos lápices no son rojos? En el bote hay unos lápices y algunos son rojos.', marca: 'En el bote hay {t} lápices' },
+      ],
+      explica: { juntar: 'En total solo hay {t}.' },
+      pistas: ['¿Qué número es el de todos juntos?', 'Lo que buscas es un trozo del total.'],
+      barras: { forma: 'partes', total: '{t}', partes: ['{m}', '?{sol}'] },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{t}', '{m}'] }],
+      clave: 'Si sabes <b>el total y una parte</b>, la otra sale restando: {t} − {m} = {sol}.' },
 
-    { tipo: 'compara',
+    { tipo: 'compara', operacion: 'quitar', opciones: ['juntar', 'quitar'],
       vars: () => { const i = AZ(4, 9), d = AZ(2, 5); return { i, g: i + d, sol: d }; },
-      enunciado: 'Gala tiene {g} lazos e Inés tiene {i}. ¿Cuántos lazos tiene Gala más que Inés?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'Juntarlos dice cuántos hay entre las dos, no la diferencia.' },
-      pistas: ['La diferencia entre {g} y {i}.', 'De {i} a {g}.'],
-      clave: 'Cuando preguntan <b>«cuántos más»</b>, se resta.' },
+      textos: [
+        { quien: 'Gala', quien2: 'Inés', cosas: 'lazos', mas: 'quien',
+          con: 'Gala tiene {g} lazos e Inés tiene {i}. ¿Cuántos lazos tiene Gala más que Inés?',
+          sin: 'Gala tiene unos lazos e Inés tiene menos. ¿Cuántos lazos tiene Gala más que Inés?', marca: '¿Cuántos lazos tiene Gala más que Inés?' },
+        { quien: 'el perro', quien2: 'el gato', cosas: 'años', mas: 'quien',
+          con: 'El perro tiene {g} años y el gato, {i}. ¿Cuántos años más tiene el perro?',
+          sin: 'El perro tiene unos años y el gato, menos. ¿Cuántos años más tiene el perro?', marca: '¿Cuántos años más' },
+        { quien: 'Pau', quien2: 'Nube', cosas: 'saltos', mas: 'quien',
+          con: '¿Cuántos saltos más ha dado Pau que Nube? Pau ha dado {g} y Nube, {i}.',
+          sin: '¿Cuántos saltos más ha dado Pau que Nube? Pau ha dado unos cuantos y Nube, menos.', marca: '¿Cuántos saltos más' },
+      ],
+      explica: { juntar: 'Juntarlos dice cuántos hay entre los dos, no cuánto le saca uno al otro.' },
+      pistas: ['¿Quién tiene más?', '¿Cuánto le saca al otro?'],
+      barras: { forma: 'compara', grande: '{g}', pequena: '{i}', dif: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{g}', '{i}'] }],
+      clave: 'Cuando preguntan <b>«cuántos más»</b>, se busca la diferencia: {g} − {i} = {sol}.' },
 
-    { tipo: 'grupos',
+    { tipo: 'grupos', operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
       vars: () => { const p = AZ(2, 4), g = AZ(3, 6); return { p, g, sol: p * g, mal: p + g }; },
-      enunciado: 'Hay {p} platos y en cada plato hay {g} galletas. ¿Cuántas galletas hay?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
-      explica: { juntar: '{mal} no: en CADA plato hay {g}.' },
-      pistas: ['{g}, {p} veces.', 'Ve contando de {g} en {g}.'],
-      clave: 'Lo mismo varias veces es <b>multiplicar</b>, que también es sumarlo repetido.' },
+      textos: [
+        { con: 'Hay {p} platos y en cada plato hay {g} galletas. ¿Cuántas galletas hay?',
+          sin: 'Hay unos platos y en todos hay las mismas galletas. ¿Cuántas galletas hay?', marca: 'en cada plato hay {g} galletas' },
+        { con: 'Tengo {p} cajas de {g} colores. ¿Cuántos colores tengo?',
+          sin: 'Tengo unas cajas, todas con los mismos colores. ¿Cuántos colores tengo?', marca: 'cajas de {g} colores' },
+        { con: '¿Cuántas flores hay? Hay {p} jarrones y en todos hay {g} flores.',
+          sin: '¿Cuántas flores hay? Hay unos jarrones y en todos hay las mismas flores.', marca: 'en todos hay {g} flores' },
+      ],
+      explica: { juntar: '{mal} no: en CADA uno hay {g}.' },
+      pistas: ['¿Todos tienen lo mismo?', 'Cuenta de {g} en {g}.'],
+      barras: { forma: 'grupos', grupos: '{p}', cada: '{g}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{p}', '{g}'] }],
+      clave: 'Lo mismo varias veces es <b>multiplicar</b>: {p} × {g} = {sol}.' },
 
-    { tipo: 'grupos',
-      vars: () => { const p = AZ(2, 5); return { p, sol: p * 4 }; },
-      enunciado: 'Cada poni tiene 4 patas. Si hay {p} ponis, ¿cuántas patas hay?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
-      explica: { juntar: 'Cada uno de los {p} ponis tiene 4 patas.' },
-      pistas: ['4 patas, {p} veces.', '4, 8, 12…'],
-      clave: '{p} grupos iguales de 4: se multiplica.' },
+    { tipo: 'grupos', operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+      vars: () => { const p = AZ(2, 5); return { p, sol: p * 4, mal: p + 4 }; },
+      textos: [
+        { con: 'Cada poni tiene 4 patas. Si hay {p} ponis, ¿cuántas patas hay?',
+          sin: 'Cada poni tiene 4 patas. Si hay unos cuantos ponis, ¿cuántas patas hay?', marca: 'Cada poni tiene 4 patas' },
+        { con: 'Hay {p} mesas y cada mesa tiene 4 sillas. ¿Cuántas sillas hay?',
+          sin: 'Hay unas mesas y cada mesa tiene 4 sillas. ¿Cuántas sillas hay?', marca: 'cada mesa tiene 4 sillas' },
+        { con: '¿Cuántas ruedas tienen {p} coches? Cada coche tiene 4.',
+          sin: '¿Cuántas ruedas tienen unos coches? Cada coche tiene 4.', marca: 'Cada coche tiene 4' },
+      ],
+      explica: { juntar: '{mal} no: cada uno de los {p} tiene 4.' },
+      pistas: ['¿Todos tienen lo mismo?', '4, 8, 12…'],
+      barras: { forma: 'grupos', grupos: '{p}', cada: '4', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{p}', '4'] }],
+      clave: '{p} grupos iguales de 4: se multiplica. {p} × 4 = {sol}.' },
 
-    { tipo: 'reparto',
+    { tipo: 'reparto', operacion: 'repartir', opciones: ['juntar', 'repartir'],
       vars: () => { const c = AZ(3, 7); return { c, t: c * 2, sol: c }; },
-      enunciado: 'Hay {t} fresas para 2 niñas, las mismas para cada una. ¿Cuántas le tocan a cada una?',
-      operacion: 'repartir', opciones: ['juntar', 'repartir'],
-      explica: { juntar: 'Juntarlas no dice cuántas le tocan a cada una.' },
-      pistas: ['La mitad de {t}.', '{sol} y {sol} son {t}.'],
+      textos: [
+        { con: 'Hay {t} fresas para 2 niñas, las mismas para cada una. ¿Cuántas le tocan a cada una?',
+          sin: 'Hay unas fresas para 2 niñas, las mismas para cada una. ¿Cuántas le tocan a cada una?', marca: 'las mismas para cada una' },
+        { con: 'Reparto {t} cromos entre mi hermana y yo, a partes iguales. ¿Cuántos son para mí?',
+          sin: 'Reparto unos cromos entre mi hermana y yo, a partes iguales. ¿Cuántos son para mí?', marca: 'a partes iguales' },
+        { con: '¿Cuántos peces van en cada pecera? Hay {t} peces y 2 peceras, con los mismos en las dos.',
+          sin: '¿Cuántos peces van en cada pecera? Hay unos peces y 2 peceras, con los mismos en las dos.', marca: 'con los mismos en las dos' },
+      ],
+      explica: { juntar: 'Juntarlos no dice cuántos le tocan a cada uno.' },
+      pistas: ['¿Entre cuántos se reparte?', 'La mitad para cada uno.'],
+      barras: { forma: 'grupos', grupos: '2', cada: '?{sol}', total: '{t}' },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{t}', '2'] }],
       clave: 'Repartir en partes iguales es <b>dividir</b>. La mitad de {t} es {sol}.' },
 
-    { tipo: 'reparto',
+    { tipo: 'reparto', operacion: 'repartir', opciones: ['multiplicar', 'repartir'],
       vars: () => { const b = AZ(2, 4), c = AZ(3, 5); return { b, t: b * c, sol: c }; },
-      enunciado: 'Reparto {t} galletas entre {b} boles, todos igual. ¿Cuántas van en cada bol?',
-      operacion: 'repartir', opciones: ['multiplicar', 'repartir'],
-      explica: { multiplicar: 'Eso serían muchísimas más galletas.' },
-      pistas: ['{t} entre {b}.', 'Una a cada uno, y otra vuelta.'],
-      clave: 'Cuando el reparto es <b>igual para todos</b>, se divide.' },
+      textos: [
+        { con: 'Reparto {t} galletas entre {b} boles, todos igual. ¿Cuántas van en cada bol?',
+          sin: 'Reparto unas galletas entre unos boles, todos igual. ¿Cuántas van en cada bol?', marca: 'todos igual' },
+        { con: 'Hay {t} niñas y {b} equipos con las mismas niñas. ¿Cuántas niñas hay en cada equipo?',
+          sin: 'Hay unas niñas y unos equipos con las mismas niñas. ¿Cuántas niñas hay en cada equipo?', marca: 'con las mismas niñas' },
+        { con: '¿Cuántas canicas van en cada bolsa? Tengo {t} canicas y {b} bolsas, y en todas pongo las mismas.',
+          sin: '¿Cuántas canicas van en cada bolsa? Tengo unas canicas y unas bolsas, y en todas pongo las mismas.', marca: 'en todas pongo las mismas' },
+      ],
+      explica: { multiplicar: 'Eso serían muchísimas más de las que hay.' },
+      pistas: ['¿Entre cuántos se reparte?', 'Una a cada uno, y otra vuelta.'],
+      barras: { forma: 'grupos', grupos: '{b}', cada: '?{sol}', total: '{t}' },
+      barrasMal: [{ forma: 'grupos', grupos: '{b}', cada: '{t}', total: '?' }],
+      clave: 'Cuando el reparto es <b>igual para todos</b>, se divide: {t} : {b} = {sol}.' },
 
-    { tipo: 'compara-mult',
-      vars: () => { const i = AZ(2, 6); return { i, sol: i * 2 }; },
-      enunciado: 'Inés tiene {i} conchas y Gala tiene el doble. ¿Cuántas tiene Gala?',
-      operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
-      explica: { juntar: '«El doble» no es sumar dos: es dos veces lo que tiene la otra.' },
-      pistas: ['El doble es dos veces.', '{i} y otros {i}.'],
-      clave: '<b>El doble</b> es dos veces lo mismo.' },
+    { tipo: 'compara-mult', operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+      vars: () => { const i = AZ(2, 6); return { i, sol: i * 2, mal: i + 2 }; },
+      textos: [
+        { quien: 'Inés', quien2: 'Gala', cosas: 'conchas', mas: 'quien2',
+          con: 'Inés tiene {i} conchas y Gala tiene el doble. ¿Cuántas tiene Gala?',
+          sin: 'Inés tiene unas conchas y Gala tiene el doble. ¿Cuántas tiene Gala?', marca: 'Gala tiene el doble' },
+        { quien: 'Nube', quien2: 'Coco', cosas: 'plumas', mas: 'quien2',
+          con: 'Nube tiene {i} plumas. Coco tiene el doble. ¿Cuántas plumas tiene Coco?',
+          sin: 'Nube tiene unas plumas. Coco tiene el doble. ¿Cuántas plumas tiene Coco?', marca: 'Coco tiene el doble' },
+        { quien: 'el gatito', quien2: 'el perro', cosas: 'galletas', mas: 'quien2',
+          con: '¿Cuántas galletas come el perro? El gatito come {i} y el perro, el doble.',
+          sin: '¿Cuántas galletas come el perro? El gatito come unas pocas y el perro, el doble.', marca: 'el perro, el doble' },
+      ],
+      explica: { juntar: '«El doble» no es sumar dos: sale {mal}. Es dos veces lo mismo.' },
+      pistas: ['¿Qué quiere decir «el doble»?', '{i} y otros {i}.'],
+      barras: { forma: 'grupos', grupos: '2', cada: '{i}', total: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?{mal}', partes: ['{i}', '2'] }],
+      clave: '<b>El doble</b> es dos veces lo mismo: {i} y {i} son {sol}.' },
 
-    { tipo: 'sobra',
+    { tipo: 'sobra', operacion: 'juntar', opciones: ['juntar', 'quitar'],
       vars: () => { const o = AZ(3, 7), p = AZ(2, 5), c = AZ(2, 4); return { o, p, c, sol: o + p }; },
-      enunciado: 'En el corral hay {o} ovejas, {p} ponis y {c} cubos. ¿Cuántos animales hay?',
-      operacion: 'juntar', opciones: ['juntar', 'quitar'],
+      textos: [
+        { datos: ['las ovejas', 'los ponis', 'los cubos'], sobra: 'los cubos',
+          con: 'En el corral hay {o} ovejas, {p} ponis y {c} cubos. ¿Cuántos animales hay?',
+          sin: 'En el corral hay unas ovejas, unos ponis y unos cubos. ¿Cuántos animales hay?', marca: '¿Cuántos animales hay?' },
+        { datos: ['las manzanas', 'las peras', 'los platos'], sobra: 'los platos',
+          con: 'En la mesa hay {o} manzanas, {p} peras y {c} platos. ¿Cuántas frutas hay?',
+          sin: 'En la mesa hay unas manzanas, unas peras y unos platos. ¿Cuántas frutas hay?', marca: '¿Cuántas frutas hay?' },
+        { datos: ['los patos', 'las gallinas', 'las piedras'], sobra: 'las piedras',
+          con: '¿Cuántas aves hay en la granja? Hay {o} patos, {p} gallinas y {c} piedras.',
+          sin: '¿Cuántas aves hay en la granja? Hay unos patos, unas gallinas y unas piedras.', marca: '¿Cuántas aves hay en la granja?' },
+      ],
       explica: { quitar: 'No se va ninguno: hay que contarlos.' },
-      pistas: ['Los cubos no son animales.', 'Solo ovejas y ponis: {o} y {p}.'],
-      clave: 'Los cubos <b>sobraban</b>. A veces en un problema hay datos que no hacen falta.' },
+      pistas: ['¿Todos los números son de lo que te preguntan?', 'Quita lo que no es lo que preguntan.'],
+      barras: { forma: 'partes', total: '?{sol}', partes: ['{o}', '{p}'] },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{o}', '{p}', '{c}'] }],
+      clave: '{sobra} <b>sobraban</b>. A veces en un problema hay datos que no hacen falta.' },
 
-    { tipo: 'dos-pasos',
+    { tipo: 'dos-pasos', operacion: 'dosPasos', pasos: ['juntar', 'quitar'], ordenLibre: true, opciones: ['juntar', 'quitar'],
       vars: () => { const t = AZ(8, 15), g = AZ(3, 7), q = AZ(2, 5);
                     return { t, g, q, medio: t + g, sol: t + g - q }; },
-      enunciado: 'Tenía {t} conchas, gano {g} y luego gasto {q}. ¿Cuántas tengo?',
-      operacion: 'dosPasos', opciones: ['juntar', 'quitar', 'dosPasos'],
-      explica: { juntar: 'Sumar solo se olvida de las {q} que has gastado.',
-                 quitar: 'Antes de gastar habías ganado {g}.' },
-      pistas: ['Primero {t} y {g}.', '{medio} menos {q}.'],
-      clave: 'Pasan <b>dos cosas</b>: primero una y luego la otra, en orden.' },
+      textos: [
+        { con: 'Tenía {t} conchas, gano {g} y luego gasto {q}. ¿Cuántas tengo?', marca: 'gano {g} y luego gasto {q}' },
+        { con: 'En el bus van {t} niñas. Suben {g} y bajan {q}. ¿Cuántas niñas van ahora?', marca: 'Suben {g} y bajan {q}' },
+        { con: '¿Cuántos globos tiene Coco? Tenía {t}, le dan {g} y se le escapan {q}.', marca: 'le dan {g} y se le escapan {q}' },
+      ],
+      pistas: ['¿Cuántas cosas pasan?', 'Haz una y luego la otra.'],
+      clave: 'Pasan <b>dos cosas</b>: primero una y luego la otra. {t} + {g} = {medio}, y {medio} − {q} = {sol}.' },
 
-    { tipo: 'iguala',
-      vars: () => { const i = AZ(4, 9), d = AZ(2, 5); return { i, q: i + d, sol: d }; },
-      enunciado: 'Inés tiene {i} cromos y quiere tener {q}. ¿Cuántos le faltan?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'Ella solo quiere llegar a {q}, no tener más.' },
-      pistas: ['De {i} hasta {q}.', 'Cuenta desde {i}.'],
-      clave: '«Cuántos le faltan» también <b>se resta</b>.' },
+    { tipo: 'iguala', operacion: 'quitar', opciones: ['juntar', 'quitar'],
+      vars: () => { const i = AZ(4, 9), d = AZ(2, 5); return { i, g: i + d, sol: d }; },
+      textos: [
+        {
+          con: 'Inés tiene {i} cromos y quiere tener {g}. ¿Cuántos le faltan?',
+          sin: 'Inés tiene unos cromos y quiere tener más. ¿Cuántos le faltan?', marca: 'quiere tener {g}' },
+        {
+          con: 'Mi torre tiene {i} piezas y la quiero de {g}. ¿Cuántas piezas me faltan?',
+          sin: 'Mi torre tiene unas piezas y la quiero más alta. ¿Cuántas piezas me faltan?', marca: 'la quiero de {g}' },
+        { quien: 'Pau', quien2: 'Nube', cosas: 'pegatinas', mas: 'quien2',
+          con: '¿Cuántas pegatinas le faltan a Pau para tener las mismas que Nube? Pau tiene {i} y Nube, {g}.',
+          sin: '¿Cuántas pegatinas le faltan a Pau para tener las mismas que Nube? Pau tiene unas y Nube, más.', marca: 'para tener las mismas que Nube' },
+      ],
+      explica: { juntar: 'Solo quiere llegar a {g}, no tener muchísimos.' },
+      pistas: ['¿Cuánto tiene y cuánto quiere?', 'Cuenta desde lo que tiene hasta lo que quiere.'],
+      barras: { forma: 'compara', grande: '{g}', pequena: '{i}', dif: '?{sol}' },
+      barrasMal: [{ forma: 'partes', total: '?', partes: ['{i}', '{g}'] }],
+      clave: '«Cuántos le faltan» es la diferencia: {g} − {i} = {sol}.' },
 
-    { tipo: 'compara-menos',
+    { tipo: 'compara-menos', operacion: 'quitar', opciones: ['juntar', 'quitar'],
       vars: () => { const n = AZ(6, 12), d = AZ(2, 5); return { n, d, sol: n - d }; },
-      enunciado: 'Nube tiene {n} conchas. Coco tiene {d} menos que Nube. ¿Cuántas tiene Coco?',
-      operacion: 'quitar', opciones: ['juntar', 'quitar'],
-      explica: { juntar: 'Coco tiene MENOS, no más.' },
-      pistas: ['El que tiene menos es Coco.', '{n} menos {d}.'],
-      clave: 'Aquí «menos que» sí es restar. Fíjate en <b>quién tiene menos</b>.' },
+      textos: [
+        { quien: 'Nube', quien2: 'Coco', cosas: 'conchas', mas: 'quien', busca: 1,
+          con: 'Nube tiene {n} conchas. Coco tiene {d} menos que Nube. ¿Cuántas tiene Coco?',
+          sin: 'Nube tiene unas conchas. Coco tiene menos que Nube. ¿Cuántas tiene Coco?', marca: 'Coco tiene {d} menos que Nube' },
+        { quien: 'la gata', quien2: 'el gatito', cosas: 'bolitas', mas: 'quien', busca: 1,
+          con: 'La gata juega con {n} bolitas. El gatito juega con {d} menos. ¿Con cuántas juega el gatito?',
+          sin: 'La gata juega con unas bolitas. El gatito juega con menos. ¿Con cuántas juega el gatito?', marca: 'El gatito juega con {d} menos' },
+        { quien: 'Tomeu', quien2: 'Bruno', cosas: 'peces', mas: 'quien', busca: 1,
+          con: '¿Cuántos peces tiene Bruno? Tomeu tiene {n} y Bruno tiene {d} menos.',
+          sin: '¿Cuántos peces tiene Bruno? Tomeu tiene unos cuantos y Bruno tiene menos.', marca: 'Bruno tiene {d} menos' },
+      ],
+      explica: { juntar: 'El que buscas tiene MENOS, no más.' },
+      pistas: ['¿Quién tiene menos?', 'El que buscas, ¿tiene más o menos?'],
+      barras: { forma: 'compara', grande: '{n}', pequena: '?{sol}', dif: '{d}' },
+      barrasMal: [{ forma: 'compara', grande: '?', pequena: '{n}', dif: '{d}' }],
+      clave: 'Aquí «menos que» sí es restar: {n} − {d} = {sol}. Fíjate en <b>quién tiene menos</b>.' },
 
-    { tipo: 'agrupa',
+    { tipo: 'agrupa', operacion: 'repartir', opciones: ['multiplicar', 'repartir'],
       vars: () => { const c = AZ(2, 3), r = AZ(3, 5); return { c, t: c * r, sol: r }; },
-      enunciado: 'Tengo {t} flores y hago ramitos de {c} flores. ¿Cuántos ramitos me salen?',
-      operacion: 'repartir', opciones: ['multiplicar', 'repartir'],
-      explica: { multiplicar: 'Eso serían muchas más flores de las que tengo.' },
-      pistas: ['De {c} en {c} hasta {t}.', 'Cuenta: {c}, {c}+{c}…'],
-      clave: 'Esto también es <b>dividir</b>: sabes cuántas van en cada ramito y buscas cuántos salen.' },
+      textos: [
+        { con: 'Tengo {t} flores y hago ramitos de {c} flores. ¿Cuántos ramitos me salen?',
+          sin: 'Tengo unas flores y hago ramitos, todos iguales. ¿Cuántos ramitos me salen?', marca: 'ramitos de {c} flores' },
+        { con: 'Hay {t} calcetines y los pongo de {c} en {c}. ¿Cuántos montones hago?',
+          sin: 'Hay unos calcetines y los pongo en montones iguales. ¿Cuántos montones hago?', marca: 'de {c} en {c}' },
+        { con: '¿Cuántas parejas salen? Hay {t} niñas y se ponen de {c} en {c}.',
+          sin: '¿Cuántos grupos salen? Hay unas niñas y se ponen en grupos iguales.', marca: 'se ponen de {c} en {c}' },
+      ],
+      explica: { multiplicar: 'Eso serían muchas más de las que tengo.' },
+      pistas: ['¿Cuántos van en cada grupo?', 'Cuenta de {c} en {c} hasta {t}.'],
+      barras: { forma: 'grupos', grupos: '?{sol}', cada: '{c}', total: '{t}' },
+      barrasMal: [{ forma: 'grupos', grupos: '{c}', cada: '{t}', total: '?' }],
+      clave: 'Esto también es <b>dividir</b>: sabes cuántos van en cada grupo y buscas cuántos grupos salen. {t} : {c} = {sol}.' },
   ],
 };
 
-/* Saca un problema del banco. Evita repetir la misma forma dos veces seguidas,
-   para que vea planteamientos distintos y no se acostumbre a uno solo. */
-function problemaPara(nivel, ultimoTipo, hechos) {
-  const banco = PROBLEMAS[nivel] || PROBLEMAS.pequena;
-  let lista = banco.filter(p => p.tipo !== ultimoTipo);
-  if (!lista.length) lista = banco;
-  /* La mitad de las veces, de las formas que menos ha resuelto: así los
-     huecos del álbum son justo lo que más le toca practicar. */
-  if (hechos && Math.random() < 0.5) {
-    const n = (p) => hechos[p.tipo] || 0;
-    const menos = Math.min(...lista.map(n));
-    lista = lista.filter(p => n(p) === menos);
-  }
-  return lista[Math.floor(Math.random() * lista.length)];
-}
-
 /* EL ÁLBUM: una pegatina por cada forma de problema. Con 3 resueltos lleva
-   estrella y con 6 es de oro. Se ve en la mochila. */
-/* Cada forma de problema con su REGLA: la frase que hay que saber ver para
+   estrella y con 6 es de oro. Se ve en la mochila.
+   Cada forma de problema con su REGLA: la frase que hay que saber ver para
    resolver todos los de esa clase. Sale en el Cuaderno de Cabeza al tocar la
    pegatina, y es lo más parecido a «aprenderse la teoría» que hay en el juego:
    la regla llega después de haberlo hecho, no antes. */
@@ -3205,7 +3859,9 @@ const PEGATINAS = {
   'sobra':         { icono: '🙈', nombre: 'Un dato que sobra',
     regla: 'No todos los números del enunciado sirven. Pregúntate <b>qué te están pidiendo</b> y usa solo lo que haga falta.' },
   'resto':         { icono: '🍪', nombre: '¿Y lo que sobra?',
-    regla: 'Al repartir no siempre sale exacto: lo que no se puede repartir es el <b>resto</b>.' },
+    regla: 'Al repartir no siempre sale exacto: lo que no se puede repartir es el <b>resto</b>. A veces se deja fuera y a veces hace falta uno más.' },
+  'falta':         { icono: '🤷', nombre: 'Falta un dato',
+    regla: 'Antes de calcular, mira si <b>tienes todo lo que necesitas</b>. Si falta un dato, la respuesta es «no se puede saber».' },
 };
 
 </script>
@@ -3946,6 +4602,9 @@ const Estado = {
       hechosHoy: { dia: '', ids: [] },    // retos ya superados hoy: no se repiten
       retosDelDia: { dia: '', ids: [] },  // qué sitios tienen reto hoy
       ultimaVariante: {},       // qué versión salió la última vez en cada reto
+      registro: [],             // cada problema y reto: si lo entendió a la primera (informe de la portada)
+      ultimoTexto: {},          // qué historia salió la última vez en cada problema
+      paquetes: { nivel: 1, seguidas: 0 },  // los encargos de Teo: por qué dificultad va
     };
   },
 
@@ -4211,6 +4870,15 @@ const Estado = {
     this.actual.problemas[tipo] = (this.actual.problemas[tipo] || 0) + 1;
     this.guardar();
     return this.actual.problemas[tipo];      // 1 = pegatina nueva en el álbum
+  },
+
+  /* Un intento de problema o de reto, para el informe de la portada.
+     Se guardan los últimos 400: sobra para ver la evolución y no llena el aparato. */
+  apuntarIntento(x) {
+    if (!this.actual.registro) this.actual.registro = [];
+    this.actual.registro.push(x);
+    if (this.actual.registro.length > 400) this.actual.registro.splice(0, this.actual.registro.length - 400);
+    this.guardar();
   },
 
   leerHistoria(id) {
@@ -5936,6 +6604,7 @@ const UI = {
   },
 
   hablar(texto) {
+    this.vozUsada = true;          // se apunta en el informe: ¿lo lee o lo escucha?
     if (!AJUSTES.vozActivada || !window.speechSynthesis) return;
     speechSynthesis.cancel();
     const v = new SpeechSynthesisUtterance(texto.replace(/<[^>]*>/g, ' '));
@@ -6062,21 +6731,28 @@ const Desafio = {
       let i = Math.floor(Math.random() * n);
       if (n > 1 && i === p.ultimaVariante[id]) i = (i + 1 + Math.floor(Math.random() * (n - 1))) % n;
       p.ultimaVariante[id] = i;
-      r = bloque.variantes[i].delBanco ? this.retoDelBanco(p.nivel) : montarConNumeros(bloque.variantes[i]);
+      if (bloque.variantes[i].delBanco) return { delBanco: true };
+      r = montarConNumeros(bloque.variantes[i]);
     }
     r.enunciado = conPregunta(r.enunciado);
     return r;
   },
 
   /* Un problema del banco hecho reto: el dueño de la atracción te lo plantea
-     y se contesta con el teclado. Así en cualquier sitio puede salir
-     cualquier forma de problema. */
-  retoDelBanco(nivel) {
-    const pr = montarConNumeros(problemaPara(nivel, this.ultimoTipo, Estado.actual.problemas));
-    this.ultimoTipo = pr.tipo;
-    return Object.assign({}, pr, {
-      mecanica: 'cerradura', preguntas: [{ texto: '', sol: pr.sol }],
-      moralejaPropia: { titulo: 'Lo que había que ver', texto: pr.clave },
+     y se resuelve paso a paso (motor/problema.js). Así en cualquier sitio
+     puede salir cualquier forma de problema. */
+  problemaDeReto(id) {
+    Problema.jugar(Estado.actual.nivel, {
+      suelto: false,
+      quien: this.quien(id),
+      alAcertar: (limpio) => {
+        const pr = Problema.p;
+        this.reto = { tipo: pr.tipo, operacion: pr.operacion,
+                      moralejaPropia: { titulo: 'Lo que había que ver', texto: Problema.claveHtml() } };
+        this.fallosLeer = limpio ? 0 : 1;
+        this.exito();
+      },
+      alDormir: () => this.dormirse(),
     });
   },
 
@@ -6103,6 +6779,7 @@ const Desafio = {
     }
 
     this.fallosLeer = 0;
+    this.intentoReto = null;
     this.reto = this.elegir(id);
     const p = Estado.actual;
     let saludo = (p.facilitados && p.facilitados[id]) ? info.despierta : info.saludo;
@@ -6120,7 +6797,7 @@ const Desafio = {
     }
 
     UI.dialogo(this.quien(id), saludo, [
-      { texto: 'A ver, cuéntame', accion: () => this.fase1() },
+      { texto: 'A ver, cuéntame', accion: () => (this.reto.delBanco ? this.problemaDeReto(id) : this.fase1()) },
     ]);
   },
 
@@ -6143,10 +6820,12 @@ const Desafio = {
        fácil): con dos o tres tarjetas se acierta probando sin leer. Y en
        distinto orden cada vez, para que no valga acordarse del sitio. */
     let ops = r.opciones.slice();
-    if (Estado.actual.nivel === 'mayor' && ops.length > 2)
+    if (Estado.actual.nivel === 'mayor' && ops.length > 2) {
       ['juntar', 'quitar', 'multiplicar', 'repartir'].forEach(o => {
         if (ops.length < 4 && !ops.includes(o)) ops.push(o);
       });
+      if (novedad('faltaDato')) ops.push('falta');
+    }
     const tarjetas = barajar(ops).map(o => `
       <button class="tarjeta" data-op="${o}">
         <span class="icono">${OPERACIONES[o].icono}</span>
@@ -6162,19 +6841,47 @@ const Desafio = {
     `);
     esperarTarjetas();
     UI.prepararAltavoz(r.enunciado + ' ¿Qué hay que hacer?');
+    const inicio = Date.now();
+    UI.vozUsada = false;
+    this.intentoReto = { d: new Date().toISOString().slice(0, 10), t: 'reto', id: this.parada,
+      nv: Estado.actual.nivel, op1: true, seg: null, prisa: null,
+      pal: r.enunciado.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length };
+    let paso = 0;
 
     UI.modal.querySelectorAll('.tarjeta').forEach(b => {
       b.onclick = () => {
-        if (b.dataset.op === r.operacion) {
+        if (b.disabled) return;
+        const it = this.intentoReto;
+        if (it.seg === null) {
+          it.seg = Math.round((Date.now() - inicio) / 100) / 10;
+          it.prisa = it.seg < it.pal * AJUSTES.segundosPorPalabraMinimo;
+        }
+        // Dos pasos: primero uno y después otro (ya no hay tarjeta comodín)
+        const buena = r.pasos ? r.pasos[paso] : r.operacion;
+        if (b.dataset.op === buena && r.pasos && paso === 0) {
+          paso = 1;
           b.classList.add('bien');
           Sonido.acierto();
-          document.getElementById('pista').innerHTML =
-            '✅ Eso es: <b>' + OPERACIONES[r.operacion].pista + '</b>.';
+          document.getElementById('pista').innerHTML = '✅ Eso, lo primero. <b>¿Y después?</b>';
+          setTimeout(() => UI.modal.querySelectorAll('.tarjeta').forEach(x => {
+            x.classList.remove('bien', 'mal'); x.disabled = false; }), 900);
+          return;
+        }
+        if (b.dataset.op === buena) {
+          b.classList.add('bien');
+          Sonido.acierto();
+          document.getElementById('pista').innerHTML = r.pasos
+            ? '✅ Eso es: <b>dos cuentas, una detrás de otra</b>.'
+            : '✅ Eso es: <b>' + OPERACIONES[r.operacion].pista + '</b>.';
           setTimeout(() => this.fase2(), 900);
         } else {
+          b.disabled = true;
+          it.op1 = false;
           b.classList.add('mal');
           Sonido.fallo();
-          const razon = (r.explica && r.explica[b.dataset.op]) || 'Mmm… así no nos sale. Vuelve a leer la pregunta.';
+          const razon = (paso === 1 && 'Lo primero ya lo tienes. ¿Qué pasa después en la historia?') ||
+            (r.explica && r.explica[b.dataset.op]) || EXPLICA_GENERAL[b.dataset.op] ||
+            'Mmm… así no nos sale. Vuelve a leer la pregunta.';
           document.getElementById('pista').innerHTML = '💭 ' + razon;
           this.fallosLeer++;
           this.sumarFallo();
@@ -6335,130 +7042,9 @@ const Desafio = {
     };
   },
 
-  /* UN PROBLEMA DEL BANCO: lo importante del juego.
-     Se lee, se decide qué hay que hacer y se teclea el resultado. Al final se
-     explica QUÉ HABÍA QUE VER, que es lo que de verdad se aprende. */
+  /* UN PROBLEMA DEL BANCO, suelto (desde el salón de Coco): motor/problema.js */
   problema(nivel, alTerminar) {
-    const p = montarConNumeros(problemaPara(nivel, this.ultimoTipo, Estado.actual.problemas));
-    this.ultimoTipo = p.tipo;
-    p.enunciado = conPregunta(p.enunciado);
-    this.problemaActual = p;
-    this.alTerminar = alTerminar;
-    this.parada = null;
-    this.fallos = 0;
-    this.pintarProblema(p);
-  },
-
-  pintarProblema(p) {
-    const tecnico = Estado.actual.nivel === 'mayor' && Math.random() < 0.5;
-    const nombre = (o) => tecnico ? OPERACIONES[o].tecnico : OPERACIONES[o].texto;
-
-    UI.abrir(`
-      <div class="quien">Un problema</div>
-      <p class="dice">${p.enunciado}</p>
-      <div class="altavoz" id="zonaVoz"></div>
-      <p class="pregunta">¿Qué hay que hacer?</p>
-      <div class="tarjetas">
-        ${barajar(p.opciones).map(o => `
-          <button class="tarjeta" data-op="${o}">
-            <span class="icono">${OPERACIONES[o].icono}</span>
-            <span>${nombre(o)}</span>
-          </button>`).join('')}
-      </div>
-      <p class="pista" id="pista"></p>
-    `);
-    esperarTarjetas();
-    UI.prepararAltavoz(p.enunciado + ' ¿Qué hay que hacer?');
-
-    UI.modal.querySelectorAll('.tarjeta').forEach(b => {
-      b.onclick = () => {
-        if (b.dataset.op === p.operacion) {
-          b.classList.add('bien');
-          Sonido.acierto();
-          document.getElementById('pista').innerHTML =
-            '✅ Eso es: <b>' + OPERACIONES[p.operacion].pista + '</b>.';
-          setTimeout(() => this.responderProblema(p), 1000);
-        } else {
-          b.classList.add('mal');
-          Sonido.fallo();
-          document.getElementById('pista').innerHTML =
-            '💭 ' + ((p.explica && p.explica[b.dataset.op]) || 'Vuelve a leer el problema con calma.');
-          this.fallos++;
-        }
-      };
-    });
-  },
-
-  responderProblema(p) {
-    let marcado = '';
-    const pintar = () => {
-      UI.abrir(`
-        <p class="dice">${p.enunciado}</p>
-        <div class="pantallita" id="marcado">${marcado || '—'}</div>
-        <div class="teclado">
-          ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button class="tecla-num" data-n="${n}">${n}</button>`).join('')}
-          <button class="tecla-num borrar" data-n="x">⌫</button>
-        </div>
-        <div class="botones"><button class="btn defecto" id="probar">Ya lo tengo<span class="tecla">espacio</span></button></div>
-        <p class="pista" id="pista"></p>
-      `);
-      UI.modal.querySelectorAll('.tecla-num').forEach(b => {
-        b.onclick = () => {
-          Sonido.clic();
-          if (b.dataset.n === 'x') marcado = marcado.slice(0, -1);
-          else if (marcado.length < 4) marcado += b.dataset.n;
-          document.getElementById('marcado').textContent = marcado || '—';
-        };
-      });
-      document.getElementById('probar').onclick = () => {
-        if (marcado !== '' && +marcado === p.sol) {
-          Sonido.acierto();
-          setTimeout(() => this.premiarProblema(p), 400);
-        } else {
-          Sonido.fallo();
-          this.fallos++;
-          const pistas = p.pistas || [];
-          document.getElementById('pista').innerHTML =
-            '💭 ' + (pistas[Math.min(this.fallos - 1, pistas.length - 1)] || 'Vuelve a leerlo.');
-          marcado = '';
-          document.getElementById('marcado').textContent = '—';
-        }
-      };
-    };
-    pintar();
-  },
-
-  premiarProblema(p) {
-    const paga = Estado.darConchasConTope(AJUSTES.conchasPorProblema);
-    const nueva = Estado.apuntarProblema(p.tipo) === 1 && novedad('album');
-    const cofre = this.fallos === 0 && Cofre.toca();     // sin fallos = leído a la primera
-    const luego = (f) => (cofre ? Cofre.abrir(f) : f());
-    UI.refrescarHud();
-    Sonido.fiesta();
-    setTimeout(() => Sonido.moneda(), 400);
-
-    UI.abrir(`
-      <div class="quien">💡 Lo que había que ver aquí</div>
-      <p class="dice">${p.clave}</p>
-      <div class="altavoz" id="zonaVoz"></div>
-      <p class="contador">${paga ? '🐚 <b>+' + paga + ' conchas</b>'
-        : '🐚 <small>Por hoy ya has ganado todas las conchas que se pueden ganar aquí. ' +
-          'Los problemas siguen contando para el álbum.</small>'}</p>
-      ${nueva ? '<p class="contador">📒 <b>¡Pegatina nueva!</b> Mírala en tus cuadernos 📔</p>' : ''}
-      <div class="botones">
-        <button class="btn defecto" id="otro">Otro problema<span class="tecla">espacio</span></button>
-        <button class="btn gris" id="basta">Ya está bien</button>
-      </div>
-    `);
-    UI.prepararAltavoz(p.clave.replace(/<[^>]*>/g, ' '));
-    document.getElementById('otro').onclick = () => {
-      Sonido.clic();
-      luego(() => this.problema(Estado.actual.nivel, this.alTerminar));
-    };
-    document.getElementById('basta').onclick = () => {
-      Sonido.clic();
-      luego(() => { UI.cerrar(); if (this.alTerminar) this.alTerminar(true); });
-    };
+    Problema.jugar(nivel, { suelto: true, alTerminar });
   },
 
   /* PESCAR: pican los peces cuya cuenta da el número que pide Tomeu.
@@ -6732,7 +7318,17 @@ const Desafio = {
     if (this.fallos >= AJUSTES.fallosParaDormirse) this.dormirse();
   },
 
+  /* Lo que se apunta de los retos de la isla, para el informe de la portada */
+  apuntarReto(fin) {
+    if (!this.intentoReto || this.intentoReto.id !== this.parada) return;
+    this.intentoReto.fin = fin;
+    this.intentoReto.voz = !!UI.vozUsada;
+    Estado.apuntarIntento(this.intentoReto);
+    this.intentoReto = null;
+  },
+
   dormirse() {
+    this.apuntarReto('dormido');
     const id = this.parada;
     const p = Estado.actual;
     Estado.dormir(id);
@@ -6749,6 +7345,7 @@ const Desafio = {
 
   // --- Ganar -------------------------------------------------------------
   exito() {
+    this.apuntarReto('bien');
     const id = this.parada;
     const p = Estado.actual;
     if (p.facilitados) delete p.facilitados[id];
@@ -6881,11 +7478,26 @@ const Salon = {
   pregunta(nivel) {
     const az = (n) => 1 + Math.floor(Math.random() * n);
     if (nivel === 'mayor') {
-      const a = az(9), b = az(9);
-      return { texto: `${a} × ${b}`, sol: a * b };
+      const a = 1 + az(8), b = 1 + az(8);
+      // Los errores de verdad al multiplicar: la de al lado en la tabla, o sumar
+      return { texto: `${a} × ${b}`, sol: a * b,
+               casi: [a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b, a + b] };
     }
     const a = az(10), b = az(9);
-    return { texto: `${a} + ${b}`, sol: a + b };
+    return { texto: `${a} + ${b}`, sol: a + b, casi: [a + b + 1, a + b - 1, a + b + 2, a + b - 2, a + b + 10] };
+  },
+
+  /* Dos respuestas malas de las que se confunden de verdad. Pueden ser las
+     dos más grandes, las dos más pequeñas o una y una: la buena ya no está
+     siempre en medio (antes se acertaba cogiendo la del centro sin calcular). */
+  opcionesDe(q) {
+    const casi = [...new Set(q.casi)].filter(x => x > 0 && x !== q.sol);
+    const arriba = barajar(casi.filter(x => x > q.sol)), abajo = barajar(casi.filter(x => x < q.sol));
+    const maneras = [[arriba, arriba], [abajo, abajo], [arriba, abajo]]
+      .filter(([x, y]) => (x === y ? x.length >= 2 : x.length && y.length));
+    const [x, y] = maneras[Math.floor(Math.random() * maneras.length)];
+    const malas = x === y ? x.slice(0, 2) : [x[0], y[0]];
+    return barajar([q.sol].concat(malas));
   },
 
   abrir(alTerminar) {
@@ -6894,8 +7506,8 @@ const Salon = {
       if (ronda === 3) return this.premiar(alTerminar, acertadas);
       ronda++;
       const q = this.pregunta(Estado.actual.nivel);
-      const opciones = [q.sol, q.sol + 1 + Math.floor(Math.random() * 3), Math.max(1, q.sol - 1 - Math.floor(Math.random() * 3))]
-        .sort(() => Math.random() - 0.5);
+      const opciones = this.opcionesDe(q);
+      let primera = true;
 
       UI.abrir(`
         <div class="quien">Coco</div>
@@ -6910,13 +7522,14 @@ const Salon = {
       UI.modal.querySelectorAll('.num').forEach(b => {
         b.onclick = () => {
           if (+b.dataset.v === q.sol) {
-            b.classList.add('bien'); acertadas++;
+            b.classList.add('bien'); if (primera) acertadas++;
             Sonido.acierto();
             setTimeout(siguiente, 500);
           } else {
             b.classList.add('mal');
             Sonido.fallo();
             b.disabled = true;
+            primera = false;
             document.getElementById('pista').textContent = 'Casi. Prueba otra.';
           }
         };
@@ -6929,18 +7542,772 @@ const Salon = {
     const paga = Estado.darConchasConTope(AJUSTES.conchasPorRondaSalon);
     Sonido.moneda();
     const habiaDormidos = Object.keys(Estado.actual.dormidos || {}).length > 0;
-    Estado.despertarTodos();
+    // Para despertar a los dormidos hay que acertar a la primera dos de tres
+    const despiertan = acertadas >= 2;
+    if (despiertan) Estado.despertarTodos();
     UI.refrescarHud();
 
     let txt = `¡Squawk! ${acertadas} de 3.` + (paga
       ? `<br><br>🐚 <b>+${paga} conchas</b>`
       : '<br><br><small>Por hoy ya no quedan conchas que ganar aquí, pero jugar es gratis.</small>');
-    if (habiaDormidos) txt += '<br><br>' + TEXTOS.salonDespierta;
+    if (habiaDormidos) txt += '<br><br>' + (despiertan ? TEXTOS.salonDespierta
+      : '😴 Todavía duermen. Acierta <b>dos a la primera</b> en una ronda y se despiertan.');
 
     UI.dialogo('Coco', txt, [
       { texto: 'Otra ronda', accion: () => Salon.abrir(alTerminar) },
       { texto: 'Me voy', accion: () => { UI.cerrar(); if (alTerminar) alTerminar(); } },
     ]);
+  },
+};
+
+</script>
+<script>
+/* === motor/problema.js === */
+/* UN PROBLEMA DEL BANCO, PASO A PASO (revisión pedagógica del 14-09-2026)
+
+   El objetivo número uno es que Gala ENTIENDA LO QUE LEE. Tiene muy buena
+   memoria visual y busca atajos para no leer, así que cada paso está pensado
+   para que no se pueda acertar sin haber entendido la historia:
+
+     1. La historia SIN NÚMEROS           → ¿qué buscamos? (y, si hace falta,
+                                             ¿hay más o menos? / ¿quién tiene más?)
+     2. Con números: ¿qué dibujo es?      → el problema en barras
+     3. ¿Qué hay que hacer?               → siempre las cuatro operaciones
+     4. ¿Saldrá más o menos que…?         → estimar antes de calcular
+     5. El número
+     6. ¿Por qué?                         → explicar el razonamiento
+     7. Lo que había que ver              → la clave, con su dibujo
+
+   NO SALEN TODOS LOS PASOS SIEMPRE. Depende de cómo le va con esa forma de
+   problema (andamiaje que se retira):
+     guiado → las formas nuevas o las que falla: todos los pasos
+     medio  → ya las va sacando: sin dibujo ni pregunta de «más o menos»
+     solo   → las domina: directamente qué hay que hacer y el número
+   Y cada paso nuevo solo aparece cuando su novedad está encendida (ajustes.js).
+
+   Fallar tres veces no castiga: se resuelve juntas, paso a paso, y enseguida
+   sale OTRO PARECIDO (misma forma, otra historia), que es cuando se aprende.
+   Dentro de un reto de la isla, el personaje se va a dormir como siempre.
+
+   Todo lo que pasa se apunta en la partida (Estado.apuntarIntento) para que
+   Antonio vea en la portada si de verdad mejora. Nada sale del aparato. */
+
+const OPS_MAYOR = ['juntar', 'quitar', 'multiplicar', 'repartir'];
+
+const EXPLICA_GENERAL = {
+  juntar: 'Si lo juntas todo, ¿sale lo que te preguntan? Mira otra vez qué buscas.',
+  quitar: '¿Se va algo, o buscas una diferencia? Vuelve a mirar la historia.',
+  multiplicar: 'Para multiplicar tiene que haber grupos iguales. ¿Los hay aquí?',
+  repartir: 'Para dividir hay que repartir en partes iguales o hacer grupos iguales. ¿Pasa eso aquí?',
+  falta: 'Aquí están todos los datos que hacen falta. ¡Se puede calcular!',
+};
+
+const ACCION = { juntar: 'sumar', quitar: 'restar', multiplicar: 'multiplicar',
+                 repartir: 'dividir', dosPasos: 'hacer dos cuentas seguidas', falta: 'decir que falta un dato' };
+
+/* Rellena marcadores en textos, listas y objetos, a cualquier profundidad */
+function rellenarTodo(x, v) {
+  if (typeof x === 'string') return rellenar(x, v);
+  if (Array.isArray(x)) return x.map(y => rellenarTodo(y, v));
+  if (x && typeof x === 'object') {
+    const o = {};
+    Object.keys(x).forEach(k => { o[k] = rellenarTodo(x[k], v); });
+    return o;
+  }
+  return x;
+}
+
+/* La primera letra de verdad (saltando etiquetas) en mayúscula */
+function mayuscula(html) {
+  return String(html).replace(/^((?:<[^>]*>)*)(\p{Ll})/u, (m, tags, l) => tags + l.toUpperCase());
+}
+
+/* Subraya un trozo del texto: la primera pista devuelve al texto, no da la cuenta */
+function subrayar(html, trozo) {
+  if (!trozo) return html;
+  const i = html.indexOf(trozo);
+  if (i < 0) return html;
+  return html.slice(0, i) + '<mark>' + trozo + '</mark>' + html.slice(i + trozo.length);
+}
+
+/* --------------------------------------------------------------------------
+   EL DIBUJO CON BARRAS. Tres dibujos sirven para todos los problemas:
+     partes  → el total arriba y sus partes debajo
+     compara → dos barras, y el trozo que le saca la grande a la pequeña
+     grupos  → el total partido en grupos iguales
+   Lo que se busca va con '?' y en blanco, con el borde a rayas.
+   ------------------------------------------------------------------------ */
+const Barras = {
+
+  lee(x) {
+    const s = String(x === undefined ? '' : x);
+    if (s[0] === '?') return { et: '?', v: s.length > 1 ? +s.slice(1) : null, hueco: true };
+    return { et: s, v: s === '' ? null : +s, hueco: false };
+  },
+
+  seg(p, ancho, clase) {
+    return `<div class="bm-seg ${clase || ''} ${p.hueco ? 'hueco' : ''}" style="width:calc(${ancho}% - 3px)">${p.et}</div>`;
+  },
+
+  html(m) {
+    if (!m) return '';
+    if (m.forma === 'partes') {
+      const partes = m.partes.map(x => this.lee(x));
+      const total = this.lee(m.total);
+      const suma = partes.reduce((a, p) => a + (p.v || 0), 0);
+      if (total.v === null) total.v = suma;
+      partes.forEach(p => { if (p.v === null) p.v = Math.max(1, total.v - suma); });
+      const max = Math.max(total.v, partes.reduce((a, p) => a + p.v, 0), 1);
+      return `<div class="bm">
+        <div class="bm-fila">${this.seg(total, total.v / max * 100, 'bm-total')}</div>
+        <div class="bm-fila">${partes.map(p => this.seg(p, p.v / max * 100)).join('')}</div>
+      </div>`;
+    }
+    if (m.forma === 'compara') {
+      const g = this.lee(m.grande), s = this.lee(m.pequena), d = this.lee(m.dif);
+      if (g.v === null && s.v !== null && d.v !== null) g.v = s.v + d.v;
+      if (s.v === null && g.v !== null && d.v !== null) s.v = Math.max(1, g.v - d.v);
+      if (d.v === null && g.v !== null && s.v !== null) d.v = Math.max(1, g.v - s.v);
+      [g, s, d].forEach(p => { if (p.v === null || p.v <= 0) p.v = 1; });
+      const max = Math.max(g.v, s.v + d.v);
+      return `<div class="bm">
+        <div class="bm-fila">${this.seg(g, g.v / max * 100, 'bm-total')}</div>
+        <div class="bm-fila">${this.seg(s, s.v / max * 100)}${this.seg(d, d.v / max * 100, 'bm-dif')}</div>
+      </div>`;
+    }
+    if (m.forma === 'grupos') {
+      const G = this.lee(m.grupos), C = this.lee(m.cada), T = this.lee(m.total);
+      const S = this.lee(m.sobran || '0');
+      if (T.v === null && G.v && C.v) T.v = G.v * C.v + (S.v || 0);
+      if (C.v === null && G.v && T.v) C.v = Math.max(1, Math.round((T.v - (S.v || 0)) / G.v));
+      if (G.v === null && C.v && T.v) G.v = Math.max(1, Math.floor((T.v - (S.v || 0)) / C.v));
+      const n = Math.max(1, G.v || 3);
+      const dibujados = Math.min(n, 6);           // más de 6 no cabe en el móvil: se ponen puntos
+      const partes = dibujados + (n > 6 ? 1 : 0) + (S.v ? 0.5 : 0);
+      const ancho = 100 / partes;
+      let fila = '';
+      for (let i = 0; i < dibujados; i++) fila += this.seg(C, ancho, 'bm-g');
+      if (n > 6) fila += `<div class="bm-seg bm-puntos" style="width:calc(${ancho}% - 3px)">…</div>`;
+      if (S.v) fila += `<div class="bm-seg bm-sobra" style="width:calc(${ancho / 2}% - 3px)">${S.et}</div>`;
+      return `<div class="bm">
+        <div class="bm-fila">${this.seg(T, 100, 'bm-total')}</div>
+        <div class="bm-fila">${fila}</div>
+        <div class="bm-pie"><b class="${G.hueco ? 'hueco-txt' : ''}">${G.et}</b> grupos iguales${S.v ? ' y sobran ' + S.et : ''}</div>
+      </div>`;
+    }
+    return '';
+  },
+};
+
+const Problema = {
+
+  p: null,              // el problema montado
+  ctx: null,            // de dónde viene: { suelto, alTerminar } o { quien, alAcertar, alDormir }
+  fallos: 0,
+  intento: null,        // lo que se apunta
+  ultimoTipo: null,
+  familia: null,        // { nombre, vistos: [tipos] } para «la misma historia, otra pregunta»
+  gemelo: null,         // tipo que toca repetir después de resolverlo juntas
+
+  // ======================================================== ELEGIR =====
+
+  historial(tipo, nivel) {
+    return ((Estado.actual && Estado.actual.registro) || [])
+      .filter(x => x.t === tipo && x.nv === nivel);
+  },
+
+  /* Un intento «limpio»: lo entendió a la primera en todos los pasos y no tocó
+     antes de haber podido leer */
+  limpio(x) {
+    return x.fin === 'bien' && x.op1 && x.num1 !== false && x.e1 !== false &&
+           x.b1 !== false && x.est1 !== false && !x.prisa;
+  },
+
+  /* Cuánta ayuda le toca con esta forma de problema */
+  andamiaje(tipo, nivel) {
+    const h = this.historial(tipo, nivel);
+    if (h.length < 2) return 'guiado';
+    const ult = h.slice(-4);
+    const buenos = ult.filter(x => this.limpio(x)).length;
+    if (ult.length === 4 && buenos === 4) return 'solo';
+    if (buenos / ult.length < 0.5) return 'guiado';
+    return 'medio';
+  },
+
+  banco(nivel) {
+    return (PROBLEMAS[nivel] || PROBLEMAS.pequena)
+      .filter(b => b.operacion !== 'falta' || (nivel === 'mayor' && novedad('faltaDato')));
+  },
+
+  /* Saca un problema. Por orden:
+     1. si se acaba de resolver juntas, otro de la misma forma (el gemelo);
+     2. a veces, la misma historia con otra pregunta;
+     3. si no, al azar, pero con más peso las formas que falla y las que
+        nunca ha visto (y nunca la misma forma dos veces seguidas). */
+  elegir(nivel) {
+    const banco = this.banco(nivel);
+    this.mismaHistoria = false;
+
+    if (this.gemelo) {
+      const iguales = banco.filter(b => b.tipo === this.gemelo && !b.familia);
+      this.gemelo = null;
+      if (iguales.length) return iguales[Math.floor(Math.random() * iguales.length)];
+    }
+
+    if (this.familia && Math.random() < AJUSTES.otraPreguntaMismaHistoria) {
+      const hermanos = banco.filter(b => b.familia === this.familia.nombre &&
+                                         !this.familia.vistos.includes(b.tipo));
+      if (hermanos.length) {
+        this.mismaHistoria = true;
+        return hermanos[Math.floor(Math.random() * hermanos.length)];
+      }
+    }
+    this.familia = null;
+
+    let lista = banco.filter(b => b.tipo !== this.ultimoTipo);
+    if (!lista.length) lista = banco;
+    const cuantosDe = (t) => banco.filter(b => b.tipo === t).length;
+    const peso = (b) => {
+      if (b.operacion === 'falta') return 0.35;
+      const h = this.historial(b.tipo, nivel).slice(-4);
+      let w = 1;
+      if (!h.length) w += 2;
+      else w += 3 * h.filter(x => !this.limpio(x)).length / h.length;
+      return w / cuantosDe(b.tipo);
+    };
+    const pesos = lista.map(peso);
+    let r = Math.random() * pesos.reduce((a, w) => a + w, 0);
+    for (let i = 0; i < lista.length; i++) { r -= pesos[i]; if (r <= 0) return lista[i]; }
+    return lista[lista.length - 1];
+  },
+
+  /* Pone números y elige historia (nunca la misma que la última vez) */
+  montar(base, nivel) {
+    const v = base.vars ? base.vars() : {};
+    const clave = nivel + ':' + PROBLEMAS[nivel].indexOf(base);
+    const p0 = Estado.actual;
+    if (!p0.ultimoTexto) p0.ultimoTexto = {};
+    const n = base.textos.length;
+    let i = Math.floor(Math.random() * n);
+    if (n > 1 && i === p0.ultimoTexto[clave]) i = (i + 1 + Math.floor(Math.random() * (n - 1))) % n;
+    p0.ultimoTexto[clave] = i;
+    const t = base.textos[i];
+
+    const w = Object.assign({}, v);
+    ['quien', 'quien2', 'cosas', 'sobra'].forEach(k => { if (t[k] !== undefined) w[k] = t[k]; });
+    const R = (x) => rellenarTodo(x, w);
+    const esq = ESQUEMA[base.tipo] || {};
+
+    return {
+      base, nivel, t,
+      tipo: base.tipo, familia: base.familia || null,
+      operacion: base.operacion, pasos: base.pasos || null,
+      ordenLibre: !!base.ordenLibre, tambienVale: base.tambienVale || [],
+      opciones: base.opciones || null,
+      sol: v.sol,
+      con: R(t.con), sin: t.sin ? R(t.sin) : null, marca: t.marca ? R(t.marca) : null,
+      clave: mayuscula(R(t.clave || base.clave)),
+      explica: R(base.explica || {}), explicaPasos: R(base.explicaPasos || {}),
+      pistas: R(base.pistas || []),
+      barras: base.barras ? R(base.barras) : null,
+      barrasMal: R(base.barrasMal || []),
+      esquema: esq,
+      busca: t.busca !== undefined ? t.busca : esq.busca,
+      palabras: w,
+    };
+  },
+
+  // ======================================================== JUGAR ======
+
+  /* ctx.suelto = true  → desde el salón de Coco (paga con tope, «otro problema»)
+     ctx.suelto = false → dentro de un reto: ctx.alAcertar(limpio) / ctx.alDormir() */
+  jugar(nivel, ctx) {
+    const base = this.elegir(nivel);
+    const p = this.montar(base, nivel);
+    this.p = p;
+    this.ctx = ctx;
+    this.fallos = 0;
+    this.pasoOp = 0;
+    this.usados = [];
+    this.ultimoTipo = p.tipo;
+    UI.vozUsada = false;
+
+    const modo = this.andamiaje(p.tipo, nivel);
+    this.intento = {
+      d: new Date().toISOString().slice(0, 10), t: p.tipo, nv: nivel, m: modo,
+      en: ctx.suelto ? 'salon' : 'reto', e1: null, b1: null, op1: null, est1: null,
+      num1: null, pq1: null, seg: null, prisa: null, pistas: 0, voz: false, fin: null,
+      pal: p.con.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length,
+    };
+
+    // Qué pasos tocan
+    const pasos = [];
+    const hayEscena = novedad('escena') && p.sin && modo !== 'solo';
+    if (hayEscena && modo === 'guiado' && this.preguntaSituacion(p)) pasos.push('situacion');
+    if (hayEscena && (p.busca !== null && p.busca !== undefined && p.esquema.roles || p.esquema.sobra))
+      pasos.push('escena');
+    if (novedad('barras') && modo === 'guiado' && p.barras && p.barrasMal.length) pasos.push('barras');
+    pasos.push('operacion');
+    if (p.operacion !== 'falta') {
+      if (novedad('estimar') && modo !== 'guiado' && Math.random() < AJUSTES.probEstimar &&
+          this.referencia(p) !== null) pasos.push('estimar');
+      pasos.push('numero');
+    }
+    this.pasos = pasos;
+    this.leyoAntes = pasos[0] !== 'operacion';
+    this.siguiente();
+  },
+
+  siguiente() {
+    const paso = this.pasos.shift();
+    if (paso === 'situacion') return this.pasoSituacion();
+    if (paso === 'escena') return this.pasoEscena();
+    if (paso === 'barras') return this.pasoBarras();
+    if (paso === 'operacion') return this.pasoOperacion();
+    if (paso === 'estimar') return this.pasoEstimar();
+    if (paso === 'numero') return this.pasoNumero();
+    return this.alAcertar();
+  },
+
+  // --- pantalla común ---------------------------------------------------
+  titulo() {
+    if (this.ctx.suelto) return this.mismaHistoria ? '📖 La misma historia… ¡otra pregunta!' : 'Un problema';
+    return this.ctx.quien || 'Un problema';
+  },
+
+  pintar({ texto, pregunta, opciones, extra, voz }) {
+    UI.abrir(`
+      <div class="quien">${this.titulo()}</div>
+      <p class="dice" id="enunciado">${texto}</p>
+      ${extra || ''}
+      <div class="altavoz" id="zonaVoz"></div>
+      ${pregunta ? `<p class="pregunta">${pregunta}</p>` : ''}
+      ${opciones || ''}
+      <p class="pista" id="pista"></p>
+    `);
+    if (voz) UI.prepararAltavoz(voz);
+  },
+
+  decir(html) { const el = document.getElementById('pista'); if (el) el.innerHTML = html; },
+
+  /* Un fallo: a la tercera se resuelve juntas */
+  fallar() {
+    this.fallos++;
+    Sonido.fallo();
+    if (this.fallos >= AJUSTES.fallosParaDormirse) {
+      setTimeout(() => this.resolverJuntas(), 1400);
+      return true;
+    }
+    return false;
+  },
+
+  /* Tarjetas de texto que salen tras unos segundos; cada una con su respuesta */
+  elegirEntre(lista, alElegir) {
+    const html = `<div class="tarjetas">${lista.map((o, i) =>
+      `<button class="tarjeta tarjeta-texto" data-i="${i}">${o}</button>`).join('')}</div>`;
+    return { html, enganchar: () => {
+      esperarTarjetas();
+      UI.modal.querySelectorAll('.tarjeta').forEach(b => {
+        b.onclick = () => { if (!b.disabled) alElegir(+b.dataset.i, b); };
+      });
+    } };
+  },
+
+  // --- 1a. ¿Hay más o menos? / ¿Quién tiene más? -------------------------
+  preguntaSituacion(p) {
+    const w = p.palabras, t = p.t;
+    if (p.esquema.pregunta === 'dir' && t.dir && w.cosas)
+      return { q: 'Al final, ¿hay más ' + w.cosas + ' o menos que al principio?',
+               ops: ['Más', 'Menos'], buena: t.dir === 'mas' ? 0 : 1,
+               no: 'Vuelve a leerla: ¿llegan cosas o se van?' };
+    if (p.esquema.pregunta === 'mas' && t.mas && w.quien && w.quien2)
+      return { q: '¿Quién tiene más ' + w.cosas + '?',
+               ops: [mayuscula(w.quien), mayuscula(w.quien2)], buena: t.mas === 'quien' ? 0 : 1,
+               no: 'Vuelve a leerla despacio. ¿Quién es el que tiene menos?' };
+    return null;
+  },
+
+  pasoSituacion() {
+    const s = this.preguntaSituacion(this.p);
+    let primera = true;
+    const orden = barajar([0, 1]);
+    const el = this.elegirEntre(orden.map(i => s.ops[i]), (k, b) => {
+      if (orden[k] === s.buena) {
+        b.classList.add('bien'); Sonido.acierto();
+        if (this.intento.e1 === null) this.intento.e1 = primera;
+        this.decir('✅ Eso es.');
+        setTimeout(() => this.siguiente(), 900);
+      } else {
+        b.classList.add('mal'); b.disabled = true;
+        primera = false; this.intento.e1 = false;
+        this.decir('💭 ' + s.no);
+        this.fallar();
+      }
+    });
+    this.pintar({ texto: conPregunta(this.p.sin), pregunta: s.q, opciones: el.html,
+                  voz: this.p.sin + ' ' + s.q });
+    el.enganchar();
+  },
+
+  // --- 1b. ¿Qué buscamos? -----------------------------------------------
+  pasoEscena() {
+    const p = this.p;
+    let pregunta, ops, buena, no;
+    if (p.esquema.sobra) {
+      pregunta = '¿Qué dato <b>no hace falta</b> para contestar?';
+      ops = p.t.datos; buena = p.t.sobra;
+      no = 'Ese sí hace falta: tiene que ver con lo que te preguntan.';
+    } else {
+      pregunta = '¿Qué buscamos?';
+      ops = ROLES[p.esquema.roles]; buena = ops[p.busca];
+      no = 'Vuelve a leer la pregunta del final: ¿qué te piden exactamente?';
+    }
+    const lista = barajar(ops);
+    const el = this.elegirEntre(lista.map(mayuscula), (k, b) => {
+      if (lista[k] === buena) {
+        b.classList.add('bien'); Sonido.acierto();
+        if (this.intento.e1 !== false) this.intento.e1 = true;
+        this.decir('✅ Eso es. Ahora, con los números.');
+        setTimeout(() => this.siguiente(), 1100);
+      } else {
+        b.classList.add('mal'); b.disabled = true;
+        this.intento.e1 = false;
+        this.decir('💭 ' + no);
+        this.fallar();
+      }
+    });
+    this.pintar({ texto: conPregunta(p.sin), pregunta, opciones: el.html,
+                  voz: p.sin + ' ' + pregunta.replace(/<[^>]*>/g, '') });
+    el.enganchar();
+  },
+
+  // --- 2. ¿Qué dibujo es? -------------------------------------------------
+  pasoBarras() {
+    const p = this.p;
+    const dibujos = barajar([{ m: p.barras, bien: true }].concat(p.barrasMal.map(m => ({ m, bien: false }))));
+    const el = this.elegirEntre(dibujos.map(d => Barras.html(d.m)), (k, b) => {
+      if (dibujos[k].bien) {
+        b.classList.add('bien'); Sonido.acierto();
+        if (this.intento.b1 === null) this.intento.b1 = true;
+        this.decir('✅ Ese es el dibujo de esta historia.');
+        this.dibujoElegido = true;
+        setTimeout(() => this.siguiente(), 1100);
+      } else {
+        b.classList.add('mal'); b.disabled = true;
+        this.intento.b1 = false;
+        this.decir('💭 Ese dibujo cuenta otra historia. Mira dónde está el <b>?</b>: tiene que ser lo que te preguntan.');
+        this.fallar();
+      }
+    });
+    this.pintar({ texto: conPregunta(p.con), pregunta: '¿Qué dibujo cuenta este problema?',
+                  opciones: el.html.replace('class="tarjetas"', 'class="tarjetas dibujos"'), voz: p.con });
+    el.enganchar();
+  },
+
+  // --- 3. ¿Qué hay que hacer? ---------------------------------------------
+  pasoOperacion() {
+    const p = this.p;
+    const mayor = p.nivel === 'mayor';
+    const tecnico = mayor && Math.random() < 0.5;
+    const nombre = (o) => tecnico ? OPERACIONES[o].tecnico : OPERACIONES[o].texto;
+    let ops = mayor ? OPS_MAYOR.slice() : (p.opciones || ['juntar', 'quitar']).slice();
+    if (mayor && novedad('faltaDato')) ops.push('falta');
+    ops = barajar(ops);
+
+    const tarjetas = ops.map(o => `
+      <button class="tarjeta" data-op="${o}">
+        <span class="icono">${OPERACIONES[o].icono}</span>
+        <span>${nombre(o)}</span>
+      </button>`).join('');
+    const dibujo = this.dibujoElegido ? Barras.html(p.barras) : '';
+    this.dibujoElegido = false;
+
+    this.pintar({ texto: conPregunta(p.con), extra: dibujo, pregunta: '¿Qué hay que hacer?',
+                  opciones: `<div class="tarjetas">${tarjetas}</div>`, voz: p.con + ' ¿Qué hay que hacer?' });
+    esperarTarjetas();
+    const inicio = Date.now();
+    let primera = true;
+
+    UI.modal.querySelectorAll('.tarjeta').forEach(b => {
+      b.onclick = () => {
+        if (b.disabled) return;
+        if (this.intento.seg === null) {
+          this.intento.seg = Math.round((Date.now() - inicio) / 100) / 10;
+          if (!this.leyoAntes)
+            this.intento.prisa = this.intento.seg < this.intento.pal * AJUSTES.segundosPorPalabraMinimo;
+        }
+        const op = b.dataset.op;
+
+        if (p.pasos) {
+          const valen = p.ordenLibre ? p.pasos.filter(x => !this.usados.includes(x)) : [p.pasos[this.pasoOp]];
+          if (valen.includes(op)) {
+            this.usados.push(op);
+            this.pasoOp++;
+            b.classList.add('bien'); Sonido.acierto();
+            if (this.pasoOp === 1) {
+              this.decir('✅ Eso, lo primero. <b>¿Y después?</b>');
+              UI.modal.querySelectorAll('.tarjeta').forEach(x => {
+                setTimeout(() => { x.classList.remove('bien', 'mal'); x.disabled = false; }, 900);
+              });
+              return;
+            }
+            this.intento.op1 = primera;
+            this.decir('✅ Eso es: <b>dos cuentas, una detrás de otra</b>.');
+            return setTimeout(() => this.siguiente(), 1000);
+          }
+          if (this.pasoOp === 0 && p.tambienVale.includes(op)) {
+            this.decir('💡 ' + (p.explicaPasos[op] || 'También se podría, pero hay un camino más corto.'));
+            return;
+          }
+          b.classList.add('mal'); b.disabled = true; primera = false;
+          const razon = this.pasoOp === 0
+            ? (p.explicaPasos[op] || EXPLICA_GENERAL[op])
+            : 'Lo primero ya lo tienes. ¿Qué pasa después en la historia?';
+          this.decir('💭 ' + razon + this.ayudaTexto());
+          return this.fallar();
+        }
+
+        if (op === p.operacion) {
+          b.classList.add('bien'); Sonido.acierto();
+          this.intento.op1 = primera;
+          this.decir('✅ Eso es: <b>' + OPERACIONES[op].pista + '</b>.');
+          return setTimeout(() => this.siguiente(), 1000);
+        }
+        b.classList.add('mal'); b.disabled = true; primera = false;
+        this.intento.op1 = false;
+        this.decir('💭 ' + (p.explica[op] || EXPLICA_GENERAL[op]) + this.ayudaTexto());
+        this.fallar();
+      };
+    });
+  },
+
+  /* A partir del segundo fallo: se subraya en el texto lo que hay que mirar */
+  ayudaTexto() {
+    if (this.fallos < 1) return '';
+    const en = document.getElementById('enunciado');
+    if (en && this.p.marca) en.innerHTML = subrayar(conPregunta(this.p.con), this.p.marca);
+    this.intento.pistas++;
+    return this.p.pistas[0] ? '<br>👀 ' + this.p.pistas[0] : '';
+  },
+
+  // --- 4. ¿Más o menos que…? ----------------------------------------------
+  referencia(p) {
+    const nums = (p.con.match(/\d+/g) || []).map(Number);
+    if (!nums.length || p.sol === undefined) return null;
+    const ref = Math.max(...nums);
+    return ref === p.sol ? null : ref;
+  },
+
+  pasoEstimar() {
+    const p = this.p;
+    const ref = this.referencia(p);
+    const buena = p.sol > ref ? 0 : 1;
+    const ops = ['Más grande que ' + ref, 'Más pequeño que ' + ref];
+    const el = this.elegirEntre(ops, (k, b) => {
+      if (k === buena) {
+        b.classList.add('bien'); Sonido.acierto();
+        if (this.intento.est1 === null) this.intento.est1 = true;
+        this.decir('✅ Bien pensado. Ahora, a calcularlo.');
+        setTimeout(() => this.siguiente(), 1000);
+      } else {
+        b.classList.add('mal'); b.disabled = true;
+        this.intento.est1 = false;
+        this.decir('💭 Piénsalo con la historia: lo que buscas, ¿puede ser más que ' + ref + '?');
+        this.fallar();
+      }
+    });
+    this.pintar({ texto: conPregunta(p.con), pregunta: 'Antes de calcular: la respuesta, ¿será…',
+                  opciones: el.html, voz: p.con });
+    el.enganchar();
+  },
+
+  // --- 5. El número ---------------------------------------------------------
+  pasoNumero() {
+    const p = this.p;
+    let marcado = '';
+    let primera = true;
+    this.pintar({
+      texto: conPregunta(p.con),
+      extra: `<div class="pantallita" id="marcado">—</div>
+        <div class="teclado">
+          ${[1,2,3,4,5,6,7,8,9,0].map(n => `<button class="tecla-num" data-n="${n}">${n}</button>`).join('')}
+          <button class="tecla-num borrar" data-n="x">⌫</button>
+        </div>
+        <div class="botones"><button class="btn defecto" id="probar">Ya lo tengo<span class="tecla">espacio</span></button></div>
+        <div id="dibujoPista"></div>`,
+    });
+    UI.modal.querySelectorAll('.tecla-num').forEach(b => {
+      b.onclick = () => {
+        Sonido.clic();
+        if (b.dataset.n === 'x') marcado = marcado.slice(0, -1);
+        else if (marcado.length < 4) marcado += b.dataset.n;
+        document.getElementById('marcado').textContent = marcado || '—';
+      };
+    });
+    document.getElementById('probar').onclick = () => {
+      if (marcado === '') return;
+      if (+marcado === p.sol) {
+        Sonido.acierto();
+        this.intento.num1 = primera;
+        return setTimeout(() => this.alAcertar(), 400);
+      }
+      primera = false;
+      this.intento.num1 = false;
+      marcado = '';
+      document.getElementById('marcado').textContent = '—';
+      if (this.fallar()) return this.decir('💭 Vamos a verlo juntas.');
+      this.intento.pistas++;
+      // Primera pista: al texto. Segunda: el dibujo (o una pregunta sobre la historia)
+      if (this.fallos === 1 || !(novedad('barras') && p.barras)) {
+        document.getElementById('enunciado').innerHTML = subrayar(conPregunta(p.con), p.marca);
+        this.decir('💭 Lee otra vez lo subrayado. ' + (p.pistas[Math.min(this.fallos - 1, p.pistas.length - 1)] || ''));
+      } else {
+        document.getElementById('dibujoPista').innerHTML = Barras.html(p.barras);
+        this.decir('💭 Míralo dibujado: el <b>?</b> es lo que buscas.');
+      }
+    };
+  },
+
+  // --- 6. ¿Por qué? ---------------------------------------------------------
+  tocaPorQue() {
+    if (!novedad('porque') || !POR_QUE[this.p.tipo]) return false;
+    return this.intento.m === 'guiado' || this.fallos > 0 || Math.random() < AJUSTES.probPorque;
+  },
+
+  pasoPorQue(luego) {
+    const p = this.p;
+    const pool = POR_QUE[p.tipo];
+    const buena = pool.buenas[Math.floor(Math.random() * pool.buenas.length)];
+    const malas = barajar(pool.malas).slice(0, 2);
+    const lista = barajar([{ t: buena, bien: true }].concat(malas.map(m => ({ t: m.t, no: m.no }))));
+    const accion = ACCION[p.operacion] || 'hacer eso';
+    const pregunta = '¿Por qué había que <b>' + accion + '</b>?';
+    const el = this.elegirEntre(lista.map(x => x.t), (k, b) => {
+      UI.modal.querySelectorAll('.tarjeta').forEach(x => { x.disabled = true; });
+      if (lista[k].bien) {
+        b.classList.add('bien'); Sonido.acierto();
+        this.intento.pq1 = true;
+        this.decir('✅ Eso es. Así se explica.');
+        setTimeout(luego, 1300);
+      } else {
+        b.classList.add('mal');
+        UI.modal.querySelectorAll('.tarjeta')[lista.findIndex(x => x.bien)].classList.add('bien');
+        this.intento.pq1 = false;
+        this.decir('💭 ' + lista[k].no +
+          '<div class="botones"><button class="btn defecto" id="entendido">Entendido<span class="tecla">espacio</span></button></div>');
+        document.getElementById('entendido').onclick = () => { Sonido.clic(); luego(); };
+      }
+    });
+    this.pintar({ texto: '<small>' + conPregunta(p.con) + '</small>', pregunta, opciones: el.html,
+                  voz: pregunta.replace(/<[^>]*>/g, '') + ' ' + lista.map(x => x.t).join('. ') });
+    el.enganchar();
+  },
+
+  // --- 7. Terminar ------------------------------------------------------------
+  apuntar(fin) {
+    this.intento.fin = fin;
+    this.intento.voz = !!UI.vozUsada;
+    if (typeof Estado.apuntarIntento === 'function') Estado.apuntarIntento(this.intento);
+  },
+
+  alAcertar() {
+    const p = this.p;
+    const cerrar = () => {
+      this.apuntar('bien');
+      if (p.familia) {
+        if (!this.familia || this.familia.nombre !== p.familia) this.familia = { nombre: p.familia, vistos: [] };
+        this.familia.vistos.push(p.tipo);
+      }
+      if (this.ctx.suelto) return this.premiar();
+      this.ctx.alAcertar(this.fallos === 0);
+    };
+    if (this.tocaPorQue()) return this.pasoPorQue(cerrar);
+    cerrar();
+  },
+
+  /* La clave, con su dibujo si ya se usan las barras */
+  claveHtml() {
+    const p = this.p;
+    return p.clave + (novedad('barras') && p.barras ? Barras.html(p.barras) : '');
+  },
+
+  premiar() {
+    const p = this.p;
+    const paga = Estado.darConchasConTope(AJUSTES.conchasPorProblema);
+    const nueva = Estado.apuntarProblema(p.tipo) === 1 && novedad('album');
+    const cofre = this.fallos === 0 && Cofre.toca();
+    const luego = (f) => (cofre ? Cofre.abrir(f) : f());
+    const alTerminar = this.ctx.alTerminar;
+    UI.refrescarHud();
+    Sonido.fiesta();
+    setTimeout(() => Sonido.moneda(), 400);
+
+    UI.abrir(`
+      <div class="quien">💡 Lo que había que ver aquí</div>
+      <p class="dice">${this.claveHtml()}</p>
+      <div class="altavoz" id="zonaVoz"></div>
+      <p class="contador">${paga ? '🐚 <b>+' + paga + ' conchas</b>'
+        : '🐚 <small>Por hoy ya has ganado todas las conchas que se pueden ganar aquí. ' +
+          'Los problemas siguen contando para el álbum.</small>'}</p>
+      ${nueva ? '<p class="contador">📒 <b>¡Pegatina nueva!</b> Mírala en tus cuadernos 📔</p>' : ''}
+      <div class="botones">
+        <button class="btn defecto" id="otro">Otro problema<span class="tecla">espacio</span></button>
+        <button class="btn gris" id="basta">Ya está bien</button>
+      </div>
+    `);
+    UI.prepararAltavoz(p.clave.replace(/<[^>]*>/g, ' '));
+    document.getElementById('otro').onclick = () => {
+      Sonido.clic();
+      luego(() => this.jugar(p.nivel, this.ctx));
+    };
+    document.getElementById('basta').onclick = () => {
+      Sonido.clic();
+      this.familia = null;
+      luego(() => { UI.cerrar(); if (alTerminar) alTerminar(true); });
+    };
+  },
+
+  /* Tres fallos: se resuelve juntas, sin prisa, y luego uno parecido */
+  resolverJuntas() {
+    const p = this.p;
+    this.apuntar('ejemplo');
+    this.familia = null;
+    const nombre = (o) => OPERACIONES[o].tecnico.toLowerCase();
+    let hacer;
+    if (p.operacion === 'falta') hacer = 'Aquí <b>no se podía calcular</b>: faltaba un dato.';
+    else if (p.pasos) hacer = 'Había que hacer <b>dos cuentas</b>: primero <b>' + nombre(p.pasos[0]) +
+                              '</b> y después <b>' + nombre(p.pasos[1]) + '</b>.';
+    else hacer = 'Había que <b>' + nombre(p.operacion) + '</b>, y sale <b>' + p.sol + '</b>.';
+
+    UI.abrir(`
+      <div class="quien">💡 Lo vemos juntas</div>
+      <p class="dice">${subrayar(conPregunta(p.con), p.marca)}</p>
+      ${novedad('barras') && p.barras ? Barras.html(p.barras) : ''}
+      <p class="dice">${hacer}</p>
+      <p class="dice">${p.clave}</p>
+      <div class="altavoz" id="zonaVoz"></div>
+      <div class="botones">
+        ${this.ctx.suelto
+          ? '<button class="btn defecto" id="parecido">Uno parecido<span class="tecla">espacio</span></button>' +
+            '<button class="btn gris" id="basta">Ya está bien</button>'
+          : '<button class="btn defecto" id="vale">Vale<span class="tecla">espacio</span></button>'}
+      </div>
+    `);
+    UI.prepararAltavoz(p.con + '. ' + hacer.replace(/<[^>]*>/g, '') + ' ' + p.clave.replace(/<[^>]*>/g, ' '));
+    if (this.ctx.suelto) {
+      document.getElementById('parecido').onclick = () => {
+        Sonido.clic();
+        this.gemelo = p.tipo;
+        this.ultimoTipo = null;
+        this.jugar(p.nivel, this.ctx);
+      };
+      document.getElementById('basta').onclick = () => {
+        Sonido.clic(); UI.cerrar();
+        if (this.ctx.alTerminar) this.ctx.alTerminar(false);
+      };
+    } else {
+      document.getElementById('vale').onclick = () => { Sonido.clic(); this.ctx.alDormir(); };
+    }
   },
 };
 
@@ -7576,7 +8943,8 @@ const Cuadernos = {
      regla: la teoría llega después de haberlo hecho, nunca antes. */
   hoja_cabeza() {
     const hechos = Estado.actual.problemas || {};
-    const tipos = [...new Set((PROBLEMAS[Estado.actual.nivel] || []).map(x => x.tipo))];
+    const tipos = [...new Set((PROBLEMAS[Estado.actual.nivel] || [])
+      .filter(x => x.operacion !== 'falta' || novedad('faltaDato')).map(x => x.tipo))];
     const tengo = tipos.filter(t => hechos[t]).length;
     const fichas = tipos.map(t => {
       const pg = PEGATINAS[t] || { icono: '⭐', nombre: t };
@@ -7808,6 +9176,373 @@ const Pedidos = {
       try { navigator.clipboard.writeText(texto); ev.target.textContent = '¡Copiado!'; }
       catch (e) { ev.target.textContent = 'No se ha podido copiar'; }
     };
+  },
+};
+
+</script>
+<script>
+/* === motor/paquetes.js === */
+/* LOS PAQUETES DE TEO: leer una instrucción y cumplirla al pie de la letra
+   (revisión pedagógica del 14-09-2026)
+
+   La tutora de Gala dice que todavía necesita ayuda para entender algunas
+   CONSIGNAS. Aquí no hay números que calcular: Teo deja escrita una nota
+   («Mete todas las estrellas que no sean azules») y hay que meter en el
+   paquete exactamente lo que dice. Solo se acierta leyendo la nota entera:
+   el «todas», el «que no sean», el «primero».
+
+   Sube de dificultad sola: dos paquetes bien a la primera → nivel siguiente.
+   Si se resuelve juntas, baja uno.
+     1  cuántas y de qué forma        «Mete 3 estrellas.»
+     2  todas las de un color         «Mete todas las lunas verdes.»
+     3  todas menos un color          «Mete todos los círculos que no sean rojos.»
+     4  dos encargos a la vez         «Mete 2 corazones grandes y todas las lunas azules.»
+     5  dos condiciones en negativo   «Mete todas las estrellas que no sean pequeñas ni amarillas.»
+     6  con orden                     «Primero, un triángulo azul. Después, todos los cuadrados grandes.»
+   Inés llega hasta el 3, con menos pegatinas en la mesa.
+
+   Cumple la regla 23: botones de verdad, sin reloj ni vidas, no se atasca
+   (siempre hay solución; lo comprueba comprobar.js) y paga con tope. */
+
+const FORMAS = {
+  circulo:   { f: false, s: 'círculo',   p: 'círculos',   svg: '<circle cx="20" cy="20" r="16"/>' },
+  cuadrado:  { f: false, s: 'cuadrado',  p: 'cuadrados',  svg: '<rect x="5" y="5" width="30" height="30" rx="4"/>' },
+  triangulo: { f: false, s: 'triángulo', p: 'triángulos', svg: '<polygon points="20,4 37,35 3,35"/>' },
+  corazon:   { f: false, s: 'corazón',   p: 'corazones',  svg: '<path d="M20 35 C4 24 3 12 11 8 C16 6 19 9 20 12 C21 9 24 6 29 8 C37 12 36 24 20 35Z"/>' },
+  estrella:  { f: true,  s: 'estrella',  p: 'estrellas',  svg: '<polygon points="20,3 25,15 38,15 28,23 32,36 20,28 8,36 12,23 2,15 15,15"/>' },
+  luna:      { f: true,  s: 'luna',      p: 'lunas',      svg: '<path d="M26 4 A16 16 0 1 0 36 28 A13 13 0 1 1 26 4Z"/>' },
+};
+const COLORES = {
+  rojo:     { hex: '#E0483F', ms: 'rojo',     fs: 'roja',     mp: 'rojos',     fp: 'rojas' },
+  azul:     { hex: '#3276D6', ms: 'azul',     fs: 'azul',     mp: 'azules',    fp: 'azules' },
+  verde:    { hex: '#3E9B4B', ms: 'verde',    fs: 'verde',    mp: 'verdes',    fp: 'verdes' },
+  amarillo: { hex: '#E9B61C', ms: 'amarillo', fs: 'amarilla', mp: 'amarillos', fp: 'amarillas' },
+};
+const TAMANOS = {
+  grande:  { ms: 'grande',  fs: 'grande',  mp: 'grandes',  fp: 'grandes' },
+  pequeno: { ms: 'pequeño', fs: 'pequeña', mp: 'pequeños', fp: 'pequeñas' },
+};
+
+const Paquetes = {
+
+  cualquiera(obj) { const k = Object.keys(obj); return k[Math.floor(Math.random() * k.length)]; },
+  adj(tabla, clave, forma, plural) {
+    const f = FORMAS[forma].f;
+    return tabla[clave][(f ? 'f' : 'm') + (plural ? 'p' : 's')];
+  },
+  cumple(it, r) {
+    return it.k === r.k && (!r.c || it.c === r.c) && (!r.noC || it.c !== r.noC) &&
+           (!r.t || it.t === r.t) && (!r.noT || it.t !== r.noT);
+  },
+
+  /* ---- La nota de Teo y la mesa con las pegatinas ------------------- */
+  crear(nivel, cuantas) {
+    const pieza = (rol, t) => ({ rol, t });
+    const todos = (k) => FORMAS[k].f ? 'todas las' : 'todos los';
+    const k1 = this.cualquiera(FORMAS);
+    let k2 = this.cualquiera(FORMAS);
+    while (k2 === k1) k2 = this.cualquiera(FORMAS);
+    const c1 = this.cualquiera(COLORES), c2 = this.cualquiera(COLORES);
+    const t1 = this.cualquiera(TAMANOS);
+    const n = AZ(2, 4);
+    let reqs, nota;
+
+    if (nivel <= 1) {
+      reqs = [{ k: k1, n }];
+      nota = ['Mete en el paquete ', pieza(0, String(n)), ' ', pieza(0, FORMAS[k1].p), '.'];
+    } else if (nivel === 2) {
+      reqs = [{ k: k1, c: c1, n: 'todos' }];
+      nota = ['Mete ', pieza(0, todos(k1)), ' ', pieza(0, FORMAS[k1].p), ' ', pieza(0, this.adj(COLORES, c1, k1, true)), '.'];
+    } else if (nivel === 3) {
+      reqs = [{ k: k1, noC: c1, n: 'todos' }];
+      nota = ['Mete ', pieza(0, todos(k1)), ' ', pieza(0, FORMAS[k1].p), ' ',
+              pieza(0, 'que no sean ' + this.adj(COLORES, c1, k1, true)), '.'];
+    } else if (nivel === 4) {
+      reqs = [{ k: k1, t: t1, n: 2 }, { k: k2, c: c2, n: 'todos' }];
+      nota = ['Mete ', pieza(0, '2'), ' ', pieza(0, FORMAS[k1].p), ' ', pieza(0, this.adj(TAMANOS, t1, k1, true)),
+              ' y ', pieza(1, todos(k2)), ' ', pieza(1, FORMAS[k2].p), ' ', pieza(1, this.adj(COLORES, c2, k2, true)), '.'];
+    } else if (nivel === 5) {
+      reqs = [{ k: k1, noT: t1, noC: c1, n: 'todos' }];
+      nota = ['Mete ', pieza(0, todos(k1)), ' ', pieza(0, FORMAS[k1].p), ' ',
+              pieza(0, 'que no sean ' + this.adj(TAMANOS, t1, k1, true) + ' ni ' + this.adj(COLORES, c1, k1, true)), '.'];
+    } else {
+      reqs = [{ k: k1, c: c1, n: 1, primero: true }, { k: k2, t: t1, n: 'todos' }];
+      nota = [pieza('orden', 'Primero'), ', mete ', pieza(0, FORMAS[k1].f ? 'una' : 'un'), ' ', pieza(0, FORMAS[k1].s), ' ',
+              pieza(0, this.adj(COLORES, c1, k1, false)), '. ', pieza('orden', 'Después'), ', ',
+              pieza(1, todos(k2)), ' ', pieza(1, FORMAS[k2].p), ' ', pieza(1, this.adj(TAMANOS, t1, k2, true)), '.'];
+    }
+
+    // La mesa: lo que hace falta, lo que se le parece (para que haya que leer) y relleno
+    const mesa = [];
+    const nueva = () => ({ k: this.cualquiera(FORMAS), c: this.cualquiera(COLORES), t: this.cualquiera(TAMANOS) });
+    const conforme = (r) => {
+      for (let i = 0; i < 200; i++) {
+        const it = { k: r.k, c: r.c || this.cualquiera(COLORES), t: r.t || this.cualquiera(TAMANOS) };
+        if (this.cumple(it, r)) return it;
+      }
+      return null;
+    };
+    const casi = (r) => {
+      for (let i = 0; i < 200; i++) {
+        const it = { k: r.k, c: this.cualquiera(COLORES), t: this.cualquiera(TAMANOS) };
+        if (!this.cumple(it, r)) return it;
+      }
+      return null;
+    };
+    const estorba = (it) => reqs.some(r => r.n === 'todos' && this.cumple(it, r));
+    reqs.forEach(r => {
+      const cuantasBuenas = r.n === 'todos' ? AZ(2, 3) : r.n + AZ(0, 1);
+      for (let i = 0; i < cuantasBuenas; i++) mesa.push(conforme(r));
+      for (let i = 0; i < 2; i++) { const x = casi(r); if (x && !estorba(x)) mesa.push(x); }
+    });
+    let vueltas = 0;
+    while (mesa.length < cuantas && vueltas++ < 500) {
+      const it = nueva();
+      if (!estorba(it)) mesa.push(it);
+    }
+    return { nivel, reqs, nota, mesa: barajar(mesa) };
+  },
+
+  /* ---- ¿Está bien el paquete? Si no, qué parte de la nota hay que releer - */
+  revisar(pq, elegidas) {
+    const items = elegidas.map(i => pq.mesa[i]);
+    for (const it of items) {
+      if (!pq.reqs.some(r => this.cumple(it, r))) {
+        const r = pq.reqs.find(q => q.k === it.k);
+        if (!r) return { ok: false, rol: null, dice: 'Has metido algo que la nota no pide. ¿Qué forma decía?' };
+        const malColor = (r.c && it.c !== r.c) || (r.noC && it.c === r.noC);
+        const malTamano = (r.t && it.t !== r.t) || (r.noT && it.t === r.noT);
+        return { ok: false, rol: pq.reqs.indexOf(r),
+                 dice: malColor && !malTamano ? 'Esa es de la forma buena, pero mira el <b>color</b>.'
+                     : malTamano && !malColor ? 'Esa es de la forma buena, pero mira el <b>tamaño</b>.'
+                     : 'Esa es de la forma buena, pero mira el <b>color</b> y el <b>tamaño</b>.' };
+      }
+    }
+    for (let i = 0; i < pq.reqs.length; i++) {
+      const r = pq.reqs[i];
+      const dentro = items.filter(it => this.cumple(it, r)).length;
+      const hay = pq.mesa.filter(it => this.cumple(it, r)).length;
+      if (r.n === 'todos' && dentro < hay) return { ok: false, rol: i, dice: 'Faltan. Lee otra vez <b>cuántas</b> pide.' };
+      if (r.n !== 'todos' && dentro !== r.n)
+        return { ok: false, rol: i, dice: dentro < r.n ? 'Faltan. ¿Cuántas pide?' : 'Sobran. ¿Cuántas pide?' };
+    }
+    const primera = pq.reqs.find(r => r.primero);
+    if (primera && !(items.length && this.cumple(items[0], primera)))
+      return { ok: false, rol: 'orden', dice: 'Está todo, pero lee otra vez qué va <b>primero</b>.' };
+    return { ok: true };
+  },
+
+  /* Una solución, para resolverlo juntas (y para que comprobar.js vea que siempre hay) */
+  solucion(pq) {
+    const usadas = [];
+    pq.reqs.slice().sort((a, b) => (b.primero ? 1 : 0) - (a.primero ? 1 : 0)).forEach(r => {
+      const valen = pq.mesa.map((it, i) => i).filter(i => !usadas.includes(i) && this.cumple(pq.mesa[i], r));
+      (r.n === 'todos' ? valen : valen.slice(0, r.n)).forEach(i => usadas.push(i));
+    });
+    return usadas;
+  },
+
+  /* ---- Pintar ------------------------------------------------------- */
+  dibujo(it) {
+    const tam = it.t === 'grande' ? 46 : 26;
+    return `<svg viewBox="0 0 40 40" width="${tam}" height="${tam}" fill="${COLORES[it.c].hex}" aria-hidden="true">${FORMAS[it.k].svg}</svg>`;
+  },
+
+  notaHtml(pq, resaltar) {
+    return pq.nota.map(x => typeof x === 'string' ? x
+      : `<span class="${resaltar !== undefined && x.rol === resaltar ? 'marcado' : ''}">${x.t}</span>`).join('');
+  },
+
+  abrir(alTerminar) {
+    const p = Estado.actual;
+    if (!p.paquetes) p.paquetes = { nivel: 1, seguidas: 0 };
+    const tope = p.nivel === 'mayor' ? 6 : 3;
+    const nivel = Math.min(p.paquetes.nivel, tope);
+    const pq = this.crear(nivel, p.nivel === 'mayor' ? 12 : 8);
+    let elegidas = [];
+    let fallos = 0;
+
+    const pintar = (resaltar, mensaje) => {
+      UI.abrir(`
+        <div class="quien">📦 Los paquetes de Teo</div>
+        <p class="dice nota-teo">📝 ${this.notaHtml(pq, resaltar)}</p>
+        <div class="altavoz" id="zonaVoz"></div>
+        <div class="mesa">${pq.mesa.map((it, i) =>
+          `<button class="pegatina ${elegidas.includes(i) ? 'dentro' : ''}" data-i="${i}"
+                   aria-label="${FORMAS[it.k].s} ${this.adj(COLORES, it.c, it.k, false)} ${this.adj(TAMANOS, it.t, it.k, false)}">${this.dibujo(it)}</button>`).join('')}</div>
+        <p class="pregunta">📦 En el paquete: ${elegidas.length
+          ? elegidas.map(i => this.dibujo(Object.assign({}, pq.mesa[i], { t: 'pequeno' }))).join(' ') : '<small>nada todavía</small>'}</p>
+        <p class="pista" id="pista">${mensaje || ''}</p>
+        <div class="botones">
+          <button class="btn defecto" id="listo">Ya está<span class="tecla">espacio</span></button>
+          <button class="btn gris" id="vaciar">Vaciar el paquete</button>
+        </div>
+      `);
+      UI.prepararAltavoz(pq.nota.map(x => typeof x === 'string' ? x : x.t).join(''));
+      UI.modal.querySelectorAll('.pegatina').forEach(b => {
+        b.onclick = () => {
+          const i = +b.dataset.i;
+          elegidas = elegidas.includes(i) ? elegidas.filter(x => x !== i) : elegidas.concat(i);
+          Sonido.clic();
+          pintar(resaltar, document.getElementById('pista').innerHTML);
+        };
+      });
+      document.getElementById('vaciar').onclick = () => { Sonido.clic(); elegidas = []; pintar(resaltar); };
+      document.getElementById('listo').onclick = () => {
+        const r = this.revisar(pq, elegidas);
+        if (r.ok) return this.bien(fallos === 0, alTerminar);
+        fallos++;
+        Sonido.fallo();
+        if (fallos >= AJUSTES.fallosParaDormirse) return this.juntas(pq, alTerminar);
+        pintar(r.rol === null ? undefined : r.rol, '💭 ' + r.dice);
+      };
+    };
+    pintar();
+  },
+
+  bien(primera, alTerminar) {
+    const p = Estado.actual;
+    const tope = p.nivel === 'mayor' ? 6 : 3;
+    let sube = false;
+    if (primera) {
+      p.paquetes.seguidas++;
+      if (p.paquetes.seguidas >= 2 && p.paquetes.nivel < tope) {
+        p.paquetes.nivel++; p.paquetes.seguidas = 0; sube = true;
+      }
+    } else p.paquetes.seguidas = 0;
+    const paga = Estado.darConchasConTope(AJUSTES.conchasPorPaquete);
+    Estado.guardar();
+    UI.refrescarHud();
+    Sonido.fiesta();
+    UI.dialogo('Teo', '¡Perfecto, justo lo que ponía la nota! 📦' +
+      (paga ? '<br><br>🐚 <b>+' + paga + ' conchas</b>' : '<br><br><small>Por hoy ya no quedan conchas que ganar aquí.</small>') +
+      (sube ? '<br><br>⭐ Las próximas notas serán un poco más difíciles.' : ''), [
+      { texto: 'Otro paquete', accion: () => this.abrir(alTerminar) },
+      { texto: 'Ya está bien', accion: () => { UI.cerrar(); if (alTerminar) alTerminar(); } },
+    ]);
+  },
+
+  juntas(pq, alTerminar) {
+    const p = Estado.actual;
+    p.paquetes.seguidas = 0;
+    if (p.paquetes.nivel > 1) p.paquetes.nivel--;
+    Estado.guardar();
+    const sol = this.solucion(pq);
+    UI.abrir(`
+      <div class="quien">💡 Lo vemos juntas</div>
+      <p class="dice nota-teo">📝 ${this.notaHtml(pq)}</p>
+      <div class="mesa">${pq.mesa.map((it, i) =>
+        `<span class="pegatina ${sol.includes(i) ? 'dentro' : 'fuera'}">${this.dibujo(it)}</span>`).join('')}</div>
+      <p class="dice">Las que van en el paquete son las que están marcadas. Fíjate en cada palabra de la nota.</p>
+      <div class="botones">
+        <button class="btn defecto" id="otro">Otro paquete<span class="tecla">espacio</span></button>
+        <button class="btn gris" id="basta">Ya está bien</button>
+      </div>
+    `);
+    document.getElementById('otro').onclick = () => { Sonido.clic(); this.abrir(alTerminar); };
+    document.getElementById('basta').onclick = () => { Sonido.clic(); UI.cerrar(); if (alTerminar) alTerminar(); };
+  },
+};
+
+</script>
+<script>
+/* === motor/informe.js === */
+/* EL INFORME PARA ANTONIO: ¿de verdad entiende mejor lo que lee?
+   (revisión pedagógica del 14-09-2026)
+
+   Se abre desde la portada, en «📊 cómo va la lectura». Lee lo que el juego
+   apunta de cada problema y cada reto (Estado.apuntarIntento). Todo está en
+   el propio aparato: no se envía a ningún sitio. */
+
+const Informe = {
+
+  hay() {
+    return (Estado.perfiles || []).some(p => (p.registro || []).length > 0);
+  },
+
+  /* Porcentaje de «sí» entre los que tienen dato, o una raya si no hay */
+  pct(lista, campo) {
+    const con = lista.filter(x => x[campo] === true || x[campo] === false);
+    if (!con.length) return '—';
+    return Math.round(100 * con.filter(x => x[campo] === true).length / con.length) + '%';
+  },
+
+  diasAtras(n) {
+    const d = new Date(); d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  },
+
+  fila(nombre, reciente, antes, campo, explica) {
+    return `<tr><td>${nombre}<br><small>${explica}</small></td>
+      <td><b>${this.pct(reciente, campo)}</b></td><td>${this.pct(antes, campo)}</td></tr>`;
+  },
+
+  perfil(p) {
+    const reg = p.registro || [];
+    const hace14 = this.diasAtras(14), hace28 = this.diasAtras(28);
+    const probs = reg.filter(x => x.t !== 'reto');
+    const rec = probs.filter(x => x.d > hace14);
+    const ant = probs.filter(x => x.d <= hace14 && x.d > hace28);
+    const conPrisa = (l) => l.map(x => Object.assign({}, x, { conCalma: x.prisa === null || x.prisa === undefined ? null : !x.prisa }));
+    const conVoz = (l) => l.map(x => Object.assign({}, x, { sinVoz: !x.voz }));
+    const juntas = (l) => l.map(x => Object.assign({}, x, { sola: x.fin === 'bien' }));
+    const prep = (l) => juntas(conVoz(conPrisa(l)));
+
+    const tabla = rec.length || ant.length ? `
+      <div class="informe-tabla"><table>
+        <tr><th></th><th>Últimos 14 días<br><small>${rec.length} problemas</small></th>
+            <th>Los 14 anteriores<br><small>${ant.length} problemas</small></th></tr>
+        ${this.fila('Entiende la historia sin números', prep(rec), prep(ant), 'e1', '«¿qué buscamos?» a la primera')}
+        ${this.fila('Elige el dibujo bueno', prep(rec), prep(ant), 'b1', 'las barras, a la primera')}
+        ${this.fila('Sabe qué hay que hacer', prep(rec), prep(ant), 'op1', 'la operación, a la primera')}
+        ${this.fila('Estima bien', prep(rec), prep(ant), 'est1', '«¿más o menos que…?»')}
+        ${this.fila('Calcula bien', prep(rec), prep(ant), 'num1', 'el número, a la primera')}
+        ${this.fila('Explica por qué', prep(rec), prep(ant), 'pq1', 'elige la razón buena')}
+        ${this.fila('Lee antes de tocar', prep(rec), prep(ant), 'conCalma', 'no toca antes de poder leerlo')}
+        ${this.fila('Lo lee ella', prep(rec), prep(ant), 'sinVoz', 'sin pulsar 🔊')}
+        ${this.fila('Lo termina sola', prep(rec), prep(ant), 'sola', 'sin tener que resolverlo juntas')}
+      </table></div>` : '<p class="pista">Todavía no ha hecho problemas.</p>';
+
+    // Por forma de problema
+    const tipos = [...new Set(probs.map(x => x.t))];
+    const nombreAyuda = { guiado: 'con toda la ayuda', medio: 'con algo de ayuda', solo: 'sola' };
+    const formas = tipos.map(t => {
+      const h = probs.filter(x => x.t === t);
+      const ult = h.slice(-5).map(x => Problema.limpio(x) ? '✅' : '❌').join('');
+      const pg = PEGATINAS[t] || { icono: '⭐', nombre: t };
+      return `<tr><td>${pg.icono} ${pg.nombre}</td><td>${h.length}</td><td>${ult}</td>
+                  <td><small>${nombreAyuda[Problema.andamiaje(t, p.nivel)]}</small></td></tr>`;
+    }).join('');
+
+    const retos = reg.filter(x => x.t === 'reto' && x.d > hace14);
+    const paq = p.paquetes || { nivel: 1 };
+
+    return `
+      <h3>${p.nombre} <small>(${p.nivel === 'mayor' ? 'Gala' : 'Inés'})</small></h3>
+      ${tabla}
+      ${formas ? `<div class="informe-tabla"><table>
+        <tr><th>Forma de problema</th><th>Veces</th><th>Últimas 5</th><th>Ahora le toca</th></tr>
+        ${formas}</table></div>` : ''}
+      <p class="pista">🏝️ Retos de la isla (14 días): ${retos.length} ·
+         qué hacer a la primera <b>${this.pct(retos, 'op1')}</b> ·
+         con prisa <b>${this.pct(retos, 'prisa')}</b></p>
+      <p class="pista">📦 Paquetes de Teo: va por el <b>nivel ${paq.nivel}</b> de ${p.nivel === 'mayor' ? 6 : 3}.</p>`;
+  },
+
+  abrir() {
+    const perfiles = (Estado.perfiles || []).filter(p => (p.registro || []).length);
+    UI.abrir(`
+      <div class="quien">📊 Cómo va la lectura</div>
+      <p class="pista">Lo que el juego apunta de cada problema. Se guarda <b>solo en este aparato</b>.
+        ✅ en «Últimas 5» quiere decir que lo entendió todo a la primera y sin prisa.
+        «Ahora le toca» es cuánta ayuda le da el juego con esa forma: se retira sola cuando la domina.</p>
+      <div class="informe">${perfiles.map(p => this.perfil(p)).join('<hr>') ||
+        '<p class="pista">Todavía no hay nada apuntado.</p>'}</div>
+      <p class="pista"><small>«Lee antes de tocar» es una estimación: si toca una tarjeta en menos de
+        ${AJUSTES.segundosPorPalabraMinimo} segundos por palabra del problema, no le ha dado tiempo a leerlo.</small></p>
+      <div class="botones"><button class="btn gris" id="cerrarInforme">Cerrar</button></div>
+    `);
+    document.getElementById('cerrarInforme').onclick = () => UI.cerrar();
   },
 };
 
@@ -9399,7 +11134,8 @@ const Juego = {
         { texto: '🧠 Un problema', accion: () => Desafio.problema(Estado.actual.nivel, () => UI.refrescarHud()) },
         { texto: '⚡ Preguntas rápidas', accion: () => Salon.abrir(() => UI.refrescarHud()) },
         { texto: '🎈 La fiesta de los globos', accion: () => Globos.abrir(() => UI.refrescarHud()) },
-      ]);
+      ].concat(novedad('paquetes')
+        ? [{ texto: '📦 Los paquetes de Teo', accion: () => Paquetes.abrir(() => UI.refrescarHud()) }] : []));
     }
     if (l.accion === 'meta') return this.farol();
     Desafio.abrir(l.id, () => UI.refrescarHud());     // reto y letras
@@ -11711,10 +13447,10 @@ const Inicio = {
     const f = Estado.guardadoEl();
     aviso.className = '';
     const n = Pedidos.cuantas();
-    const libreta = n
+    const libreta = (n
       ? ' · <button class="enlace" id="verLibreta">📦 ' + n +
         (n === 1 ? ' petición para la tienda' : ' peticiones para la tienda') + '</button>'
-      : '';
+      : '') + (Informe.hay() ? ' · <button class="enlace" id="verInforme">📊 cómo va la lectura</button>' : '');
     if (!f) {
       aviso.innerHTML = 'Todavía no se ha guardado nada en este aparato.' + libreta;
     } else {
@@ -11726,6 +13462,8 @@ const Inicio = {
     }
     const bl = document.getElementById('verLibreta');
     if (bl) bl.onclick = () => Pedidos.libreta();
+    const bi = document.getElementById('verInforme');
+    if (bi) bi.onclick = () => Informe.abrir();
   },
 
   formulario() {
