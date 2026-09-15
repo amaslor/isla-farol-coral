@@ -608,7 +608,10 @@ const AJUSTES = {
   segundosPorPalabraMinimo: 0.25,
 
   // --- Cuándo se cansa un personaje ------------------------------------
-  fallosParaDormirse: 3,     // fallos seguidos antes de que se vaya a dormir
+  /* Fallos en un reto antes de que el personaje se duerma (hasta mañana o hasta
+     una buena ronda con Coco). En los problemas solo cuentan los de elegir la
+     operación y poner el número: equivocarse en los pasos de ayuda no duerme. */
+  fallosParaDormirse: 3,
 
   // --- El altavoz (leer el texto en voz alta) ---------------------------
   // Segundos que tarda en aparecer el botón. Si el texto se lee y se pasa
@@ -4690,9 +4693,13 @@ const Estado = {
 
   tieneCristal(id) { return this.actual.cristales.includes(id); },
 
-  estaDormido(id) { return !!this.actual.dormidos[id]; },
+  /* Dormido solo durante el día en que se durmió (15-09-2026): cada mañana la isla
+     empieza despierta, pero cerrar y abrir el juego no despierta a nadie (sería un
+     truco para no tener que ir a Coco). Las partidas viejas guardaban «true»: eso
+     cuenta como despierto. */
+  estaDormido(id) { return this.actual.dormidos[id] === this.hoy(); },
 
-  dormir(id) { this.actual.dormidos[id] = true; this.guardar(); },
+  dormir(id) { this.actual.dormidos[id] = this.hoy(); this.guardar(); },
 
   despertarTodos() {
     this.actual.dormidos = {};
@@ -7541,7 +7548,7 @@ const Salon = {
   premiar(alTerminar, acertadas) {
     const paga = Estado.darConchasConTope(AJUSTES.conchasPorRondaSalon);
     Sonido.moneda();
-    const habiaDormidos = Object.keys(Estado.actual.dormidos || {}).length > 0;
+    const habiaDormidos = Object.keys(Estado.actual.dormidos || {}).some(id => Estado.estaDormido(id));
     // Para despertar a los dormidos hay que acertar a la primera dos de tres
     const despiertan = acertadas >= 2;
     if (despiertan) Estado.despertarTodos();
@@ -7827,6 +7834,7 @@ const Problema = {
     this.p = p;
     this.ctx = ctx;
     this.fallos = 0;
+    this.decisivos = 0;
     this.pasoOp = 0;
     this.usados = [];
     this.ultimoTipo = p.tipo;
@@ -7890,11 +7898,16 @@ const Problema = {
 
   decir(html) { const el = document.getElementById('pista'); if (el) el.innerHTML = html; },
 
-  /* Un fallo: a la tercera se resuelve juntas */
-  fallar() {
+  /* Un fallo. Todos cuentan para las pistas y el informe, pero para resolverlo
+     juntas (o dormir al personaje en un reto) solo cuentan los DECISIVOS: elegir
+     la operación y poner el número, que es donde se puede ganar probando. Los
+     pasos de ayuda (escena, dibujo, estimar) son para aprender: equivocarse ahí
+     no castiga (15-09-2026). */
+  fallar(decisivo) {
     this.fallos++;
+    if (decisivo) this.decisivos++;
     Sonido.fallo();
-    if (this.fallos >= AJUSTES.fallosParaDormirse) {
+    if (this.decisivos >= AJUSTES.fallosParaDormirse) {
       setTimeout(() => this.resolverJuntas(), 1400);
       return true;
     }
@@ -8064,7 +8077,7 @@ const Problema = {
             ? (p.explicaPasos[op] || EXPLICA_GENERAL[op])
             : 'Lo primero ya lo tienes. ¿Qué pasa después en la historia?';
           this.decir('💭 ' + razon + this.ayudaTexto());
-          return this.fallar();
+          return this.fallar(true);
         }
 
         if (op === p.operacion) {
@@ -8076,7 +8089,7 @@ const Problema = {
         b.classList.add('mal'); b.disabled = true; primera = false;
         this.intento.op1 = false;
         this.decir('💭 ' + (p.explica[op] || EXPLICA_GENERAL[op]) + this.ayudaTexto());
-        this.fallar();
+        this.fallar(true);
       };
     });
   },
@@ -8155,7 +8168,7 @@ const Problema = {
       this.intento.num1 = false;
       marcado = '';
       document.getElementById('marcado').textContent = '—';
-      if (this.fallar()) return this.decir('💭 Vamos a verlo juntas.');
+      if (this.fallar(true)) return this.decir('💭 Vamos a verlo juntas.');
       this.intento.pistas++;
       // Primera pista: al texto. Segunda: el dibujo (o una pregunta sobre la historia)
       if (this.fallos === 1 || !(novedad('barras') && p.barras)) {
