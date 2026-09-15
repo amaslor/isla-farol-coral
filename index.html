@@ -13371,6 +13371,653 @@ const Juego = {
 
 </script>
 <script>
+/* === ampliaciones/motor-ampliaciones.js === */
+/* AMPLIACIONES DE LA ISLA · el enchufe
+   ─────────────────────────────────────
+   Cada isla nueva va en su propio archivo (isla-1-pins.js, isla-2-sal.js…) y
+   se queda APAGADA: el juego publicado no carga nada de esta carpeta. Cómo se
+   encienden: ver LEEME.md, aquí al lado.
+
+   Cada ampliación llama a  ampliacion({ ... })  con listas que tienen la misma
+   forma que las de contenido/mundo.js (islotes, lugares, bloqueos…), y además:
+     retos, historias, charlas → se añaden a RETOS, HISTORIAS, CHARLAS
+     caminos    → parejas de sitios unidas por un caminito
+     dibujos    → cómo se pinta cada sitio nuevo
+     obstaculos → cómo se pinta cada obstáculo nuevo
+
+   Lo que el motor no sabía hacer y se añade aquí, sin tocar el motor:
+     · obstáculos que bloquean también en las islas pequeñas
+     · puentes en vertical (de norte a sur)
+     · el barco: sitios con acción 'barco' que te llevan a otra isla
+     · caminos entre los sitios nuevos
+     · textos propios cuando se repite un trabajo el mismo día */
+
+const Ampliaciones = {
+  lista: [],
+  caminos: [],
+  bloqueos: [],
+
+  registrar(d) {
+    this.lista.push(d.id);
+    ['islotes', 'pasarelas', 'pasos', 'lugares', 'bloqueos', 'zonas', 'piezas',
+     'secretos', 'flores', 'matas', 'rocas', 'palmeras']
+      .forEach(k => (d[k] || []).forEach(x => MUNDO[k].push(x)));
+    (d.bloqueos || []).forEach(b => this.bloqueos.push(b));
+    Object.assign(MUNDO.nodos, d.nodos || {});
+    (d.caminos || []).forEach(c => this.caminos.push(c));
+    Object.assign(RETOS, d.retos || {});
+    Object.assign(HISTORIAS, d.historias || {});
+    Object.assign(CHARLAS, d.charlas || {});
+    Object.keys(d.dibujos || {}).forEach(k => { Juego['pintar_' + k] = d.dibujos[k]; });
+    Object.keys(d.obstaculos || {}).forEach(k => { Juego['obstaculo_' + k] = d.obstaculos[k]; });
+  },
+
+  dentro(x, y, e) {
+    return !!e && Math.pow((x - e.x) / e.rx, 2) + Math.pow((y - e.y) / e.ry, 2) <= 1;
+  },
+
+  /* ¿Hay un obstáculo de las islas nuevas justo aquí? */
+  tapado(x, y) {
+    return this.bloqueos.some(b => {
+      if (!this.dentro(x, y, b) || this.dentro(x, y, b.hueco)) return false;
+      return ![b.paso, b.paso2].some(p =>
+        p && (!p.requiere || Estado.pasoAbierto(p.requiere)) && this.dentro(x, y, p));
+    });
+  },
+
+  /* EL BARCO: la primera vez hay que ayudar a la capitana (un reto); después
+     se puede ir y volver cuando se quiera. */
+  barco(l) {
+    const v = l.viaje;
+    const zarpar = () => UI.dialogo(v.personaje, v.pregunta, [
+      { texto: '⛵ ¡Vamos!', accion: () => { UI.cerrar(); this.navegar(v); } },
+      { texto: 'Ahora no', accion: () => UI.cerrar() },
+    ]);
+    if (!v.paso || Estado.pasoAbierto(v.paso)) return zarpar();
+
+    UI.dialogo(v.personaje, v.cerrado + '<br><br>✨ <b>Si me ayudas, zarpamos.</b>', [
+      { texto: '¡Te ayudo!', accion: () => {
+          Desafio.abrir(v.reto, (bien) => {
+            UI.refrescarHud();
+            if (!bien) return;
+            Estado.abrirPaso(v.paso);
+            Sonido.fiesta();
+            UI.dialogo('🎉 ¡El barco está listo!', v.alAbrir, [
+              { texto: '⛵ ¡A navegar!', accion: () => { UI.cerrar(); this.navegar(v); } },
+            ]);
+          });
+        } },
+      { texto: 'Ahora no', accion: () => UI.cerrar() },
+    ]);
+  },
+
+  /* El viaje: se aparece en la otra orilla y la cámara cruza el mar sola */
+  navegar(v) {
+    const j = Juego.jugador, m = Juego.mascota;
+    j.x = v.destino.x; j.y = v.destino.y; j.z = 0;
+    m.x = j.x - 40; m.y = j.y + 10;
+    Juego.destino = null;
+    Sonido.cristal();
+    setTimeout(() => Hada.decir(v.llegada, 7), 1200);
+  },
+};
+
+function ampliacion(d) { Ampliaciones.registrar(d); }
+
+ICONOS.barco = '⛵';
+TECLAS.barco = 'J';
+
+(function engancharAlMotor() {
+  const J = Juego;
+
+  const transitable = J.transitable;
+  J.transitable = function (x, y) {
+    return transitable.call(this, x, y) && !Ampliaciones.tapado(x, y);
+  };
+
+  const bloqueo = J.bloqueo;
+  J.bloqueo = function (ctx, b) {
+    const f = this['obstaculo_' + b.dibujo];
+    if (!f) return bloqueo.call(this, ctx, b);
+    ctx.save(); f.call(this, ctx, b); ctx.restore();
+  };
+
+  // Un puente vertical es el mismo puente, girado un cuarto de vuelta
+  const puente = J.puente;
+  J.puente = function (ctx, p) {
+    if (!p.vertical) return puente.call(this, ctx, p);
+    ctx.save();
+    ctx.translate(p.x, p.y); ctx.rotate(Math.PI / 2); ctx.translate(-p.x, -p.y);
+    puente.call(this, ctx, { x: p.x, y: p.y, rx: p.ry, ry: p.rx, requiere: p.requiere });
+    ctx.restore();
+  };
+
+  const tramos = J.tramos;
+  J.tramos = function () {
+    if (this._tramosAmp) return this._tramosAmp;
+    const p = {};
+    MUNDO.lugares.forEach(l => p[l.id] = l);
+    Object.keys(MUNDO.nodos).forEach(k => p[k] = MUNDO.nodos[k]);
+    const extra = Ampliaciones.caminos.filter(u => p[u[0]] && p[u[1]])
+      .map(u => [p[u[0]].x, p[u[0]].y, p[u[1]].x, p[u[1]].y]);
+    return (this._tramosAmp = tramos.call(this).concat(extra));
+  };
+
+  const interactuar = J.interactuar;
+  J.interactuar = function (tecla) {
+    const l = this.lugar || this.lugarEn(this.jugador.x, this.jugador.y, 95);
+    if (!this.cogible && !this.entregable && !this.encajable && l && l.accion === 'barco' &&
+        (!tecla || tecla === 'Enter' || tecla === 'J')) {
+      this.teclas = {};
+      Sonido.clic();
+      return Ampliaciones.barco(l);
+    }
+    return interactuar.call(this, tecla);
+  };
+
+  // Igual que el de motor/desafios.js, pero cada trabajo puede decir su frase
+  // cuando se repite el mismo día (el original habla siempre de «limpiar»).
+  Desafio.pagarTrabajo = function (id, extra) {
+    const primera = Estado.trabajoDeHoy(id);
+    const pago = primera ? AJUSTES.conchasPorLimpiar : AJUSTES.conchasPorLimpiarRepe;
+    Estado.darConchas(pago);
+    Sonido.fiesta();
+    setTimeout(() => Sonido.moneda(), 450);
+    UI.refrescarHud();
+
+    let texto = RETOS[id].exito + '<br><br>🐚 <b>+' + pago + ' conchas</b>' + (extra || '');
+    if (!primera) texto += '<br><small>' +
+      (RETOS[id].repetido || 'Hoy ya los limpiaste: mañana vuelven a pagar bien.') + '</small>';
+
+    const moraleja = RETOS[id].moraleja;
+    UI.dialogo(this.quien(id), texto, [
+      { texto: moraleja ? '¿Y qué he hecho?' : '¡Bien!', accion: () => {
+          if (moraleja) return this.explicar(moraleja);
+          UI.cerrar();
+          if (this.alTerminar) this.alTerminar(true);
+        } },
+    ]);
+  };
+})();
+
+</script>
+<script>
+/* === ampliaciones/isla-2-sal.js === */
+/* AMPLIACIÓN 2 · L'ILLA DE LA SAL
+   Se llega en BARCO desde un muelle nuevo en la costa sur de la isla grande
+   (al este de la hamaca). Estado: PREPARADA, APAGADA.
+
+   Qué hay:
+     · El muelle de la capitana Mar: la primera vez hay que ayudarla a cargar
+       provisiones (reto); después se va y se vuelve cuando se quiera
+     · Las balsas de sal, una laguna con flamencos y unas dunas (no se pasa)
+     · Tià, el salinero (trabajo diario: sacos y kilos de sal)
+     · Lia, la que cuenta pájaros (trabajo diario: patas de flamenco, con el
+       problema de «la pata coja», que es de dos pasos)
+     · El faro viejo y el barco hundido (para mirar)
+     · L'avi Salvador, el antiguo farero (para charlar)
+     · Una bombilla perdida en el barco hundido que vuelve a encender el faro */
+
+ampliacion({
+  id: 'sal',
+
+  islotes: [{ id: 'sal', x: 7650, y: 3880, rx: 620, ry: 520 }],
+
+  pasarelas: [
+    { x: 5250, y: 4180, rx: 34, ry: 130 },     // el muelle de la isla grande
+    { x: 6960, y: 3860, rx: 130, ry: 34 },     // el muelle de l'Illa de la Sal
+  ],
+
+  lugares: [
+    { id: 'muelle', x: 5250, y: 4250, accion: 'barco', dibujo: 'muelle',
+      nombre: 'El barco de la capitana', mapa: 'El Moll', personaje: 'La capitana Mar',
+      viaje: {
+        paso: 'barco', reto: 'barcoReto', personaje: 'La capitana Mar',
+        cerrado: 'Mi barco va hasta l\'Illa de la Sal, una isla blanca y rosa, al este.<br><br>' +
+                 'Pero antes de zarpar hay que cargar las provisiones.',
+        alAbrir: 'Cargáis las provisiones y la capitana suelta las cuerdas.<br><br>' +
+                 '<b>Ya puedes ir en barco cuando quieras.</b>',
+        pregunta: '¿Nos vamos a l\'Illa de la Sal? El viaje es cortito.',
+        destino: { x: 7160, y: 3860 },
+        llegada: '⛵ ¡Tierra! Esto es <b>l\'Illa de la Sal</b>.' } },
+
+    { id: 'muelleSal', x: 6870, y: 3860, accion: 'barco', dibujo: 'muelleSal',
+      nombre: 'El barco de vuelta', mapa: 'Moll de la Sal', personaje: 'La capitana Mar',
+      viaje: {
+        personaje: 'La capitana Mar',
+        pregunta: '¿Volvemos a la isla grande?',
+        destino: { x: 5250, y: 4000 },
+        llegada: '⛵ De vuelta en la isla grande.' } },
+
+    { id: 'salinero', x: 7450, y: 3990, accion: 'reto', dibujo: 'salinero',
+      nombre: 'Las salinas de Tià', mapa: 'Les Salines', personaje: 'Tià, el salinero' },
+    { id: 'flamencos', x: 7820, y: 3800, accion: 'reto', dibujo: 'flamencos',
+      nombre: 'La laguna de los flamencos', mapa: 'Els Flamencs', personaje: 'Lia, la que cuenta pájaros' },
+    { id: 'farVell', x: 8130, y: 3920, accion: 'ver', historia: 'farVell', dibujo: 'farVell',
+      nombre: 'El faro viejo', mapa: 'El Far Vell' },
+    { id: 'naufragio', x: 7420, y: 4300, accion: 'ver', historia: 'naufragio', dibujo: 'naufragio',
+      nombre: 'El barco hundido', mapa: 'La Gavina' },
+    { id: 'avi', x: 7600, y: 4200, accion: 'hablar', charla: 'avi', dibujo: 'avi',
+      nombre: 'L\'avi Salvador', mapa: 'L\'Avi' },
+  ],
+
+  zonas: [{ tipo: 'rosa', x: 7450, y: 3720, rx: 330, ry: 230 }],
+
+  bloqueos: [
+    { dibujo: 'salinas', x: 7450, y: 3700, rx: 240, ry: 150,
+      mensaje: 'Son las <b>balsas de sal</b>. No se pisan, que se enturbia el agua.' },
+    { dibujo: 'lago', x: 7980, y: 3600, rx: 190, ry: 120,
+      mensaje: 'En la laguna están los <b>flamencos</b>. Si te metes, se asustan.' },
+    { dibujo: 'dunas', x: 7960, y: 4180, rx: 230, ry: 130,
+      mensaje: 'La arena de las <b>dunas</b> se hunde bajo los pies. Mejor rodearlas.' },
+  ],
+
+  nodos: { salLlegada: { x: 7160, y: 3860 } },
+  caminos: [['salLlegada', 'salinero'], ['salinero', 'flamencos'], ['flamencos', 'farVell'],
+            ['salinero', 'avi'], ['avi', 'naufragio']],
+
+  piezas: [
+    { id: 'bombilla', x: 7300, y: 4200, icono: '💡', nombre: 'Una bombilla antigua',
+      hallazgo: 'Una bombilla enorme, de las antiguas, entre las tablas del barco hundido. ' +
+                'Está entera de milagro.',
+      encaja: 'farVell', arreglo: 'El faro viejo vuelve a brillar',
+      pista: 'Lejos del Farol hay una torre pequeña que lleva años a oscuras.',
+      alColocar: 'Enroscas la bombilla en lo alto del faro viejo. Parpadea una vez, dos, tres… ' +
+                 'y <b>se queda encendida</b>.<br><br>Seguro que desde el Farol de Coral se ve.' },
+  ],
+
+  palmeras: [[7200, 3650], [8150, 3750], [7700, 4350]],
+  matas: [[7600, 3500], [8200, 4000]],
+  rocas: [[7350, 4100], [8180, 4100]],
+
+  /* ------------------------------------------------------------ RETOS */
+  retos: {
+
+    barcoReto: {
+      paseo: true,          // paga como una atracción y NO cuenta como cristal del Farol
+      quien: 'La capitana Mar',
+      saludo: 'Antes de zarpar hay que cargar el barco. ¿Me echas una mano con las cuentas?',
+      exito: '¡Todo cargado! Suelta esa cuerda, marinera.',
+      dormido: 'Me he mareado sin salir del muelle. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con una más corta.',
+      moraleja: { titulo: 'Qué pregunta el problema',
+        texto: 'Antes de hacer cuentas, busca <b>qué te preguntan</b>.<br><br>' +
+               '«¿Cuántas llevamos?», «¿cuántas faltan?», «¿cuántas para cada uno?» ' +
+               'son preguntas distintas y piden cuentas distintas.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const c = AZ(4, 9), b = AZ(6, 9); return { c, b, sol: c * b, mal: c + b }; },
+            enunciado: 'Subimos {c} cajas al barco. En cada caja hay {b} botellas de agua. ¿Cuántas botellas llevamos?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{c} más {b} son {mal}. Pero CADA caja lleva {b}.',
+                       repartir: 'No repartimos: queremos saber cuántas llevamos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas botellas?', sol: '{sol}' }],
+            pistas: ['{c} cajas iguales.', 'La tabla del {b}: {c} × {b}.'] },
+          { vars: () => { const p = AZ(3, 6), b = AZ(3, 5), y = AZ(2, 8);
+                          return { p, b, y, tot: p * b, sol: p * b - y }; },
+            enunciado: 'Vamos {p} personas y cada una bebe {b} botellas en el viaje. ' +
+                       'Ya hay {y} botellas en el barco. ¿Cuántas faltan por subir?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{p} × {b} = {tot} es lo que hace falta. Pero ya hay {y}…',
+                       quitar: 'Antes de quitar, hay que saber cuántas hacen falta: {p} personas de {b}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas hacen falta?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántas faltan por subir?', sol: '{sol}' }],
+            pistas: ['Primero: {p} × {b} = {tot}.', 'Después: {tot} menos las {y} que ya hay.'] },
+          { vars: () => { const p = AZ(3, 6), k = AZ(3, 8); return { p, k, n: p * k, sol: k }; },
+            enunciado: 'Llevamos {n} naranjas y somos {p}. Nos las repartimos a partes iguales. ¿Cuántas para cada uno?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántas le tocan a cada uno.',
+                       multiplicar: 'Si multiplico salen muchísimas naranjas. ¡No hay tantas!' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas para cada uno?', sol: '{sol}' }],
+            pistas: ['«A partes iguales» es repartir.', '¿Qué número por {p} da {n}?'] },
+        ],
+        facil: { enunciado: 'Subimos 4 cajas con 5 botellas cada una. ¿Cuántas botellas?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 × 5', sol: 20 }],
+          pistas: ['Cuatro veces cinco.', '5, 10, 15, 20.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(10, 20), b = AZ(3, 9); return { a, b, sol: a - b }; },
+            enunciado: 'En el barco caben {a} personas. Ya han subido {b}. ¿Cuántas más caben?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si juntas, salen más personas de las que caben.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Caben {a} y ya hay {b}.', 'Cuenta desde {b} hasta {a}.'] },
+          { vars: () => { const c = AZ(2, 6); return { c, sol: c * 5 }; },
+            enunciado: 'Subo {c} cajas. En cada caja hay 5 botellas. ¿Cuántas botellas subo?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y 5… pero CADA caja lleva 5.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{c} × 5', sol: '{sol}' }],
+            pistas: ['De 5 en 5.', '5, 10, 15…'] },
+        ],
+        facil: { enunciado: 'En el barco caben 8 personas y han subido 3. ¿Cuántas más caben?',
+          operacion: 'quitar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '8 − 3', sol: 5 }],
+          pistas: ['Ocho menos tres.', 'Cinco.'] },
+      },
+    },
+
+    salinero: {
+      trabajo: true,
+      quien: 'Tià, el salinero',
+      saludo: 'El sol ya ha secado las balsas. ¿Me ayudas con los sacos de sal?',
+      exito: '¡Perfecto! Toma, que el trabajo se paga.',
+      repetido: 'Hoy ya me ayudaste. Mañana hay sal nueva y te pago mejor.',
+      dormido: 'Con este sol me entra una siesta… Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos sacos.',
+      moraleja: { titulo: 'Kilos y sacos',
+        texto: 'Si sabes cuántos sacos y cuántos kilos lleva cada uno, <b>multiplicas</b>.<br><br>' +
+               'Si sabes los kilos y quieres saber cuántos sacos, <b>divides</b>.<br><br>' +
+               'Es la misma cuenta, pero al revés.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const b = AZ(3, 9), k = AZ(4, 9); return { b, k, sol: b * k, mal: b + k }; },
+            enunciado: 'Hay {b} balsas de sal. De cada balsa saco {k} sacos. ¿Cuántos sacos saco?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{b} más {k} son {mal}. Pero de CADA balsa salen {k}.',
+                       repartir: 'No repartimos: queremos saber cuántos sacos hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos sacos?', sol: '{sol}' }],
+            pistas: ['{b} balsas y todas dan lo mismo.', 'La tabla del {k}.'] },
+          { vars: () => { const k = AZ(4, 9), s = AZ(3, 9); return { k, s, n: k * s, sol: s }; },
+            enunciado: 'Tengo {n} kilos de sal. Cada saco lleva {k} kilos. ¿Cuántos sacos lleno?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántos sacos salen.',
+                       multiplicar: '{n} × {k} serían muchísimos kilos. ¡No tengo tantos!' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos sacos?', sol: '{sol}' }],
+            pistas: ['{n} kilos, de {k} en {k}.', '¿Qué número por {k} da {n}?'] },
+          { vars: () => { const a = AZ(15, 40), d = AZ(6, 25); return { a, b: a + d, sol: d }; },
+            enunciado: 'Ayer Tià sacó {a} sacos. Hoy ha sacado {b}. ¿Cuántos sacos más ha sacado hoy?',
+            operacion: 'compara', opciones: ['juntar', 'compara', 'repartir'],
+            explica: { juntar: 'Juntarlos dice cuántos hay entre los dos días, no cuántos MÁS.',
+                       repartir: 'No hay nada que repartir.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos más?', sol: '{sol}' }],
+            pistas: ['Compara {b} con {a}.', '{b} menos {a}.'] },
+          { vars: () => { const s = AZ(3, 6), k = AZ(5, 9), v = AZ(4, 14);
+                          return { s, k, v, tot: s * k, sol: s * k - v }; },
+            enunciado: 'Lleno {s} sacos de {k} kilos. Luego vendo {v} kilos. ¿Cuántos kilos me quedan?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{s} × {k} = {tot} kilos tengo. Pero luego vendo {v}…',
+                       quitar: 'Antes de quitar, hay que saber cuántos kilos hay: {s} sacos de {k}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos kilos tengo?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántos me quedan?', sol: '{sol}' }],
+            pistas: ['Primero: {s} × {k} = {tot}.', 'Después: {tot} menos {v}.'] },
+        ],
+        facil: { enunciado: 'Hay 4 balsas y de cada una saco 5 sacos. ¿Cuántos sacos?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 × 5', sol: 20 }],
+          pistas: ['Cuatro veces cinco.', '5, 10, 15, 20.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(5, 14), b = AZ(3, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Por la mañana Tià llena {a} sacos. Por la tarde llena {b}. ¿Cuántos llena en total?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No se pierde ningún saco: se llenan más.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'] },
+          { vars: () => { const a = AZ(12, 20), b = AZ(3, 9); return { a, b, sol: a - b }; },
+            enunciado: 'Tià tiene {a} sacos. Vende {b}. ¿Cuántos le quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si vende sacos, le quedan menos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Tenía {a} y se van {b}.', 'Cuenta hacia atrás desde {a}.'] },
+          { vars: () => { const c = AZ(2, 9); return { c, sol: c * 10 }; },
+            enunciado: 'Hay {c} sacos. Cada saco pesa 10 kilos. ¿Cuántos kilos hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y 10… pero CADA saco pesa 10.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{c} × 10', sol: '{sol}' }],
+            pistas: ['De 10 en 10.', '10, 20, 30…'] },
+        ],
+        facil: { enunciado: 'Tià llena 6 sacos y luego 3 más. ¿Cuántos llena?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '6 + 3', sol: 9 }],
+          pistas: ['Seis y tres.', 'Nueve.'] },
+      },
+    },
+
+    flamencos: {
+      trabajo: true,
+      quien: 'Lia, la que cuenta pájaros',
+      saludo: 'Cada día apunto cuántos flamencos hay. Son tantos que me lío. ¿Me ayudas?',
+      exito: '¡Apuntado! Mira, uno te está mirando con la cabeza torcida.',
+      repetido: 'Hoy ya los contamos. Mañana vuelven y te pago mejor.',
+      dormido: 'Tanto flamenco quieto me da sueño. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos pájaros.',
+      moraleja: { titulo: 'La pata coja',
+        texto: 'Si todos tuvieran las dos patas en el agua, sería <b>multiplicar por 2</b>.<br><br>' +
+               'Pero algunos tienen una levantada: después hay que <b>quitar</b> esas.<br><br>' +
+               'Primero lo fácil, luego el arreglo. Eso es un problema de <b>dos pasos</b>.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const f = AZ(11, 24); return { f, sol: f * 2, mal: f + 2 }; },
+            enunciado: 'En la laguna hay {f} flamencos. Cada uno tiene 2 patas. ¿Cuántas patas hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{f} más 2 son {mal}. Pero CADA flamenco tiene 2 patas.',
+                       repartir: 'No hay nada que repartir.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas patas?', sol: '{sol}' }],
+            pistas: ['{f} flamencos, 2 patas cada uno.', 'Es el doble de {f}.'] },
+          { vars: () => { const f = AZ(6, 12), u = AZ(2, 5); return { f, u, tot: f * 2, sol: f * 2 - u }; },
+            enunciado: 'Hay {f} flamencos. {u} están a la pata coja: tienen una pata levantada. ' +
+                       '¿Cuántas patas tocan el agua?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{f} × 2 = {tot}. Pero {u} flamencos tienen una pata levantada…',
+                       quitar: 'Antes de quitar, hay que saber cuántas patas serían: {f} flamencos de 2 patas.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: si todos tuvieran 2 patas en el agua, ¿cuántas serían?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántas tocan el agua de verdad?', sol: '{sol}' }],
+            pistas: ['Primero: {f} × 2 = {tot}.', 'Después: quita una pata por cada uno de los {u}.'] },
+          { vars: () => { const g = AZ(3, 6), k = AZ(3, 9); return { g, k, n: g * k, sol: k }; },
+            enunciado: 'Llegan {n} flamencos y se ponen en {g} filas iguales. ¿Cuántos hay en cada fila?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántos van en cada fila.',
+                       multiplicar: 'Si multiplico, salen muchos más flamencos de los que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos en cada fila?', sol: '{sol}' }],
+            pistas: ['«Filas iguales» es repartir.', '¿Qué número por {g} da {n}?'] },
+          { vars: () => { const f = AZ(3, 9), g = AZ(6, 9); return { f, g, sol: f * g, mal: f + g }; },
+            enunciado: 'Cada flamenco se come {g} gambas para desayunar. Hay {f} flamencos. ¿Cuántas gambas se comen?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'quitar'],
+            explica: { juntar: '{f} más {g} son {mal}. Pero CADA flamenco se come {g}.',
+                       quitar: 'No hay nada que quitar.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas gambas?', sol: '{sol}' }],
+            pistas: ['{f} flamencos, {g} gambas cada uno.', 'La tabla del {g}.'] },
+        ],
+        facil: { enunciado: 'Hay 6 flamencos y cada uno tiene 2 patas. ¿Cuántas patas hay?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '6 × 2', sol: 12 }],
+          pistas: ['El doble de seis.', 'Doce.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(5, 14), b = AZ(3, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Hay {a} flamencos en la laguna y llegan {b} volando. ¿Cuántos hay ahora?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'Llegan más: no se va ninguno.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'] },
+          { vars: () => { const a = AZ(11, 19), b = AZ(2, 8); return { a, b, sol: a - b }; },
+            enunciado: 'Hay {a} flamencos y se van {b} volando. ¿Cuántos quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si se van, quedan menos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Había {a} y se van {b}.', 'Cuenta hacia atrás.'] },
+          { vars: () => { const f = AZ(3, 8); return { f, sol: f * 2 }; },
+            enunciado: 'Hay {f} flamencos. Cada uno tiene 2 patas. ¿Cuántas patas hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{f} y 2… pero CADA flamenco tiene 2 patas.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{f} × 2', sol: '{sol}' }],
+            pistas: ['De 2 en 2.', 'El doble de {f}.'] },
+        ],
+        facil: { enunciado: 'Hay 4 flamencos y llegan 4 más. ¿Cuántos hay?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 + 4', sol: 8 }],
+          pistas: ['Cuatro y cuatro.', 'Ocho.'] },
+      },
+    },
+  },
+
+  /* --------------------------------------------------------- HISTORIAS */
+  historias: {
+    farVell: { titulo: 'El faro viejo',
+      texto: 'Mucho más pequeño que el Farol de Coral, y mucho más viejo.<br><br>' +
+             'Arriba no hay luz: el viento se llevó la bombilla una noche de tormenta.' },
+    naufragio: { titulo: 'El barco hundido',
+      texto: 'Medio barco asoma de la arena, torcido. En un lado se lee su nombre: <i>La Gavina</i>.<br><br>' +
+             'Dentro solo hay arena, conchas… y algo que brilla entre las tablas.' },
+  },
+
+  charlas: {
+    avi: {
+      quien: 'L\'avi Salvador',
+      saludo: 'Hola, marinera. Yo encendía el faro viejo, cuando tenía luz.',
+      opciones: [
+        { texto: '¿Me cuentas un chiste?',
+          respuesta: '—¿Por qué los peces no juegan al tenis?<br><br>—Porque les da miedo la red.' },
+        { texto: '¿Por qué se apagó el faro?',
+          respuesta: 'Una noche de tormenta, el viento se llevó la bombilla. La vi volar hacia el barco hundido.<br><br>' +
+                     'Yo ya no tengo piernas para buscarla.' },
+        { texto: '¿Por qué los flamencos son rosas?',
+          respuesta: 'Por lo que comen: gambitas rosas. Si comieran espinacas, serían verdes.<br><br>' +
+                     'Bueno, eso último me lo invento.' },
+        { texto: '¿De dónde sale la sal?',
+          respuesta: 'Del mar. Se mete agua en las balsas, el sol la seca y queda la sal, blanca como la nieve.' },
+      ],
+    },
+  },
+
+  /* ----------------------------------------------------------- DIBUJOS */
+  dibujos: {
+    barquito(ctx, bx, by) {
+      by += Math.sin(this.t * 1.5) * 3;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.beginPath(); ctx.ellipse(bx, by + 10, 56, 12, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#C0503E';
+      ctx.beginPath(); ctx.moveTo(bx - 48, by - 14); ctx.lineTo(bx + 48, by - 14);
+      ctx.lineTo(bx + 32, by + 8); ctx.lineTo(bx - 32, by + 8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#FFF3C4'; ctx.fillRect(bx - 48, by - 18, 96, 5);
+      ctx.fillStyle = '#8D5A3B'; ctx.fillRect(bx - 3, by - 88, 6, 72);           // el mástil
+      ctx.fillStyle = '#FDF6E3';                                                 // la vela
+      ctx.beginPath(); ctx.moveTo(bx + 3, by - 86); ctx.lineTo(bx + 42, by - 22); ctx.lineTo(bx + 3, by - 22); ctx.fill();
+      ctx.fillStyle = '#3C8DA6';                                                 // la bandera
+      ctx.beginPath(); ctx.moveTo(bx - 3, by - 88); ctx.lineTo(bx - 24, by - 81); ctx.lineTo(bx - 3, by - 74); ctx.fill();
+    },
+    muelle(ctx, x, y, hecho, dormido) {
+      this.pintar_barquito(ctx, x + 84, y + 10);
+      this.personajeSimple(ctx, x, y, '#3C8DA6', '#2F2A28', dormido);
+    },
+    muelleSal(ctx, x, y, hecho, dormido) {
+      this.pintar_barquito(ctx, x - 20, y + 74);
+      this.personajeSimple(ctx, x, y, '#3C8DA6', '#2F2A28', dormido);
+    },
+
+    salinero(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x - 30, y + 2, 40, 0);
+      ctx.fillStyle = '#FFFFFF';                                                 // el montón de sal
+      ctx.beginPath(); ctx.moveTo(x - 72, y); ctx.lineTo(x - 36, y - 46); ctx.lineTo(x - 2, y); ctx.fill();
+      ctx.fillStyle = '#E9E4DA';
+      ctx.beginPath(); ctx.moveTo(x - 36, y - 46); ctx.lineTo(x - 2, y); ctx.lineTo(x - 28, y); ctx.fill();
+      ctx.fillStyle = '#C8A26B'; ctx.fillRect(x - 64, y - 14, 18, 14);           // un saco
+      this.personajeSimple(ctx, x + 22, y, '#EDE3D3', '#5E3A24', dormido);
+      ctx.strokeStyle = '#8D5A3B'; ctx.lineWidth = 3;                            // el rastrillo
+      ctx.beginPath(); ctx.moveTo(x + 42, y - 60); ctx.lineTo(x + 46, y + 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 35, y - 60); ctx.lineTo(x + 49, y - 60); ctx.stroke();
+    },
+
+    flamencos(ctx, x, y, hecho, dormido) {
+      const uno = (fx, fy, fase) => {
+        ctx.strokeStyle = '#E27A93'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy - 30); ctx.stroke();            // la pata
+        ctx.beginPath(); ctx.moveTo(fx + 2, fy - 30); ctx.lineTo(fx + 9, fy - 18); ctx.stroke(); // la levantada
+        ctx.fillStyle = '#F4A3B5';
+        ctx.beginPath(); ctx.ellipse(fx, fy - 36, 15, 9, -0.2, 0, 7); ctx.fill();
+        const cab = Math.sin(this.t * 1.5 + fase) * 3;
+        ctx.strokeStyle = '#F4A3B5'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(fx - 10, fy - 40);
+        ctx.quadraticCurveTo(fx - 24, fy - 58, fx - 12, fy - 66 + cab); ctx.stroke();
+        ctx.beginPath(); ctx.arc(fx - 12, fy - 67 + cab, 5, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2F2A28';
+        ctx.beginPath(); ctx.moveTo(fx - 16, fy - 67 + cab); ctx.lineTo(fx - 23, fy - 62 + cab);
+        ctx.lineTo(fx - 14, fy - 64 + cab); ctx.fill();
+      };
+      uno(x - 46, y - 4, 0);
+      uno(x - 18, y + 4, 2);
+      this.personajeSimple(ctx, x + 26, y, '#7FA9C9', '#E8C33D', dormido);
+    },
+
+    farVell(ctx, x, y) {
+      this.sombra(ctx, x, y + 2, 30, 0);
+      for (let k = 0; k < 5; k++) {                                              // la torre a rayas
+        const w = 22 - k * 2;
+        ctx.fillStyle = k % 2 ? '#FFFFFF' : '#D9544A';
+        ctx.fillRect(x - w, y - 20 - k * 20, w * 2, 20);
+      }
+      ctx.fillStyle = '#4A5568'; ctx.fillRect(x - 16, y - 124, 32, 24);
+      ctx.fillStyle = '#2F2A28';
+      ctx.beginPath(); ctx.moveTo(x - 20, y - 124); ctx.lineTo(x, y - 142); ctx.lineTo(x + 20, y - 124); ctx.fill();
+      if (Estado.estaEncajado('farVell')) {
+        ctx.fillStyle = 'rgba(255,230,120,' + (0.55 + Math.sin(this.t * 3) * 0.35) + ')';
+        ctx.beginPath(); ctx.arc(x, y - 112, 30, 0, 7); ctx.fill();
+        ctx.fillStyle = '#FFE680';
+      } else ctx.fillStyle = '#2F3A4F';
+      ctx.fillRect(x - 10, y - 120, 20, 14);
+    },
+
+    naufragio(ctx, x, y) {
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(-0.25);
+      ctx.fillStyle = '#7A4B2F';
+      ctx.beginPath(); ctx.moveTo(-70, -30); ctx.lineTo(60, -30); ctx.lineTo(40, 0); ctx.lineTo(-55, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8D5A3B';
+      for (let k = 0; k < 3; k++) ctx.fillRect(-60 + k * 6, -24 + k * 8, 110 - k * 14, 3);
+      ctx.fillStyle = '#5E3A24'; ctx.fillRect(-8, -90, 7, 60);                   // el mástil roto
+      ctx.restore();
+      ctx.fillStyle = '#F3DDA8';                                                 // la arena que lo tapa
+      ctx.beginPath(); ctx.ellipse(x, y + 2, 80, 16, 0, 0, 7); ctx.fill();
+    },
+
+    avi(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = '#A6784D';                                                 // el banco
+      ctx.fillRect(x - 58, y - 22, 46, 6);
+      ctx.fillRect(x - 54, y - 16, 5, 16); ctx.fillRect(x - 21, y - 16, 5, 16);
+      this.personajeSimple(ctx, x + 10, y, '#3C5A80', '#EDEDED', dormido);
+    },
+  },
+
+  obstaculos: {
+    salinas(ctx, b) {
+      ctx.fillStyle = '#E4D7C3';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); ctx.fill();
+      const cols = 4, filas = 3, w = b.rx * 1.5 / cols, h = b.ry * 1.4 / filas;
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < filas; j++) {
+          const x0 = b.x - b.rx * 0.75 + i * w, y0 = b.y - b.ry * 0.7 + j * h;
+          ctx.fillStyle = (i + j) % 2 ? '#F6D0DA' : '#FFFFFF';
+          ctx.fillRect(x0 + 6, y0 + 6, w - 12, h - 12);
+          ctx.fillStyle = 'rgba(255,255,255,' + (0.3 + Math.sin(this.t * 2 + i + j) * 0.2) + ')';
+          ctx.fillRect(x0 + 12, y0 + 12, (w - 24) * 0.5, 4);
+        }
+      }
+    },
+    dunas(ctx, b) {
+      ctx.fillStyle = '#EBCB8B';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#F3D9A2';
+      ctx.beginPath(); ctx.ellipse(b.x - 30, b.y - 20, b.rx * 0.75, b.ry * 0.6, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#D9B36E'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      for (let k = 0; k < 4; k++) {
+        const yy = b.y - b.ry * 0.5 + k * b.ry * 0.33;
+        ctx.beginPath(); ctx.moveTo(b.x - b.rx * 0.65, yy);
+        ctx.quadraticCurveTo(b.x, yy - b.ry * 0.35, b.x + b.rx * 0.65, yy); ctx.stroke();
+      }
+    },
+  },
+});
+
+</script>
+<script>
 /* === motor/inicio.js === */
 /* PANTALLA DE INICIO: elegir jugadora o crear una nueva. */
 
