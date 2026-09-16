@@ -14146,6 +14146,209 @@ ampliacion({
 
 </script>
 <script>
+/* === ampliaciones/moda-otono.js === */
+/* PAQUETE DE MODA DE OTOÑO
+   Estado: ENCENDIDO el 16-09-2026 (lo pidió Antonio). Sale en la tienda de
+   Mila, en una estantería 🍂 Otoño de cada pestaña, y la ardilla en la Casa
+   dels Bitxos. Para apagarlo: quitar su <script> de index.html.
+
+   10 cosas: 3 conjuntos, unas botas, 2 cosas para las manos, 3 complementos
+   y una mascota (la ardilla con su bellota, en la Casa dels Bitxos).
+   Se pintan encima del personaje ya dibujado, así que no hace falta tocar
+   motor/personaje.js. */
+
+['conjuntos', 'zapatos', 'manos', 'complementos']
+  .forEach(k => GRUPOS[k].push({ id: 'otono', titulo: '🍂 Otoño' }));
+
+ROPA.conjuntos.push(
+  { id: 'hojasotono',  nombre: 'Vestido de hojas',     forma: 'vestido',  color: '#C8642D', detalle: '#F2B33D', precio: 45, grupo: 'otono' },
+  { id: 'calabaza',    nombre: 'Jersey de calabaza',   forma: 'camiseta', color: '#E8822E', detalle: '#6B4A33', precio: 40, grupo: 'otono' },
+  { id: 'chubasquero', nombre: 'Chubasquero amarillo', forma: 'vestido',  color: '#F2C94C', detalle: '#D9A92E', precio: 50, grupo: 'otono' });
+ROPA.zapatos.push(
+  { id: 'botasmontana', nombre: 'Botas de montaña', color: '#7A4B2F', precio: 30, grupo: 'otono' });
+ROPA.manos.push(
+  { id: 'paraguas',      nombre: 'Paraguas de lunares', color: '#C8642D', precio: 55, grupo: 'otono' },
+  { id: 'cestacastanas', nombre: 'Cesta de castañas',   color: '#B5764B', precio: 35, grupo: 'otono' });
+ROPA.complementos.push(
+  { id: 'boina',          nombre: 'Boina de lana',      precio: 30, grupo: 'otono' },
+  { id: 'gorrobellota',   nombre: 'Gorro de bellota',   precio: 45, grupo: 'otono' },
+  { id: 'bufandacuadros', nombre: 'Bufanda de cuadros', precio: 35, grupo: 'otono' });
+ROPA.mascotas.push(
+  { id: 'ardilla', nombre: 'Ardilla con bellota', color: '#C0703A', detalle: '#F0D2A8', precio: 120, grupo: 'tierra' });
+
+(function () {
+  /* LA ARDILLA: va sentada, con la cola tiesa y su bellota entre las manos */
+  const dibujarMascota = Avatar.dibujarMascota;
+  Avatar.dibujarMascota = function (ctx, x, yPies, esc, id, mirando, t) {
+    if (id !== 'ardilla') return dibujarMascota.apply(this, arguments);
+    const m = ROPA.mascotas.find(e => e.id === 'ardilla');
+    ctx.save();
+    ctx.translate(x, yPies);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+    ctx.save();                                       // la cola, grande y peluda
+    ctx.translate(-5, -9); ctx.rotate(Math.sin(t * 3) * 0.18);
+    ctx.fillStyle = m.color;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(-14, -5, -11, -20);
+    ctx.quadraticCurveTo(-8, -30, 2, -25);
+    ctx.quadraticCurveTo(-4, -20, -4, -12);
+    ctx.quadraticCurveTo(-4, -5, 0, 0);
+    ctx.fill();
+    ctx.fillStyle = m.detalle;                        // el mechón claro, por dentro
+    ctx.beginPath();
+    ctx.moveTo(-2, -6);
+    ctx.quadraticCurveTo(-9, -9, -7.5, -19);
+    ctx.quadraticCurveTo(-5.5, -25, -0.5, -23);
+    ctx.quadraticCurveTo(-4.5, -16, -2, -6);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = m.color;                          // cuerpo, sentada
+    ctx.beginPath(); ctx.ellipse(1, -9, 8, 9, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = m.detalle;                        // barriguita
+    ctx.beginPath(); ctx.ellipse(4, -8, 5, 6, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = m.color;                          // cabeza y orejas
+    ctx.beginPath(); ctx.arc(7, -20, 6.5, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3, -25); ctx.lineTo(3.5, -31.5); ctx.lineTo(8, -25.5); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(9.5, -25.5); ctx.lineTo(13.5, -30); ctx.lineTo(13, -24); ctx.fill();
+    ctx.fillStyle = '#3A3A3A';
+    ctx.beginPath(); ctx.arc(10, -21, 1.3, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(13.4, -19, 1.1, 0, 7); ctx.fill();
+    const bx = 11, by = -11 + Math.sin(t * 2) * 0.6;  // la bellota
+    ctx.fillStyle = '#E8C9A0';
+    ctx.beginPath(); ctx.ellipse(bx, by, 3.1, 3.6, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#7A4B2F';
+    ctx.beginPath(); ctx.ellipse(bx, by - 3.2, 3.6, 1.9, 0, 0, 7); ctx.fill();
+    ctx.fillRect(bx - 0.5, by - 6.5, 1, 2.2);
+    ctx.fillStyle = m.color;                          // las manitas que la sujetan
+    ctx.beginPath(); ctx.arc(bx - 3.6, by + 1.2, 1.9, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bx + 3.6, by + 1.2, 1.9, 0, 7); ctx.fill();
+    const pa = Math.sin(t * 8) * 1.2;                 // las patitas
+    ctx.fillRect(-2 + pa, -3, 3.2, 3);
+    ctx.fillRect(4 - pa, -3, 3.2, 3);
+    ctx.restore();
+  };
+
+  const dibujar = Avatar.dibujar;
+  Avatar.dibujar = function (ctx, x, yPies, esc, look, mirando, paso) {
+    dibujar.apply(this, arguments);
+    ctx.save();
+    ctx.translate(x, yPies);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+    const bal = Math.sin(paso || 0) * 3;
+    const mx = 11 + bal * 0.5, my = -20;             // donde caen las manos
+    const hoja = (hx, hy, giro, color) => {
+      ctx.save(); ctx.translate(hx, hy); ctx.rotate(giro);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(-3.6, 0);
+      ctx.quadraticCurveTo(0, -2.6, 3.6, 0);
+      ctx.quadraticCurveTo(0, 2.6, -3.6, 0);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(-3, 0); ctx.lineTo(3.6, 0); ctx.stroke();
+      ctx.restore();
+    };
+
+    // --- conjuntos
+    if (look.conjunto === 'hojasotono') {
+      hoja(-3, -26, 0.5, '#F2B33D'); hoja(4, -21, -0.6, '#8E3B1F');
+      hoja(-4, -17, -0.3, '#E8C33D'); hoja(5, -15, 0.8, '#F2B33D');
+    }
+    if (look.conjunto === 'calabaza') {
+      ctx.fillStyle = '#F7B955';
+      ctx.beginPath(); ctx.ellipse(0, -27, 5.5, 4.3, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#D9822B'; ctx.lineWidth = 0.8;         // los gajos
+      [-2, 2].forEach(d => { ctx.beginPath(); ctx.ellipse(d, -27, 1.6, 4.1, 0, 0, 7); ctx.stroke(); });
+      ctx.fillStyle = '#5E9E3E'; ctx.fillRect(-0.7, -32.5, 1.4, 2.4);   // el rabito
+      hoja(2.4, -31.8, -0.4, '#7FBF6A');
+    }
+    if (look.conjunto === 'chubasquero') {
+      ctx.fillStyle = '#3C6E9F';                                 // los botones
+      [-30, -25, -20].forEach(by => { ctx.beginPath(); ctx.arc(0, by, 1.3, 0, 7); ctx.fill(); });
+      ctx.strokeStyle = '#D9A92E'; ctx.lineWidth = 1;            // los bolsillos
+      ctx.strokeRect(-7.5, -21, 4.5, 3.5); ctx.strokeRect(3, -21, 4.5, 3.5);
+      ctx.fillStyle = '#F2C94C';                                 // la capucha, a la espalda
+      ctx.beginPath(); ctx.ellipse(0, -34, 10, 2.8, 0, 0, 7); ctx.fill();
+    }
+
+    // --- botas
+    if (look.zapatos === 'botasmontana') {
+      ctx.fillStyle = '#F2A65A';                                 // los cordones
+      [-5 + bal, 5 - bal].forEach(px => { ctx.fillRect(px - 2.5, -6, 5, 1); ctx.fillRect(px - 2.5, -4.2, 5, 1); });
+      ctx.fillStyle = '#3B2A20';
+      [-5 + bal, 5 - bal].forEach(px => ctx.fillRect(px - 5, -1, 10, 1.4));     // la suela
+    }
+
+    // --- en las manos
+    if (look.manos === 'paraguas') {
+      const px = mx + 12, arriba = my - 30;
+      ctx.strokeStyle = '#5E3A24'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(mx, my + 2); ctx.lineTo(px, arriba); ctx.stroke();
+      ctx.beginPath(); ctx.arc(mx - 2, my + 2, 2.2, 0, Math.PI); ctx.stroke();     // el mango
+      ctx.fillStyle = '#C8642D';                                 // la tela
+      ctx.beginPath(); ctx.arc(px, arriba + 3, 13.5, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#A84F22';                                 // las ondas del borde
+      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(px - 9 + k * 9, arriba + 3, 4.5, 0, Math.PI, true); ctx.fill(); }
+      ctx.fillStyle = '#FFF3C4';                                 // los lunares
+      [[-7, -5], [1, -9], [8, -4]].forEach(l => {
+        ctx.beginPath(); ctx.arc(px + l[0], arriba + 3 + l[1], 1.7, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#5E3A24'; ctx.fillRect(px - 0.8, arriba - 15, 1.6, 4);
+    }
+    if (look.manos === 'cestacastanas') {
+      const cx = mx + 5, cy = my + 6;
+      ctx.strokeStyle = '#8D5A3B'; ctx.lineWidth = 1.6;          // el asa
+      ctx.beginPath(); ctx.arc(cx, cy - 4, 7, Math.PI, 0); ctx.stroke();
+      ctx.fillStyle = '#7A4228';                                 // las castañas
+      [[-4, -5], [0, -6.5], [4, -5]].forEach(c => { ctx.beginPath(); ctx.arc(cx + c[0], cy + c[1], 2.8, 0, 7); ctx.fill(); });
+      ctx.fillStyle = '#E8C9A0';
+      [[-4, -3.5], [0, -5], [4, -3.5]].forEach(c => ctx.fillRect(cx + c[0] - 2, cy + c[1], 4, 1));
+      ctx.fillStyle = '#B5764B';                                 // la cesta
+      ctx.beginPath(); ctx.moveTo(cx - 9, cy - 4); ctx.lineTo(cx + 9, cy - 4);
+      ctx.lineTo(cx + 6.5, cy + 5); ctx.lineTo(cx - 6.5, cy + 5); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#8D5A3B'; ctx.lineWidth = 0.7;          // el mimbre
+      [-1, 2].forEach(k => { ctx.beginPath(); ctx.moveTo(cx - 8, cy + k); ctx.lineTo(cx + 8, cy + k); ctx.stroke(); });
+    }
+
+    // --- complementos
+    if (look.complemento === 'boina') {
+      ctx.fillStyle = '#8E3B1F';
+      ctx.beginPath(); ctx.ellipse(3, -58, 17, 6.5, -0.12, 0, 7); ctx.fill();
+      ctx.fillStyle = '#A84A2A';
+      ctx.beginPath(); ctx.ellipse(1, -60, 11, 3.5, -0.12, 0, 7); ctx.fill();
+      ctx.fillStyle = '#6E2D17'; ctx.fillRect(2, -67, 2, 4);     // el rabito de la boina
+    }
+    if (look.complemento === 'gorrobellota') {
+      ctx.fillStyle = '#9C6B3F';
+      ctx.beginPath(); ctx.arc(0, -50, 16, Math.PI, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#7A4B2F';                                 // la textura de la cúpula
+      for (let f = 0; f < 3; f++) for (let k = -3; k <= 3; k++) {
+        const px = k * 4 + (f % 2) * 2, py = -53 - f * 4;
+        if (Math.hypot(px, py + 50) < 14) { ctx.beginPath(); ctx.arc(px, py, 1.1, 0, 7); ctx.fill(); }
+      }
+      ctx.fillStyle = '#6B4226';
+      ctx.beginPath(); ctx.ellipse(0, -50, 17, 3.2, 0, 0, 7); ctx.fill();
+      ctx.fillRect(-1.3, -71, 2.6, 6);                           // el rabito
+    }
+    if (look.complemento === 'bufandacuadros') {
+      const cuadros = (x0, y0, an, al) => {
+        ctx.fillStyle = '#B5452B'; ctx.fillRect(x0, y0, an, al);
+        ctx.fillStyle = 'rgba(242,179,61,0.85)';
+        for (let cx = x0 + 2; cx < x0 + an; cx += 4.5) ctx.fillRect(cx, y0, 1.1, al);
+        for (let cy = y0 + 2; cy < y0 + al; cy += 4.5) ctx.fillRect(x0, cy, an, 1.1);
+      };
+      cuadros(-11, -34.5, 22, 6.5);        // la vuelta del cuello
+      cuadros(5.5, -29, 6.5, 12);          // el cabo que cuelga
+      ctx.fillStyle = '#F2B33D';           // los flecos
+      [6, 8.5, 11].forEach(fx => ctx.fillRect(fx - 0.5, -17, 1, 2.6));
+    }
+    ctx.restore();
+  };
+})();
+
+</script>
+<script>
 /* === motor/inicio.js === */
 /* PANTALLA DE INICIO: elegir jugadora o crear una nueva. */
 
