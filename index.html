@@ -13412,6 +13412,7 @@ const Ampliaciones = {
 
   registrar(d) {
     this.lista.push(d.id);
+    if (d.alto) MUNDO.alto = Math.max(MUNDO.alto, d.alto);     // más mar hacia el sur
     ['islotes', 'pasarelas', 'pasos', 'lugares', 'bloqueos', 'zonas', 'piezas',
      'secretos', 'flores', 'matas', 'rocas', 'palmeras']
       .forEach(k => (d[k] || []).forEach(x => MUNDO[k].push(x)));
@@ -13464,14 +13465,58 @@ const Ampliaciones = {
     ]);
   },
 
-  /* El viaje: se aparece en la otra orilla y la cámara cruza el mar sola */
+  /* LA TRAVESÍA: anda hasta el barco, navega por la ruta (con su rodeo) y
+     baja en el otro muelle. Mientras dura no se maneja: se mira el viaje. */
   navegar(v) {
-    const j = Juego.jugador, m = Juego.mascota;
-    j.x = v.destino.x; j.y = v.destino.y; j.z = 0;
-    m.x = j.x - 40; m.y = j.y + 10;
+    const j = Juego.jugador;
     Juego.destino = null;
+    if (!v.ruta) {                                     // sin ruta: aparece allí
+      j.x = v.destino.x; j.y = v.destino.y;
+      return this.llegar(v);
+    }
+    Juego.vehiculo = { tipo: 'travesia', viaje: v, tramo: 0, punto: 0, tramos: [
+      { barco: false, puntos: (v.subida || []).concat([v.ruta[0]]) },
+      { barco: true,  puntos: v.ruta.slice(1) },
+      { barco: false, puntos: (v.bajada || []).concat([[v.destino.x, v.destino.y]]) },
+    ] };
+    Musica.poner('paseo');
+  },
+
+  llegar(v) {
+    const j = Juego.jugador, m = Juego.mascota;
+    j.z = 0;
+    m.x = j.x - 40; m.y = j.y + 10;
     Sonido.cristal();
-    setTimeout(() => Hada.decir(v.llegada, 7), 1200);
+    setTimeout(() => Hada.decir(v.llegada, 7), 600);
+  },
+
+  viajando() { const v = Juego.vehiculo; return !!v && v.tipo === 'travesia'; },
+  enBarco() { const v = Juego.vehiculo; return this.viajando() && !!v.tramos[v.tramo] && v.tramos[v.tramo].barco; },
+
+  /* Un fotograma de la travesía */
+  avanzar(J) {
+    const v = J.vehiculo, j = J.jugador;
+    Hada.sinAccion();
+    let queda = v.tramos[v.tramo].barco ? 3 : 2;       // el barco va algo más rápido que andando
+    while (queda > 0 && v.tramo < v.tramos.length) {
+      const obj = v.tramos[v.tramo].puntos[v.punto];
+      if (!obj) { v.tramo++; v.punto = 0; continue; }
+      const dx = obj[0] - j.x, dy = obj[1] - j.y, d = Math.hypot(dx, dy);
+      if (Math.abs(dx) > 1) j.mirando = dx > 0 ? 1 : -1;
+      if (d <= queda) { j.x = obj[0]; j.y = obj[1]; queda -= d; v.punto++; }
+      else { j.x += dx / d * queda; j.y += dy / d * queda; queda = 0; }
+    }
+    if (v.tramo >= v.tramos.length) {
+      J.vehiculo = null;
+      Musica.poner(null);
+      return this.llegar(v.viaje);
+    }
+    const barco = v.tramos[v.tramo].barco;
+    j.paso = barco ? 0 : (j.paso || 0) + 0.25;
+    // en un vehículo el motor la sube 12: andando se compensa; en el barco se mece
+    j.z = barco ? Math.sin(J.t * 3) * 2 : -12;
+    J.camX += ((j.x - J.ANCHO / 2) - J.camX) * 0.08;
+    J.camY += ((j.y - J.ALTO / 2) - J.camY) * 0.08;
   },
 };
 
@@ -13516,8 +13561,50 @@ TECLAS.barco = 'J';
     return (this._tramosAmp = tramos.call(this).concat(extra));
   };
 
+  // La travesía es un vehículo que va solo
+  const conducir = J.conducir;
+  J.conducir = function () {
+    return Ampliaciones.viajando() ? Ampliaciones.avanzar(this) : conducir.call(this);
+  };
+  const bajar = J.bajar;
+  J.bajar = function () { if (!Ampliaciones.viajando()) return bajar.call(this); };
+  const iniciar = J.iniciar;
+  J.iniciar = function () {
+    if (Ampliaciones.viajando()) this.vehiculo = null;     // salió a la portada a medio viaje
+    return iniciar.apply(this, arguments);
+  };
+  const dibujarVehiculo = J.dibujarVehiculo;
+  J.dibujarVehiculo = function (ctx, x, y, tipo, mirando) {
+    if (tipo !== 'travesia') return dibujarVehiculo.call(this, ctx, x, y, tipo, mirando);
+    if (!Ampliaciones.enBarco() || !this.pintar_barquito) return;
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(mirando < 0 ? -1 : 1, 1);
+    this.pintar_barquito(ctx, 6, 4);
+    this.personajeSimple(ctx, -32, -8, '#3C8DA6', '#2F2A28', false);   // la capitana, al timón
+    const fase = (this.t * 0.35) % 1;                                   // un delfín que salta
+    if (fase < 0.3) {
+      const k = fase / 0.3;
+      ctx.font = '28px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('🐬', 70 + k * 70, 30 - Math.sin(k * Math.PI) * 46);
+    }
+    ctx.restore();
+  };
+
+  // Si una isla cambia de sitio, lo que quedó escondido en el agua se recoloca
+  const prepararEscondites = J.prepararEscondites;
+  J.prepararEscondites = function () {
+    (Estado.actual.escondites || []).forEach(e => {
+      for (let n = 0; n < 200 && !this.transitable(e.x, e.y); n++) {
+        e.x = Math.round(200 + Math.random() * (MUNDO.ancho - 400));
+        e.y = Math.round(200 + Math.random() * (MUNDO.alto - 400));
+      }
+    });
+    return prepararEscondites.call(this);
+  };
+
   const interactuar = J.interactuar;
   J.interactuar = function (tecla) {
+    if (Ampliaciones.viajando()) return;
     const l = this.lugar || this.lugarEn(this.jugador.x, this.jugador.y, 95);
     if (!this.cogible && !this.entregable && !this.encajable && l && l.accion === 'barco' &&
         (!tecla || tecla === 'Enter' || tecla === 'J')) {
@@ -13558,11 +13645,12 @@ TECLAS.barco = 'J';
 /* === ampliaciones/isla-2-sal.js === */
 /* AMPLIACIÓN 2 · L'ILLA DE LA SAL
    Se llega en BARCO desde un muelle nuevo en la costa sur de la isla grande
-   (al este de la hamaca). Estado: PREPARADA, APAGADA.
+   (costa sur, al este de la hamaca). Estado: ENCENDIDA (15-09-2026).
 
    Qué hay:
      · El muelle de la capitana Mar: la primera vez hay que ayudarla a cargar
-       provisiones (reto); después se va y se vuelve cuando se quiera
+       provisiones (reto); el viaje se ve entero: sube al barco, rodea unos
+       escollos con focas y baja en el otro muelle (unos 14 segundos)
      · Las balsas de sal, una laguna con flamencos y unas dunas (no se pasa)
      · Tià, el salinero (trabajo diario: sacos y kilos de sal)
      · Lia, la que cuenta pájaros (trabajo diario: patas de flamenco, con el
@@ -13574,11 +13662,14 @@ TECLAS.barco = 'J';
 ampliacion({
   id: 'sal',
 
-  islotes: [{ id: 'sal', x: 7650, y: 3880, rx: 620, ry: 520 }],
+  /* Más lejos, al sureste, en mar abierto (15-09-2026): hace falta más mapa
+     por abajo. 5700 de alto es lo máximo que cabe sin encoger el mapa (M). */
+  alto: 5700,
+  islotes: [{ id: 'sal', x: 7500, y: 5000, rx: 620, ry: 520 }],
 
   pasarelas: [
     { x: 5250, y: 4180, rx: 34, ry: 130 },     // el muelle de la isla grande
-    { x: 6960, y: 3860, rx: 130, ry: 34 },     // el muelle de l'Illa de la Sal
+    { x: 6810, y: 4980, rx: 130, ry: 34 },     // el muelle de l'Illa de la Sal
   ],
 
   lugares: [
@@ -13591,46 +13682,55 @@ ampliacion({
         alAbrir: 'Cargáis las provisiones y la capitana suelta las cuerdas.<br><br>' +
                  '<b>Ya puedes ir en barco cuando quieras.</b>',
         pregunta: '¿Nos vamos a l\'Illa de la Sal? El viaje es cortito.',
-        destino: { x: 7160, y: 3860 },
+        // la travesía: sube al barco, rodea los escollos de las focas y baja al otro muelle
+        subida: [[5250, 4262]],
+        ruta: [[5334, 4262], [5380, 4520], [5620, 4880], [6000, 5010], [6380, 4990], [6600, 5050], [6700, 5056]],
+        bajada: [[6720, 4984]],
+        destino: { x: 7010, y: 4980 },
         llegada: '⛵ ¡Tierra! Esto es <b>l\'Illa de la Sal</b>.' } },
 
-    { id: 'muelleSal', x: 6870, y: 3860, accion: 'barco', dibujo: 'muelleSal',
+    { id: 'muelleSal', x: 6720, y: 4980, accion: 'barco', dibujo: 'muelleSal',
       nombre: 'El barco de vuelta', mapa: 'Moll de la Sal', personaje: 'La capitana Mar',
       viaje: {
         personaje: 'La capitana Mar',
         pregunta: '¿Volvemos a la isla grande?',
+        subida: [[6720, 4984]],
+        ruta: [[6700, 5056], [6600, 5050], [6380, 4990], [6000, 5010], [5620, 4880], [5380, 4520], [5334, 4262]],
+        bajada: [[5250, 4262]],
         destino: { x: 5250, y: 4000 },
         llegada: '⛵ De vuelta en la isla grande.' } },
 
-    { id: 'salinero', x: 7450, y: 3990, accion: 'reto', dibujo: 'salinero',
+    { id: 'salinero', x: 7300, y: 5110, accion: 'reto', dibujo: 'salinero',
       nombre: 'Las salinas de Tià', mapa: 'Les Salines', personaje: 'Tià, el salinero' },
-    { id: 'flamencos', x: 7820, y: 3800, accion: 'reto', dibujo: 'flamencos',
+    { id: 'flamencos', x: 7670, y: 4920, accion: 'reto', dibujo: 'flamencos',
       nombre: 'La laguna de los flamencos', mapa: 'Els Flamencs', personaje: 'Lia, la que cuenta pájaros' },
-    { id: 'farVell', x: 8130, y: 3920, accion: 'ver', historia: 'farVell', dibujo: 'farVell',
+    { id: 'farVell', x: 7980, y: 5040, accion: 'ver', historia: 'farVell', dibujo: 'farVell',
       nombre: 'El faro viejo', mapa: 'El Far Vell' },
-    { id: 'naufragio', x: 7420, y: 4300, accion: 'ver', historia: 'naufragio', dibujo: 'naufragio',
+    { id: 'naufragio', x: 7270, y: 5420, accion: 'ver', historia: 'naufragio', dibujo: 'naufragio',
       nombre: 'El barco hundido', mapa: 'La Gavina' },
-    { id: 'avi', x: 7600, y: 4200, accion: 'hablar', charla: 'avi', dibujo: 'avi',
+    { id: 'avi', x: 7450, y: 5320, accion: 'hablar', charla: 'avi', dibujo: 'avi',
       nombre: 'L\'avi Salvador', mapa: 'L\'Avi' },
   ],
 
-  zonas: [{ tipo: 'rosa', x: 7450, y: 3720, rx: 330, ry: 230 }],
+  zonas: [{ tipo: 'rosa', x: 7300, y: 4840, rx: 330, ry: 230 }],
 
   bloqueos: [
-    { dibujo: 'salinas', x: 7450, y: 3700, rx: 240, ry: 150,
+    // en el mar, justo en la línea recta entre los dos muelles: por eso el barco da el rodeo
+    { dibujo: 'escollos', x: 5900, y: 4780, rx: 150, ry: 90 },
+    { dibujo: 'salinas', x: 7300, y: 4820, rx: 240, ry: 150,
       mensaje: 'Son las <b>balsas de sal</b>. No se pisan, que se enturbia el agua.' },
-    { dibujo: 'lago', x: 7980, y: 3600, rx: 190, ry: 120,
+    { dibujo: 'lago', x: 7830, y: 4720, rx: 190, ry: 120,
       mensaje: 'En la laguna están los <b>flamencos</b>. Si te metes, se asustan.' },
-    { dibujo: 'dunas', x: 7960, y: 4180, rx: 230, ry: 130,
+    { dibujo: 'dunas', x: 7810, y: 5300, rx: 230, ry: 130,
       mensaje: 'La arena de las <b>dunas</b> se hunde bajo los pies. Mejor rodearlas.' },
   ],
 
-  nodos: { salLlegada: { x: 7160, y: 3860 } },
+  nodos: { salLlegada: { x: 7010, y: 4980 } },
   caminos: [['salLlegada', 'salinero'], ['salinero', 'flamencos'], ['flamencos', 'farVell'],
             ['salinero', 'avi'], ['avi', 'naufragio']],
 
   piezas: [
-    { id: 'bombilla', x: 7300, y: 4200, icono: '💡', nombre: 'Una bombilla antigua',
+    { id: 'bombilla', x: 7150, y: 5320, icono: '💡', nombre: 'Una bombilla antigua',
       hallazgo: 'Una bombilla enorme, de las antiguas, entre las tablas del barco hundido. ' +
                 'Está entera de milagro.',
       encaja: 'farVell', arreglo: 'El faro viejo vuelve a brillar',
@@ -13639,9 +13739,9 @@ ampliacion({
                  'y <b>se queda encendida</b>.<br><br>Seguro que desde el Farol de Coral se ve.' },
   ],
 
-  palmeras: [[7200, 3650], [8150, 3750], [7700, 4350]],
-  matas: [[7600, 3500], [8200, 4000]],
-  rocas: [[7350, 4100], [8180, 4100]],
+  palmeras: [[7050, 4770], [8000, 4870], [7550, 5470]],
+  matas: [[7450, 4620], [8050, 5120]],
+  rocas: [[7200, 5220], [8030, 5220]],
 
   /* ------------------------------------------------------------ RETOS */
   retos: {
@@ -13916,11 +14016,14 @@ ampliacion({
       ctx.fillStyle = '#3C8DA6';                                                 // la bandera
       ctx.beginPath(); ctx.moveTo(bx - 3, by - 88); ctx.lineTo(bx - 24, by - 81); ctx.lineTo(bx - 3, by - 74); ctx.fill();
     },
+    // mientras se viaja, el barco y la capitana van en la travesía, no en el muelle
     muelle(ctx, x, y, hecho, dormido) {
+      if (Ampliaciones.viajando()) return;
       this.pintar_barquito(ctx, x + 84, y + 10);
       this.personajeSimple(ctx, x, y, '#3C8DA6', '#2F2A28', dormido);
     },
     muelleSal(ctx, x, y, hecho, dormido) {
+      if (Ampliaciones.viajando()) return;
       this.pintar_barquito(ctx, x - 20, y + 74);
       this.personajeSimple(ctx, x, y, '#3C8DA6', '#2F2A28', dormido);
     },
@@ -14000,6 +14103,18 @@ ampliacion({
   },
 
   obstaculos: {
+    escollos(ctx, b) {
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';                                  // la espuma
+      ctx.beginPath(); ctx.ellipse(b.x, b.y + 8, b.rx + 20 + Math.sin(this.t * 2) * 5, b.ry + 14, 0, 0, 7); ctx.fill();
+      [[-0.55, 0.1, 42], [-0.1, -0.2, 58], [0.4, 0.15, 46], [0.75, -0.25, 30]].forEach(([fx, fy, r]) => {
+        const x = b.x + b.rx * fx, y = b.y + b.ry * fy;
+        ctx.fillStyle = '#7D766C'; ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.6, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#9C958A'; ctx.beginPath(); ctx.ellipse(x - r * 0.2, y - r * 0.2, r * 0.6, r * 0.35, 0, 0, 7); ctx.fill();
+      });
+      ctx.font = '30px system-ui'; ctx.textAlign = 'center';                     // las focas
+      ctx.fillText('🦭', b.x - b.rx * 0.1, b.y - b.ry * 0.2 - 24);
+      ctx.fillText('🦭', b.x + b.rx * 0.45, b.y - 12);
+    },
     salinas(ctx, b) {
       ctx.fillStyle = '#E4D7C3';
       ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); ctx.fill();
