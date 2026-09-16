@@ -150,6 +150,14 @@
   @media (max-width:500px){ .bm-seg.bm-g{font-size:14px} }
   .hueco-txt{color:var(--coral)}
   .nota-teo{background:#FFFBEA; border:2px dashed #E3C77A; border-radius:14px; padding:10px 16px; text-align:left}
+  .carta{background:#FFFDF6; border:2px solid #E8D9B0; border-radius:12px; padding:14px 18px; text-align:left;
+         max-width:520px; margin:8px auto; box-shadow:0 2px 0 #E8D9B0}
+  .carta-fecha{text-align:right; font-size:14px; color:#7A736A; margin-bottom:8px}
+  .carta-campo{display:block; margin:6px 0}
+  .carta-campo select{font:inherit; font-size:17px; padding:6px 8px; border-radius:10px; max-width:100%; margin-top:4px}
+  .carta-saludo{margin:12px 0 6px; font-weight:bold}
+  .carta textarea{font:inherit; font-size:18px; width:100%; box-sizing:border-box; border-radius:10px; padding:8px}
+  .carta-firma{text-align:right; margin-top:8px}
   .mesa{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:560px; margin:8px auto}
   .pegatina{font:inherit; width:64px; height:64px; display:flex; align-items:center; justify-content:center;
             background:#fff; border:3px solid #E3D9C0; border-radius:14px; cursor:pointer}
@@ -924,6 +932,8 @@ const MUNDO = {
       nombre: 'Tu cabaña', mapa: 'Tu cabaña' },
     { id: 'tienda', x: 620, y: 2020, accion: 'tienda', dibujo: 'tienda',
       nombre: 'La tienda de Mila', mapa: 'Botiga de Mila', personaje: 'Mila' },
+    { id: 'correos', x: 800, y: 2300, accion: 'carta', dibujo: 'correos',
+      nombre: 'El buzón de Correos', mapa: 'Correus' },
     { id: 'animalario', x: 1180, y: 3080, accion: 'animalario', dibujo: 'animalario',
       nombre: 'El animalario', mapa: 'Animalari' },
     { id: 'salon', x: 1520, y: 1780, accion: 'juego', dibujo: 'salon',
@@ -4601,7 +4611,8 @@ const Estado = {
       encajado: {},             // lo que ya ha puesto en marcha
       pasos: {},                // caminos que ya ha abierto (montaña, puente)
       visitadas: {},            // por dónde ha pasado: el mapa se destapa ahí
-      pedidos: [],              // lo que le han pedido a Teo el repartidor
+      pedidos: [],              // peticiones antiguas a Teo (ya no se hacen; se leen con las cartas)
+      cartas: [],               // las cartas que ha echado al buzón de correos
       hechosHoy: { dia: '', ids: [] },    // retos ya superados hoy: no se repiten
       retosDelDia: { dia: '', ids: [] },  // qué sitios tienen reto hoy
       ultimaVariante: {},       // qué versión salió la última vez en cada reto
@@ -8594,7 +8605,6 @@ const Tienda = {
       <div class="quien">Mila, la tienda</div>
       <div class="contador">Tienes 🐚 <b>${p.conchas}</b> conchas</div>
       ${Armario.resumen(this.secciones, this.seccion)}
-      ${Pedidos.cartel()}
       <div class="espejo-fila">
         <canvas id="espejoTienda" width="150" height="210"></canvas>
         <div class="espejo-lado">
@@ -8607,7 +8617,6 @@ const Tienda = {
 
     Armario.dibujarEspejo('espejoTienda');
     Armario.dibujarMiniaturas(this.seccion, sec.campo);
-    Pedidos.engancharBoton();
     UI.modal.querySelectorAll('.pestana').forEach(b =>
       b.onclick = () => { Sonido.clic(); this.seccion = b.dataset.s; this.pintar(); });
     UI.modal.querySelectorAll('.opcion').forEach(b =>
@@ -9081,111 +9090,123 @@ const Cofre = {
   },
 };
 
-/* ================================================ TEO, EL REPARTIDOR =====
-   Teo trae las cosas nuevas a la tienda de Mila. De vez en cuando pasa por
-   allí y pregunta si quieren pedirle algo, y ellas le pueden dejar escrito lo
-   que les gustaría que hubiera.
+/* ================================================ EL BUZÓN DE CORREOS =====
+   Un buzón amarillo en el poblado, entre la cabaña y la tienda de Mila. Aquí
+   escriben cartas: el remitente sale solo, y eligen a quién va (papá, mamá,
+   el presidente de la isla para pedir cambios, o un vecino con tienda).
+   Sustituye a las peticiones que antes se le dejaban a Teo en la tienda.
 
-   IMPORTANTE, para que no haya malentendidos: la petición se guarda EN EL
-   APARATO donde juegan, porque el juego es una página web sin servidor. No se
-   envía a ningún sitio ni la ve nadie más. Antonio las lee desde la pantalla
-   de inicio, en «📦 peticiones». */
-const Pedidos = {
+   IMPORTANTE: la carta se guarda EN EL APARATO donde juegan, porque el juego
+   es una página web sin servidor. No se envía a ningún sitio. Antonio las lee
+   desde la pantalla de inicio, en «✉️ cartas». */
+const DESTINATARIOS = [
+  { id: 'papa', nombre: 'Papá', para: 'lo que quieras contarle',
+    saludo: 'Querido papá:', despedida: 'Un abrazo muy fuerte,' },
+  { id: 'mama', nombre: 'Mamá', para: 'lo que quieras contarle',
+    saludo: 'Querida mamá:', despedida: 'Un abrazo muy fuerte,' },
+  { id: 'presidente', nombre: 'El presidente de la isla', para: 'pedir cambios en la isla',
+    saludo: 'Estimado señor presidente:', despedida: 'Atentamente,' },
+  { id: 'mila', nombre: 'Mila, de la tienda', para: 'ropa y complementos',
+    saludo: 'Estimada Mila:', despedida: 'Un saludo,' },
+  { id: 'ona', nombre: 'Ona, de la Casa dels Bitxos', para: 'mascotas',
+    saludo: 'Estimada Ona:', despedida: 'Un saludo,' },
+  { id: 'coco', nombre: 'Coco, del salón de juegos', para: 'juegos y retos',
+    saludo: 'Estimado Coco:', despedida: 'Un saludo,' },
+];
 
-  /* ¿Está Teo hoy en la tienda? Si nunca han pedido nada, siempre; y si ya han
-     pedido, una de cada tres veces, para que siga siendo un encuentro. */
-  estaTeo() {
+const Correo = {
+
+  escribir() {
     const p = Estado.actual;
-    if (!p.pedidos || !p.pedidos.length) return true;
-    if (this._hoy === undefined) this._hoy = Math.random() < 0.34;
-    return this._hoy;
-  },
-
-  cartel() {
-    if (!this.estaTeo()) {
-      return '<p class="pista"><button class="enlace" id="abrirPedido">📦 dejarle una petición a Teo</button></p>';
-    }
-    return `
-      <div class="aviso-tienda" style="text-align:left">
-        <b>📦 Teo, el repartidor:</b> «¡Buenas! Mañana salgo a buscar género para Mila.
-        Si se te ocurre algo que te gustaría que hubiera en la tienda, escríbemelo y lo miro.»
-        <div style="margin-top:8px"><button class="btn" id="abrirPedido">Pedirle algo a Teo</button></div>
-      </div>`;
-  },
-
-  engancharBoton() {
-    const b = document.getElementById('abrirPedido');
-    if (b) b.onclick = () => { Sonido.clic(); this.formulario(); };
-  },
-
-  formulario() {
+    const hoy = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    const opciones = DESTINATARIOS.map(d =>
+      `<option value="${d.id}">${d.nombre} (${d.para})</option>`).join('');
     UI.abrir(`
-      <div class="quien">Teo, el repartidor</div>
-      <p class="dice">¿Qué te gustaría que hubiera en la tienda?</p>
-      <p class="pista">Un peinado, una mascota, un complemento, una zona nueva de la isla…
-         lo que se te ocurra. Escríbelo como quieras.</p>
-      <textarea id="textoPedido" rows="4" maxlength="400"
-                placeholder="Me gustaría que hubiera…"></textarea>
-      <p class="pista" id="avisoPedido"></p>
+      <div class="quien">✉️ Escribir una carta</div>
+      <div class="carta">
+        <div class="carta-fecha">Isla del Farol de Coral, ${hoy}</div>
+        <div class="carta-campo"><b>Remitente:</b> ${p.nombre}</div>
+        <label class="carta-campo"><b>Para:</b>
+          <select id="paraCarta"><option value="">¿A quién se la mandas?</option>${opciones}</select>
+        </label>
+        <div class="carta-saludo" id="saludoCarta">&nbsp;</div>
+        <textarea id="textoCarta" rows="5" maxlength="600" placeholder="Escribe aquí tu carta…"></textarea>
+        <div class="carta-firma"><span id="despedidaCarta">Un saludo,</span><br><b>${p.nombre}</b></div>
+      </div>
+      <p class="pista" id="avisoCarta"></p>
       <div class="botones">
-        <button class="btn defecto" id="darPedido">Dárselo a Teo</button>
-        <button class="btn gris" id="dejarPedido">Ahora no</button>
+        <button class="btn defecto" id="echarCarta">📮 Echarla al buzón</button>
+        <button class="btn gris" id="dejarCarta">Ahora no</button>
       </div>
     `);
-    const caja = document.getElementById('textoPedido');
-    caja.focus();
-    document.getElementById('dejarPedido').onclick = () => { Sonido.clic(); Tienda.pintar(); };
-    document.getElementById('darPedido').onclick = () => {
+    const para = document.getElementById('paraCarta');
+    const caja = document.getElementById('textoCarta');
+    const aviso = document.getElementById('avisoCarta');
+    para.onchange = () => {
+      const d = DESTINATARIOS.find(x => x.id === para.value);
+      document.getElementById('saludoCarta').innerHTML = d ? d.saludo : '&nbsp;';
+      document.getElementById('despedidaCarta').textContent = d ? d.despedida : 'Un saludo,';
+      aviso.textContent = '';
+    };
+    document.getElementById('dejarCarta').onclick = () => { Sonido.clic(); UI.cerrar(); };
+    document.getElementById('echarCarta').onclick = () => {
+      const d = DESTINATARIOS.find(x => x.id === para.value);
       const texto = caja.value.trim();
-      if (!texto) {
-        document.getElementById('avisoPedido').textContent = 'Escribe algo primero, aunque sea corto.';
-        return;
-      }
-      const p = Estado.actual;
-      if (!p.pedidos) p.pedidos = [];
-      p.pedidos.push({ texto: texto, fecha: new Date().toISOString(), quien: p.nombre });
+      if (!d) { aviso.textContent = 'Primero elige a quién se la mandas.'; return; }
+      if (!texto) { aviso.textContent = 'Escribe algo primero, aunque sea corto.'; return; }
+      if (!p.cartas) p.cartas = [];
+      p.cartas.push({ para: d.id, texto: texto, fecha: new Date().toISOString(), quien: p.nombre });
       Estado.guardar();
       Sonido.moneda();
-      this._hoy = false;
-      UI.dialogo('Teo', 'Apuntado. <b>«' + texto.slice(0, 120) + '»</b><br><br>' +
-        'Lo llevo en la libreta y lo miro con Mila. No prometo nada, ¡pero se hace lo que se puede!', [
-        { texto: 'Gracias, Teo', accion: () => Tienda.pintar() },
+      UI.dialogo('El buzón', '📮 ¡Plof! Tu carta para <b>' + d.nombre + '</b> ya está dentro del buzón.', [
+        { texto: 'Vale', accion: () => UI.cerrar() },
       ]);
     };
   },
 
-  /* La libreta de Teo: aquí las lee Antonio */
-  cuantas() {
-    return (Estado.perfiles || []).reduce((n, p) => n + ((p.pedidos || []).length), 0);
+  /* Las cartas de todas las jugadoras de este aparato, las más nuevas primero.
+     Incluye las peticiones antiguas a Teo, para que no se pierda ninguna. */
+  todas() {
+    const lista = [];
+    (Estado.perfiles || []).forEach(p => {
+      (p.cartas || []).forEach(x => lista.push(x));
+      (p.pedidos || []).forEach(x => lista.push(Object.assign({ para: 'teo', quien: p.nombre }, x)));
+    });
+    return lista.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   },
 
-  libreta() {
-    const todas = [];
-    (Estado.perfiles || []).forEach(p => (p.pedidos || []).forEach(x => todas.push(x)));
-    todas.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  cuantas() { return this.todas().length; },
 
+  nombrePara(id) {
+    const d = DESTINATARIOS.find(x => x.id === id);
+    return d ? d.nombre : (id === 'teo' ? 'Teo (petición antigua para la tienda)' : id);
+  },
+
+  /* El saco del cartero: aquí las lee Antonio */
+  leer() {
+    const todas = this.todas();
     const filas = todas.length ? todas.map(x => {
       const f = new Date(x.fecha);
       const cuando = isNaN(f) ? '' : f.toLocaleDateString('es-ES',
         { day: 'numeric', month: 'long' }) + ', ' + f.toLocaleTimeString('es-ES',
         { hour: '2-digit', minute: '2-digit' });
-      return `<div class="rareza"><div><b>${x.quien || ''}</b>
+      return `<div class="rareza"><div><b>De ${x.quien || ''} para ${this.nombrePara(x.para)}</b>
               <small>${cuando}</small><br>${x.texto.replace(/</g, '&lt;')}</div></div>`;
-    }).join('') : '<p class="pista">Todavía no le han pedido nada a Teo.</p>';
+    }).join('') : '<p class="pista">Todavía no hay cartas en el buzón.</p>';
 
     UI.abrir(`
-      <div class="quien">La libreta de Teo</div>
-      <p class="pista">Lo que han pedido para la tienda. Se guarda <b>solo en este aparato</b>:
-         el juego no envía nada a ningún sitio.</p>
+      <div class="quien">✉️ Las cartas del buzón</div>
+      <p class="pista">Se guardan <b>solo en este aparato</b>: el juego no envía nada a ningún sitio.</p>
       <div class="rarezas">${filas}</div>
       <div class="botones">
-        <button class="btn" id="copiarPedidos">Copiar todo</button>
-        <button class="btn gris" id="cerrarLibreta">Cerrar</button>
+        <button class="btn" id="copiarCartas">Copiar todo</button>
+        <button class="btn gris" id="cerrarCartas">Cerrar</button>
       </div>
     `);
-    document.getElementById('cerrarLibreta').onclick = () => UI.cerrar();
-    document.getElementById('copiarPedidos').onclick = (ev) => {
-      const texto = todas.map(x => '· [' + (x.quien || '') + '] ' + x.texto).join('\n');
+    document.getElementById('cerrarCartas').onclick = () => UI.cerrar();
+    document.getElementById('copiarCartas').onclick = (ev) => {
+      const texto = todas.map(x => '· De ' + (x.quien || '') + ' para ' +
+        this.nombrePara(x.para) + ': ' + x.texto).join('\n');
       try { navigator.clipboard.writeText(texto); ev.target.textContent = '¡Copiado!'; }
       catch (e) { ev.target.textContent = 'No se ha podido copiar'; }
     };
@@ -10555,7 +10576,7 @@ const Pistas = {
 const ICONOS = {
   armario: '👗', tienda: '🛒', animalario: '🐾', juego: '🎲',
   reto: '🔢', letras: '🔤', ver: '👁️', meta: '💎', coger: '✋',
-  hablar: '💬', montar: '🎠', cuidar: '🧽', paso: '🚧', dar: '🎁', mascotas: '🐾',
+  hablar: '💬', montar: '🎠', cuidar: '🧽', paso: '🚧', dar: '🎁', mascotas: '🐾', carta: '✉️',
 };
 
 /* UN SOLO BOTÓN PARA TODO: la barra espaciadora (y el botón verde).
@@ -10566,7 +10587,7 @@ const ICONOS = {
 const TECLAS = {
   ver: 'V', hablar: 'H', coger: 'C',
   armario: 'J', tienda: 'J', animalario: 'J', juego: 'J',
-  reto: 'J', letras: 'J', meta: 'J', montar: 'J', cuidar: 'J', paso: 'J', mascotas: 'J',
+  reto: 'J', letras: 'J', meta: 'J', montar: 'J', cuidar: 'J', paso: 'J', mascotas: 'J', carta: 'J',
 };
 
 const Juego = {
@@ -10665,7 +10686,7 @@ const Juego = {
     addEventListener('keydown', e => {
       // Si está escribiendo (el nombre de la jugadora, por ejemplo) o no está
       // dentro del juego, las teclas son suyas: aquí no se toca nada.
-      const escribiendo = ['INPUT', 'TEXTAREA'].includes(
+      const escribiendo = ['INPUT', 'TEXTAREA', 'SELECT'].includes(
         (document.activeElement || {}).tagName);
       if (escribiendo) return;
       if (document.getElementById('juego').classList.contains('oculto')) return;
@@ -11141,6 +11162,7 @@ const Juego = {
     if (l.accion === 'tienda')     return Tienda.abrir();
     if (l.accion === 'animalario') return Animalario.abrir();
     if (l.accion === 'mascotas')   return Bitxos.abrir();
+    if (l.accion === 'carta')      return Correo.escribir();
     if (l.accion === 'ver')        return this.mirar(l);
     if (l.accion === 'juego') {
       return UI.dialogo('Coco', TEXTOS.salonSaludo, [
@@ -12155,6 +12177,7 @@ const Juego = {
       armario: '240,140,160', tienda: '230,120,90', animalario: '150,190,120',
       juego: '90,180,220', meta: '255,210,90', ver: '150,170,190',
       reto: '255,190,50', letras: '150,130,220', montar: '240,120,90', cuidar: '120,200,180',
+      carta: '245,195,40',
     };
     let color = colores[l.accion] || '150,170,190';
     let icono = ICONOS[l.accion] || '';
@@ -12593,6 +12616,27 @@ const Juego = {
       ctx.font = '13px system-ui'; ctx.textAlign = 'center';
       ctx.fillText('🐦', x + 22, y - 74);
     }
+  },
+
+  /* El buzón amarillo de Correos, como los de España */
+  pintar_correos(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 26, 0);
+    ctx.fillStyle = '#5F6368'; ctx.fillRect(x - 20, y - 12, 40, 14);        // la peana
+    ctx.fillStyle = '#F7C600';
+    ctx.beginPath(); ctx.moveTo(x - 24, y - 12); ctx.lineTo(x - 24, y - 70);
+    ctx.quadraticCurveTo(x - 24, y - 92, x, y - 92);
+    ctx.quadraticCurveTo(x + 24, y - 92, x + 24, y - 70);
+    ctx.lineTo(x + 24, y - 12); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#C99F00'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#2B2B2B'; ctx.fillRect(x - 14, y - 72, 28, 5);          // la boca
+    // la corneta de Correos, en azul
+    ctx.strokeStyle = '#123A7A'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(x, y - 44, 9, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#123A7A';
+    ctx.beginPath(); ctx.moveTo(x + 7, y - 48); ctx.lineTo(x + 18, y - 54);
+    ctx.lineTo(x + 18, y - 34); ctx.lineTo(x + 7, y - 40); ctx.fill();
+    ctx.font = 'bold 7px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('CORREOS', x, y - 22);
   },
 
   pintar_buzon(ctx, x, y) {
@@ -14424,10 +14468,10 @@ const Inicio = {
 
     const f = Estado.guardadoEl();
     aviso.className = '';
-    const n = Pedidos.cuantas();
+    const n = Correo.cuantas();
     const libreta = (n
-      ? ' · <button class="enlace" id="verLibreta">📦 ' + n +
-        (n === 1 ? ' petición para la tienda' : ' peticiones para la tienda') + '</button>'
+      ? ' · <button class="enlace" id="verLibreta">✉️ ' + n +
+        (n === 1 ? ' carta en el buzón' : ' cartas en el buzón') + '</button>'
       : '') + (Informe.hay() ? ' · <button class="enlace" id="verInforme">📊 cómo va la lectura</button>' : '');
     if (!f) {
       aviso.innerHTML = 'Todavía no se ha guardado nada en este aparato.' + libreta;
@@ -14439,7 +14483,7 @@ const Inicio = {
                         ' a las ' + hora + '.' + libreta;
     }
     const bl = document.getElementById('verLibreta');
-    if (bl) bl.onclick = () => Pedidos.libreta();
+    if (bl) bl.onclick = () => Correo.leer();
     const bi = document.getElementById('verInforme');
     if (bi) bi.onclick = () => Informe.abrir();
   },
