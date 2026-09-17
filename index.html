@@ -550,6 +550,11 @@ const AJUSTES = {
   conchasPorRutina: 1,       // ducharse, peinarse…
   conchasPorRutinasTodas: 3, // propina por hacer las cuatro
 
+  /* Arreglar un sitio o devolver un objeto a su dueño: simbólico (16-09-2026).
+     Las conchas salen de los retos; buscar y leer da lo que pasa en la isla. */
+  conchasPorArreglar: 1,
+  conchasPorEntregar: 1,
+
   /* Limpiar animales es el trabajo del día: paga bien la primera vez de cada
      día y poco después, para que siga habiendo motivo para volver mañana. */
   conchasPorLimpiar: 7,
@@ -4131,20 +4136,35 @@ const CHARLAS = {
   },
 };
 
+/* A QUIÉN SE LE PUEDE LLEVAR UN OBJETO: lo que sale en los botones de
+   «¿A quién se lo llevas?». Sin «el» ni «la», para no dar pistas. */
+const DUENOS = {
+  tienda: 'Mila, de la tienda',            salon: 'Coco, del salón de juegos',
+  roc: 'Roc, del bosque',                  tomeu: 'Tomeu, pescador',
+  ermitano: 'Guillem, de la cima',         barca: 'Quim, del embarcadero',
+  raton: 'Nit, del molino',                fruta: 'Bruno, del puesto de fruta',
+  coches: 'Gori, de los coches de choque', tazas: 'Bet, de las tazas locas',
+  tiovivo: 'Fina, del tiovivo',            playa: 'Nube, de la playa',
+};
+
 /* LOS ENCARGOS: doce objetos raros, y en cada partida se esconden seis por la
-   isla. NINGUNO es adorno: todos son de alguien. El texto del objeto dice a
-   quién, pero nunca con su nombre: hay que leerlo y atar cabos («alguien que
-   sale a la mar», «alguien muy, muy pequeño»). Al dárselo, esa persona hace
-   algo y se apunta en el Cuaderno de Vecinos.
-     para   → el id del lugar donde está esa persona
-     pista  → lo que se lee en el cuaderno mientras no se ha entregado
+   isla. NINGUNO es adorno: todos son de alguien.
+   CASOS DE DETECTIVE (16-09-2026): el objeto no dice de quién es, sino a qué
+   vecino preguntar. Ese vecino (que nunca es el dueño) lo cuenta sin decir el
+   nombre, y hay que elegir a quién llevarlo. Hasta que no se acierta, el
+   dueño no lo reconoce: pasear con la mochila ya no sirve de atajo.
+     para   → el id del lugar donde está el dueño (su nombre, en DUENOS)
+     sabe   → la charla (CHARLAS) del vecino que sabe de quién es
+     rumor  → lo que cuenta ese vecino: corto, con gracia y sin el nombre
      alDar  → lo que pasa al dárselo
-     premio → { conchas: n } y, si toca, { prenda: 'id' } o { mascota: 'id' } */
+     premio → las conchas no se usan (paga AJUSTES.conchasPorEntregar);
+              si toca, { prenda: 'id' } o { mascota: 'id' } */
 const RAREZAS = [
   { id: 'moneda',  icono: '🪙', nombre: 'Moneda con un pulpo',
-    texto: 'Una moneda muy gastada con un pulpo dibujado. No vale en ninguna tienda…<br><br>' +
-           'pero la que tiene tienda en la isla lleva años buscando una así.',
-    para: 'tienda', pista: 'Vale cero en cualquier tienda, y aun así hay quien la quiere.',
+    texto: 'Una moneda muy gastada con un pulpo dibujado. No vale en ninguna tienda.<br><br>' +
+           '¿De quién será? <b>Tomeu</b>, el pescador de la costa sur, ha visto de todo: pregúntale.',
+    para: 'tienda', sabe: 'tomeu',
+    rumor: '¡Una del pulpo! Hay alguien que colecciona monedas raras y las clava en un corcho, detrás del mostrador, entre vestidos y sombreros. Siempre me pregunta si he pescado alguna.',
     alDar: 'Mila la coge con dos dedos, la mira a contraluz y se le ilumina la cara.<br><br>' +
            '«¡La del pulpo! Me faltaba justo esta.» La clava en el corcho, detrás del mostrador, ' +
            'y te paga la voluntad.',
@@ -4152,8 +4172,9 @@ const RAREZAS = [
 
   { id: 'canica',  icono: '🔮', nombre: 'Canica con niebla',
     texto: 'Dentro tiene niebla de verdad, y se mueve cuando la giras.<br><br>' +
-           'Pide a gritos una partida con alguien que se pase el día jugando.',
-    para: 'salon', pista: 'Una canica quiere lo mismo que todas las canicas: que jueguen con ella.',
+           '¿De quién será? <b>Na Tortuga</b>, que vive junto al mar, al este, lo sabe casi todo: pregúntale.',
+    para: 'salon', sabe: 'tortuga',
+    rumor: 'Una canica no es de nadie hasta que alguien juega con ella. Llévasela a quien tiene la mesa llena de dados, cartas y fichas. Presume de no haber perdido nunca una partida.',
     alDar: 'Coco la hace rodar por la mesa y la niebla de dentro se arremolina.<br><br>' +
            '«Con esta no se puede hacer trampa: no se ve por dónde va.» La guarda en el bote ' +
            'de las buenas y te paga la partida.',
@@ -4161,8 +4182,9 @@ const RAREZAS = [
 
   { id: 'pluma',   icono: '🪶', nombre: 'Pluma azul',
     texto: 'No pesa nada. Si la sueltas, tarda un buen rato en llegar al suelo.<br><br>' +
-           'Es de un pájaro que solo conoce quien vive entre árboles.',
-    para: 'roc', pista: 'De un pájaro que solo conoce quien vive entre árboles.',
+           '¿De quién será? <b>Nit</b>, que vive dentro del molino, ve pasar muchos pájaros por su ventana: pregúntale.',
+    para: 'roc', sabe: 'raton',
+    rumor: 'Es de un blauet, un pájaro azul que vive entre árboles. Yo de pájaros no sé. Pero hay uno que se pasa el día escuchando a los árboles: ese sabrá.',
     alDar: 'Roc la mira al trasluz y silba bajito.<br><br>' +
            '«Un blauet. Hacía años que no bajaba uno.» La clava en su gorro y, desde ese día, ' +
            'cuando pasas por el bosque te saluda desde lejos.',
@@ -4170,8 +4192,9 @@ const RAREZAS = [
 
   { id: 'llave',   icono: '🗝️', nombre: 'Llave sin puerta',
     texto: 'Una llave pequeña y muy trabajada. Nadie sabe qué abre.<br><br>' +
-           '<b>Tomeu dice que él la tiró al mar.</b>',
-    para: 'tomeu', pista: 'Alguien juró que la había tirado al mar. Habrá que devolvérsela.',
+           '¿De quién será? <b>Na Tortuga</b>, que vive junto al mar, al este, lo sabe casi todo: pregúntale.',
+    para: 'tomeu', sabe: 'tortuga',
+    rumor: 'Esa llave la vi caer al agua. La tiró uno que se pasa el día sentado con la caña. La tira, se arrepiente y luego la busca. Siempre igual.',
     alDar: 'Tomeu se queda callado un rato largo.<br><br>' +
            '«La tiré al mar, sí. Tres veces.» Abre con ella una caja de madera que tiene bajo el ' +
            'banco. Dentro solo hay más llaves. «Pues nada», dice, y te paga el viaje.',
@@ -4179,8 +4202,9 @@ const RAREZAS = [
 
   { id: 'caracol', icono: '🐚', nombre: 'Caracola que ríe',
     texto: 'Si te la pones en la oreja no se oye el mar: se oyen risas de lejos.<br><br>' +
-           'Le haría compañía a alguien que viva solo, y muy arriba.',
-    para: 'ermitano', pista: 'Suena a gente. Le vendría bien a quien no ve a nadie en todo el día.',
+           '¿De quién será? <b>Roc</b>, el del bosque, conoce a todo el mundo: pregúntale.',
+    para: 'ermitano', sabe: 'roc',
+    rumor: 'Risas, ¿eh? Pues sé de uno que vive solo allá arriba, donde casi no sube nadie. Echa de menos oír a la gente, aunque no lo diga.',
     alDar: 'Guillem se la pone en la oreja y se ríe él también, que hacía tiempo.<br><br>' +
            '«Mira tú, resulta que aquí arriba también se oye el pueblo.» La deja en la piedra de ' +
            'la entrada, donde le dé el viento.',
@@ -4188,8 +4212,9 @@ const RAREZAS = [
 
   { id: 'brujula', icono: '🧭', nombre: 'Brújula al revés',
     texto: 'Señala siempre al sur. Alguien la montó del revés, o a propósito.<br><br>' +
-           'Una brújula, aunque sea rara, es de quien sale a navegar.',
-    para: 'barca', pista: 'Aunque esté del revés, una brújula es de quien sale a navegar.',
+           '¿De quién será? <b>Tomeu</b>, el pescador de la costa sur, ha visto de todo: pregúntale.',
+    para: 'barca', sabe: 'tomeu',
+    rumor: 'Del revés, qué risa. Yo no la quiero: pesco sin moverme de aquí. Pero el que lleva la barca por el río se pierde cada dos por tres.',
     alDar: 'Quim le da la vuelta, la mira y se echa a reír.<br><br>' +
            '«Perfecta. Yo siempre voy al sur.» La ata al banco de la barca con un cordel ' +
            'y a partir de hoy la barca vuelve sola al embarcadero.',
@@ -4197,8 +4222,9 @@ const RAREZAS = [
 
   { id: 'anillo',  icono: '💍', nombre: 'Anillo diminuto',
     texto: 'Le cabría en el dedo a alguien muy pequeño. Muy, muy pequeño.<br><br>' +
-           'Del tamaño, digamos, de quien vive dentro de un molino.',
-    para: 'raton', pista: 'Para un dedo minúsculo. ¿Quién es tan pequeño en esta isla?',
+           '¿De quién será? <b>Roc</b>, el del bosque, conoce a todo el mundo: pregúntale.',
+    para: 'raton', sabe: 'roc',
+    rumor: 'En el bosque no hay dedos tan pequeños. Pero en el molino vive una familia diminuta desde hace cien años. A la abuela se le cayó algo por un agujero.',
     alDar: 'Nit se lo prueba y le queda como un cinturón, pero da igual: se lo pone igual.<br><br>' +
            '«¡Es de mi abuela! Se le cayó por el agujero hace cien años.» Desaparece un momento ' +
            'y vuelve arrastrando un queso enorme para ti.',
@@ -4206,26 +4232,29 @@ const RAREZAS = [
 
   { id: 'hueso',   icono: '🦴', nombre: 'Hueso desconocido',
     texto: 'No es de pájaro, ni de pez, ni de gato.<br><br>' +
-           '<b>Bruno lo miró un rato largo y se calló.</b> Igual ya sabe de qué es.',
-    para: 'fruta', pista: 'Uno de la isla lo miró un rato largo y no dijo nada. Sabe algo.',
+           '¿De quién será? <b>Na Tortuga</b>, que vive junto al mar, al este, lo sabe casi todo: pregúntale.',
+    para: 'fruta', sabe: 'tortuga',
+    rumor: 'Eso es de dragón, criatura. De los pequeños. El que vende manzanas y peras lo vio el otro día y se quedó callado. Ese sabe guardar un secreto.',
     alDar: 'Bruno lo coge, lo pone a contraluz y por fin habla.<br><br>' +
            '«Es de dragón. Pequeño, de los de antes.» Lo envuelve en un trapo, lo guarda bajo el ' +
            'mostrador y te llena una bolsa de fruta.',
     premio: { conchas: 7 } },
 
   { id: 'trebol',  icono: '🍀', nombre: 'Trébol de cinco hojas',
-    texto: 'De cuatro dan suerte. Este tiene cinco. Nadie sabe qué da.<br><br>' +
-           'Quien se pasa el día chocando querrá probarlo.',
-    para: 'coches', pista: 'Quien más choca es quien más suerte necesita.',
+    texto: 'De cuatro hojas dan suerte. Este tiene cinco. Nadie sabe qué da.<br><br>' +
+           '¿De quién será? <b>Nit</b>, que vive dentro del molino, ve pasar muchos pájaros por su ventana: pregúntale.',
+    para: 'coches', sabe: 'raton',
+    rumor: '¿Cinco hojas? Eso es suerte de sobra. Yo se lo daría a quien más la necesita: alguien que se pasa el día chocando con cochecitos en la feria.',
     alDar: 'Gori se lo mete en el bolsillo del mono antes de que te lo pienses.<br><br>' +
            '«Cinco hojas: hoy no me choca nadie.» Le chocan seis veces seguidas. Se ríe tanto ' +
            'que te invita a la próxima vuelta.',
     premio: { conchas: 5 } },
 
   { id: 'burbuja', icono: '🫧', nombre: 'Burbuja que no revienta',
-    texto: 'La aprietas y no pasa nada. Lleva así desde que la encontraste.<br><br>' +
-           'Daría vueltas de maravilla en algo que gire mucho.',
-    para: 'tazas', pista: 'Algo redondo que no se rompe. Pide dar vueltas.',
+    texto: 'La aprietas y no pasa nada. No revienta nunca.<br><br>' +
+           '¿De quién será? <b>Guillem</b>, el que vive en lo alto de la montaña, lo ve todo desde allí: pregúntale.',
+    para: 'tazas', sabe: 'ermitano',
+    rumor: 'Desde aquí arriba veo la feria entera. Hay unas tazas enormes que no paran de girar. La que las cuida dice que le falta algo redondo que no se rompa.',
     alDar: 'Bet la mete en la taza azul y arranca el motor.<br><br>' +
            'La burbuja da cuarenta vueltas y sale tan entera como entró. «Esta se queda aquí ' +
            'de mascota», dice Bet.',
@@ -4233,16 +4262,18 @@ const RAREZAS = [
 
   { id: 'estrella',icono: '⭐', nombre: 'Trocito de estrella',
     texto: 'Cayó hace poco: todavía está tibio.<br><br>' +
-           'En la isla hay un sitio que gira y al que le falta algo brillante arriba del todo.',
-    para: 'tiovivo', pista: 'Está tibio y brilla. Algo que da vueltas lo querría en lo más alto.',
+           '¿De quién será? <b>Guillem</b>, el que vive en lo alto de la montaña, lo ve todo desde allí: pregúntale.',
+    para: 'tiovivo', sabe: 'ermitano',
+    rumor: 'La vi caer anoche. En la feria hay unos caballitos que dan vueltas despacio, y arriba del todo les falta algo que brille. La que los cuida lo sabe.',
     alDar: 'Fina se sube a la escalera y lo clava en la punta del tiovivo.<br><br>' +
            'Los caballitos dan una vuelta entera solos, sin motor, solo por verlo.',
     premio: { conchas: 7 } },
 
   { id: 'espejito',icono: '🪞', nombre: 'Espejito raro',
     texto: 'Refleja el cielo, pero el de ayer. Si ayer llovió, en el espejito llueve.<br><br>' +
-           'Alguien que se pase la vida mirando el cielo le sacaría partido.',
-    para: 'playa', pista: 'Enseña el cielo de ayer. ¿Quién se pasa el día mirando el cielo?',
+           '¿De quién será? <b>Roc</b>, el del bosque, conoce a todo el mundo: pregúntale.',
+    para: 'playa', sabe: 'roc',
+    rumor: 'En el bosque los árboles tapan el cielo, así que a mí no me sirve. Pero en la playa hay una que se pasa el día mirando las nubes. Hasta se llama como ellas.',
     alDar: 'Nube lo mira, mira arriba, y vuelve a mirarlo.<br><br>' +
            '«Entonces mañana veré el de hoy.» Se sienta en la arena a esperar a mañana, ' +
            'tan contenta, y te regala un puñado de conchas de las gordas.',
@@ -4600,6 +4631,7 @@ const Estado = {
       rarezas: [],              // objetos raros de la mochila
       tope: { dia: '', dadas: 0 },        // conchas de hoy por lo repetible sin fin
       entregado: {},            // encargos ya entregados a su dueño
+      averiguado: {},           // encargos de los que ya sabe de quién son
       escondites: null,         // dónde le han tocado las rarezas en esta partida
       historias: {},            // qué historias ya ha leído
       rutinas: { dia: '', hechas: [] },   // ducha, dientes, peinado y desayuno de hoy
@@ -4670,6 +4702,7 @@ const Estado = {
     p.rarezas = [];
     p.tope = { dia: '', dadas: 0 };
     p.entregado = {};
+    p.averiguado = {};
     p.escondites = null;
     p.historias = {};
     p.rutinas = { dia: '', hechas: [] };
@@ -4775,6 +4808,15 @@ const Estado = {
   entregar(id) {
     if (!this.actual.entregado) this.actual.entregado = {};
     this.actual.entregado[id] = true;
+    this.guardar();
+  },
+
+  /* Ya ha averiguado de quién es (preguntando al vecino que lo sabe) */
+  yaAveriguado(id) { return !!(this.actual.averiguado || {})[id]; },
+
+  averiguar(id) {
+    if (!this.actual.averiguado) this.actual.averiguado = {};
+    this.actual.averiguado[id] = true;
     this.guardar();
   },
 
@@ -9029,15 +9071,16 @@ const Cuadernos = {
                 <small>${r.nombre}</small></div>`;
       if (Estado.tieneRareza(r.id))
         return `<div class="cromo llevo"><span class="cara">${r.icono}</span>
-                <b>${r.nombre}</b><small>🎒 Lo llevas encima.<br>${r.pista}</small></div>`;
+                <b>${r.nombre}</b><small>🎒 Lo llevas encima.<br>${Estado.yaAveriguado(r.id)
+                  ? '📝 Es para ' + DUENOS[r.para] + '.' : '🔍 ' + r.texto.split('<br><br>')[1]}</small></div>`;
       return `<div class="cromo falta"><span class="cara">📦</span>
-              <b>¿?</b><small>${r.pista}</small></div>`;
+              <b>¿?</b><small>Todavía no lo has encontrado.</small></div>`;
     }).join('');
     return {
       cuenta: `Has devuelto lo suyo a <b>${hechos}</b> de <b>${RAREZAS.length}</b> vecinos`,
       fichas,
-      pie: 'Los objetos raros que encuentras <b>no son adornos: son de alguien</b>. Lee lo que ' +
-           'pone en cada uno y piensa a quién de la isla le pega. Al devolvérselo, pasa algo.',
+      pie: 'Los objetos raros que encuentras <b>no son adornos: son de alguien</b>. Cada uno ' +
+           'dice a quién preguntar. Lee bien lo que te cuentan y averigua de quién es.',
     };
   },
 };
@@ -9815,6 +9858,40 @@ const Mapa = {
 
   ANCHO: 660, ALTO: 450,
 
+  /* Los únicos sitios que salen en el mapa (16-09-2026), solo con su icono.
+     Los del poblado están tan juntos que salen como uno solo. La leyenda de
+     debajo explica los que ya ha encontrado. Para que salga otro, añádelo aquí. */
+  ICONOS: {
+    poblado:   ['🏘️', 'el poblado: tu casa, la tienda, el buzón y los animales'],
+    salon:     ['🎲', 'el salón de Coco'],
+    taquilla:  ['🎡', 'la feria'],
+    farol:     ['💡', 'el Farol'],
+    muelle:    ['⛵', 'el barco'],
+    playa:     ['🐚', 'reto de la playa'],
+    fruta:     ['🍎', 'reto del mercado'],
+    cartes:    ['🃏', 'reto de las cartas'],
+    piedras:   ['🪨', 'reto de las piedras'],
+    pesca:     ['🎣', 'reto de la pesca'],
+    elefantes: ['🐘', 'los elefantes'],
+    ponis:     ['🐴', 'los ponis'],
+    ovejas:    ['🐑', 'las ovejas'],
+  },
+  POBLADO: ['cabana', 'tienda', 'correos', 'bitxos', 'animalario'],
+
+  /* Los puntos que se pintan: [id, icono, texto, x, y, descubierto, lugar] */
+  puntos() {
+    const L = MUNDO.lugares, puntos = [];
+    const pob = L.filter(p => this.POBLADO.includes(p.id));
+    if (pob.length) puntos.push(['poblado', ...this.ICONOS.poblado,
+      pob.reduce((a, p) => a + p.x, 0) / pob.length, pob.reduce((a, p) => a + p.y, 0) / pob.length,
+      pob.some(p => Estado.estaDescubierto(p.id)), null]);
+    L.forEach(p => {
+      if (p.id === 'poblado' || !this.ICONOS[p.id]) return;
+      puntos.push([p.id, ...this.ICONOS[p.id], p.x, p.y, Estado.estaDescubierto(p.id), p]);
+    });
+    return puntos;
+  },
+
   abrir() {
     const total = MUNDO.lugares.length;
     const vistos = MUNDO.lugares.filter(p => Estado.estaDescubierto(p.id)).length;
@@ -9823,7 +9900,8 @@ const Mapa = {
       <div class="quien">Mapa de la isla</div>
       <canvas id="mapaLienzo" width="${this.ANCHO}" height="${this.ALTO}"></canvas>
       <p class="contador">Has encontrado <b>${vistos}</b> de <b>${total}</b> sitios</p>
-      <p class="pista">🏠 casa · 🛒 tienda · 🎲 juegos · 🐾 animalario · 🎡 feria · 💡 el Farol<br>
+      <p class="pista">${this.puntos().filter(q => q[3]).map(q => q[1] + ' ' + q[2]).join(' · ')}<br>
+      Los demás rincones no salen en el mapa: los tienes que encontrar tú.<br>
       Lo <b>oscuro</b> es lo que todavía no has pisado: camina por ahí y se irá abriendo.</p>
       <div class="botones"><button class="btn defecto" id="cerrarMapa">Seguir explorando<span class="tecla">espacio</span></button></div>
     `);
@@ -9894,54 +9972,26 @@ const Mapa = {
       ctx.setLineDash([]);
     });
 
-    // los sitios, por encima de la niebla
+    /* LOS SITIOS (16-09-2026): en el mapa solo salen los importantes, cada
+       uno con su icono, para que se orienten. Los demás no se pintan, pero se
+       siguen descubriendo y cuentan en «has encontrado X de…». Lo que aún no
+       ha pisado sale con una interrogación, para que le entren ganas de ir. */
     ctx.textAlign = 'center';
-    MUNDO.lugares.forEach(p => {
-      const visto = Estado.estaDescubierto(p.id);
-      const x = X(p.x), y = Y(p.y);
+    this.puntos().forEach(([id, icono, texto, px, py, visto, p]) => {
+      const x = X(px), y = Y(py);
+      let color = '#7FA9C9';
+      if (p && (p.accion === 'reto' || p.accion === 'letras'))
+        color = Estado.tieneCristal(p.id) ? '#4FA96B' : '#E8A33D';
 
-      let color = '#9AA0A6';
+      ctx.fillStyle = visto ? 'rgba(255,255,255,0.92)' : 'rgba(120,140,180,0.55)';
+      ctx.beginPath(); ctx.arc(x, y, 15, 0, 7); ctx.fill();
+      ctx.strokeStyle = visto ? color : '#5A6B8C'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(x, y, 15, 0, 7); ctx.stroke();
       if (visto) {
-        if (p.accion === 'reto' || p.accion === 'letras')
-          color = Estado.tieneCristal(p.id) ? '#4FA96B' : '#E8A33D';
-        else if (p.accion === 'armario' || p.accion === 'tienda') color = '#D96C9A';
-        else if (p.accion === 'animalario') color = '#8CBF6A';
-        else if (p.accion === 'juego') color = '#5AA9DC';
-        else if (p.accion === 'meta') color = '#E8C33D';
-        else color = '#7FA9C9';
-      }
-
-      /* Los sitios a los que hay que volver una y otra vez llevan su icono,
-         para reconocerlos de un vistazo. Los demás, un punto de color. */
-      const ICONO_MAPA = { cabana: '🏠', tienda: '🛒', animalario: '🐾', salon: '🎲',
-                           farol: '💡', taquilla: '🎡', elefantes: '🐘', ponis: '🐴',
-                           ovejas: '🐑' };
-      const icono = ICONO_MAPA[p.id];
-
-      if (icono && visto) {
-        ctx.fillStyle = 'rgba(255,255,255,0.92)';
-        ctx.beginPath(); ctx.arc(x, y, 15, 0, 7); ctx.fill();
-        ctx.strokeStyle = color; ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.arc(x, y, 15, 0, 7); ctx.stroke();
         ctx.font = '17px system-ui';
         ctx.fillText(icono, x, y + 6);
       } else {
-        ctx.fillStyle = visto ? 'rgba(255,255,255,0.9)' : 'rgba(120,140,180,0.55)';
-        ctx.beginPath(); ctx.arc(x, y, 13, 0, 7); ctx.fill();
-        ctx.fillStyle = visto ? color : '#5A6B8C';
-        ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.fill();
-      }
-
-      ctx.font = visto ? 'bold 12px system-ui, sans-serif' : 'bold 14px system-ui, sans-serif';
-      if (visto) {
-        ctx.fillStyle = '#2F2A28';
-        const nombre = p.mapa || p.nombre;
-        const ancho = ctx.measureText(nombre).width;
-        ctx.fillStyle = 'rgba(255,255,255,0.8)';
-        ctx.fillRect(x - ancho / 2 - 4, y + 12, ancho + 8, 16);
-        ctx.fillStyle = '#2F2A28';
-        ctx.fillText(nombre, x, y + 24);
-      } else {
+        ctx.font = 'bold 14px system-ui, sans-serif';
         ctx.fillStyle = '#DCE4F2';
         ctx.fillText('?', x, y + 5);
       }
@@ -10576,7 +10626,7 @@ const Pistas = {
 const ICONOS = {
   armario: '👗', tienda: '🛒', animalario: '🐾', juego: '🎲',
   reto: '🔢', letras: '🔤', ver: '👁️', meta: '💎', coger: '✋',
-  hablar: '💬', montar: '🎠', cuidar: '🧽', paso: '🚧', dar: '🎁', mascotas: '🐾', carta: '✉️',
+  hablar: '💬', caso: '🔍', montar: '🎠', cuidar: '🧽', paso: '🚧', dar: '🎁', mascotas: '🐾', carta: '✉️',
 };
 
 /* UN SOLO BOTÓN PARA TODO: la barra espaciadora (y el botón verde).
@@ -10929,7 +10979,8 @@ const Juego = {
     this.entregable = null;
     if (this.lugar) {
       const r = RAREZAS.find(x => x.para === this.lugar.id &&
-        Estado.tieneRareza(x.id) && !Estado.yaEntregado(x.id));
+        Estado.tieneRareza(x.id) && !Estado.yaEntregado(x.id) &&
+        (!x.sabe || Estado.yaAveriguado(x.id)));
       if (r) this.entregable = r;
     }
 
@@ -10940,7 +10991,8 @@ const Juego = {
     const bot = document.getElementById('bAccion');
     if (!hay) { if (bot) bot.textContent = '⤴'; return; }
 
-    const accion = this.cogible ? 'coger' : this.entregable ? 'dar' : this.lugar.accion;
+    const accion = this.cogible ? 'coger' : this.entregable ? 'dar' :
+      this.hayCaso(this.lugar) ? 'caso' : this.lugar.accion;
     if (bot) bot.textContent = ICONOS[accion] || '✨';
     if (this.cogible) return;
 
@@ -11242,12 +11294,19 @@ const Juego = {
     ]);
   },
 
-  /* Charlar con un vecino: se elige qué decirle */
+  /* Charlar con un vecino: se elige qué decirle. Si lleva en la mochila algo
+     de lo que este vecino sabe, la primera pregunta es esa (🔍). */
   hablar(l, dichas) {
     const c = CHARLAS[l.charla];
     if (!c) return;
     const yaDichas = dichas || {};
-    const opciones = c.opciones.map((o, i) => ({
+    const casos = RAREZAS.filter(r => r.sabe === l.charla &&
+      Estado.tieneRareza(r.id) && !Estado.yaEntregado(r.id));
+    const opciones = casos.map(r => ({
+      texto: (Estado.yaAveriguado(r.id) ? '· ' : '🔍 ') + '¿Sabes de quién es esto? ' + r.icono,
+      accion: () => this.preguntarPorObjeto(l, c, r, yaDichas),
+    }));
+    c.opciones.forEach((o, i) => opciones.push({
       texto: (yaDichas[i] ? '· ' : '') + o.texto,
       accion: () => {
         yaDichas[i] = true;
@@ -11259,6 +11318,44 @@ const Juego = {
     }));
     opciones.push({ texto: 'Me voy, ¡adiós!', accion: () => UI.cerrar() });
     UI.dialogo(c.quien, dichas ? '¿Algo más?' : c.saludo, opciones);
+  },
+
+  /* ¿Este vecino sabe de quién es algo que lleva y aún no ha averiguado? */
+  hayCaso(l) {
+    return !!(l && l.charla) && RAREZAS.some(r => r.sabe === l.charla &&
+      Estado.tieneRareza(r.id) && !Estado.yaEntregado(r.id) && !Estado.yaAveriguado(r.id));
+  },
+
+  /* CASO DE DETECTIVE: el vecino cuenta de quién es sin decir el nombre, y
+     debajo, con lo que ha dicho a la vista, se elige a quién llevárselo.
+     Equivocarse no castiga: se baraja y se vuelve a leer. */
+  preguntarPorObjeto(l, c, r, yaDichas, fallo) {
+    if (Estado.yaAveriguado(r.id)) {
+      return UI.dialogo(c.quien, r.rumor + '<br><br>📝 <b>Ya lo tienes apuntado:</b> es para ' +
+        DUENOS[r.para] + '.', [
+        { texto: 'Seguir hablando', accion: () => this.hablar(l, yaDichas) },
+        { texto: 'Adiós', accion: () => UI.cerrar() },
+      ]);
+    }
+    const cuantas = Estado.actual.nivel === 'pequena' ? 2 : 3;
+    const otros = Object.keys(DUENOS).filter(k => k !== r.para)
+      .sort(() => Math.random() - 0.5).slice(0, cuantas - 1);
+    const botones = [r.para, ...otros].sort(() => Math.random() - 0.5).map(k => ({
+      texto: DUENOS[k],
+      accion: () => {
+        if (k !== r.para) { Sonido.clic(); return this.preguntarPorObjeto(l, c, r, yaDichas, true); }
+        Estado.averiguar(r.id);
+        Sonido.hallazgo();
+        UI.dialogo('📝 ¡Caso resuelto!', r.icono + ' <b>' + r.nombre + '</b> es para <b>' +
+          DUENOS[r.para] + '</b>.<br><br>Lo tienes apuntado en tu cuaderno. Ahora, ¡a llevárselo!', [
+          { texto: 'Seguir hablando', accion: () => this.hablar(l, yaDichas) },
+          { texto: 'Adiós', accion: () => UI.cerrar() },
+        ]);
+      },
+    }));
+    UI.dialogo(c.quien, r.rumor + '<br><br>' +
+      (fallo ? '<b>Mmm, eso no es lo que ha dicho.</b> Vuelve a leerlo.<br>' : '') +
+      '🔍 <b>¿A quién se lo llevas?</b>', botones);
   },
 
   /* ------------------------------------------- MONTAR EN LAS ATRACCIONES
@@ -11432,11 +11529,11 @@ const Juego = {
   /* Colocarla donde va: eso pone algo en marcha */
   colocarPieza(p) {
     Estado.encajar(p.id, p.encaja);
-    Estado.darConchas(3);
+    Estado.darConchas(AJUSTES.conchasPorArreglar);
     UI.refrescarHud();
     Sonido.fiesta();
     setTimeout(() => Sonido.cristal(), 500);
-    UI.dialogo('🔧 ¡Encaja!', p.alColocar + '<br><br>🐚 <b>+3 conchas</b>', [
+    UI.dialogo('🔧 ¡Encaja!', p.alColocar + '<br><br>🐚 <b>+' + AJUSTES.conchasPorArreglar + ' concha</b>', [
       { texto: '¡Genial!', accion: () => {
           UI.cerrar();
           Hada.decir('¡Mira cómo funciona! Debe de haber más cosas así por ahí. ✨', 7);
@@ -11449,14 +11546,14 @@ const Juego = {
      son pocas y a propósito. Se apunta en el Cuaderno de Vecinos. */
   entregarEncargo(r) {
     Estado.entregar(r.id);
-    Estado.darConchas(r.premio.conchas);
+    Estado.darConchas(AJUSTES.conchasPorEntregar);
     if (r.premio.prenda) Estado.dar(r.premio.prenda);
     if (r.premio.mascota) Estado.darMascota(r.premio.mascota);
     UI.refrescarHud();
     Sonido.fiesta();
     setTimeout(() => Sonido.moneda(), 500);
     UI.dialogo('🎁 ' + r.nombre,
-      r.alDar + '<br><br>🐚 <b>+' + r.premio.conchas + ' conchas</b>', [
+      r.alDar + '<br><br>🐚 <b>+' + AJUSTES.conchasPorEntregar + ' concha</b>', [
       { texto: '¡Bien!', accion: () => {
           UI.cerrar();
           Hada.decir('Todo lo que llevas en la mochila <b>es de alguien</b>. ✨', 7);
@@ -11472,8 +11569,8 @@ const Juego = {
     Sonido.hallazgo();
     UI.dialogo('¡Vaya hallazgo!',
       `<div class="rareza-grande">${r.icono}</div><b>${r.nombre}</b><br><br>${r.texto}` +
-      '<br><br>🎒 Se guarda en tu mochila. <b>Esto es de alguien de la isla:</b> ' +
-      'lee bien lo que pone y sabrás de quién.');
+      '<br><br>🎒 Se guarda en tu mochila. <b>Es de alguien de la isla:</b> ' +
+      'lee bien a quién preguntar.');
   },
 
   recogerSecreto(s) {
@@ -11727,7 +11824,8 @@ const Juego = {
     } else if (this.lugar && this.lugar.accion) {
       const alto = { cabana: 150, tienda: 142, animalario: 132, salon: 142, farol: 184,
                      fruta: 114, playa: 110, cartel: 120, cartes: 134 }[this.lugar.dibujo] || 112;
-      x = this.lugar.x; y = this.lugar.y - alto - 34; accion = this.lugar.accion;
+      x = this.lugar.x; y = this.lugar.y - alto - 34;
+      accion = this.hayCaso(this.lugar) ? 'caso' : this.lugar.accion;
       nombre = this.lugar.nombre;
     } else return;
 
