@@ -95,7 +95,7 @@
   #mandos .accion{background:var(--verde); color:#fff; font-size:26px}
   .cruceta{display:flex; flex-direction:column; align-items:center; gap:6px}
   .cruceta div{display:flex; gap:6px}
-  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos{font-size:20px; border:0; border-radius:10px;
+  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo{font-size:20px; border:0; border-radius:10px;
            padding:4px 8px; background:rgba(255,255,255,.85); cursor:pointer; margin-right:6px}
 
   /* Los avisos van abajo: arriba taparían las piedras del río */
@@ -279,7 +279,7 @@
     #hud .caja-hud{padding:3px 9px; border-radius:10px}
     #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
     #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
-    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos{font-size:17px; padding:3px 5px; margin-right:0}
+    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo{font-size:17px; padding:3px 5px; margin-right:0}
     #volverInicio{font-size:17px; text-decoration:none; padding:0 3px}
 
     /* El hada, más pequeña y por debajo de la barra de arriba */
@@ -444,6 +444,11 @@
                  box-shadow:0 2px 0 rgba(0,0,0,.15)}
   .opcion .muestra{display:block; width:100%; height:22px; border-radius:8px; margin-bottom:4px}
   .opcion .precio{display:block; color:var(--coral); font-weight:bold}
+  /* El taller: debajo de cada vehículo, en una línea, cómo se conduce */
+  .opcion .comova{display:block; color:#7A736A; font-size:12px; line-height:1.25; margin:2px 0 4px}
+  .opcion .prevista.rueda{width:104px; height:80px}
+  .pronto{display:inline-block; background:#EFE9DC; color:#9A938A; border-radius:10px;
+          padding:2px 8px; margin:0 3px; font-size:14px}
 </style>
 </head>
 <body>
@@ -494,6 +499,7 @@
     <button id="bMochila" title="Mochila">🎒</button>
     <button id="bCuadernos" title="Mis cuadernos (tecla L)">📔</button>
     <button id="bMapa" title="Mapa (tecla M)">🗺️</button>
+    <button id="bVehiculo" class="oculto" title="Montarte (tecla B)">🚲</button>
     <button id="bPantalla" title="Pantalla completa (tecla P)">⛶</button>
     <button id="bSonido" title="Sonido">🔊</button>
     <button class="enlace" id="volverInicio"><span class="en-ancho">cambiar de jugadora</span><span class="en-estrecho">👤</span></button></span>
@@ -905,6 +911,73 @@ function regaloDeBienvenida() {
 
 </script>
 <script>
+/* === contenido/vehiculos.js === */
+/* LOS VEHÍCULOS · el taller de Tià (18-09-2026)
+   ─────────────────────────────────────────────
+   Lo pidió Gala: quería poder subirse a algo y moverse por la isla. Son el
+   premio caro del juego: no dan ninguna ventaja en los retos, solo hacen la
+   isla más corta y más divertida de cruzar. Por eso cuestan lo que cuestan.
+
+   Este primer paquete trae dos: el patinete y la bici. La moto, el coche y el
+   caballo quedan para más adelante (Tià ya los anuncia en su charla).
+
+   CÓMO SE LEEN LOS NÚMEROS (se pueden cambiar sin saber programar):
+     precio   → conchas que cuesta en el taller
+     tope     → a qué velocidad va lanzado (andando son 3.4)
+     arranque → cuánto tarda en coger velocidad: más alto, más de golpe
+     freno    → cuánto tarda en pararse al soltar: más alto, más en seco
+     alto     → a qué altura va montada la jugadora, para dibujarla encima */
+
+const VEHICULOS = [
+  {
+    id: 'patinete',
+    nombre: 'Patinete',
+    icono: '🛴',
+    precio: 150,
+    tope: 5.2,
+    arranque: 0.22,
+    freno: 0.20,
+    alto: 10,
+    sombra: 20,
+    color: '#5AA9DC',
+    detalle: '#FFE066',
+    comoVa: 'Arranca enseguida y se para en seco. Va de pie.',
+    alComprar: 'Dale al pie y no te caigas, que las cuestas de la isla engañan.',
+  },
+  {
+    id: 'bici',
+    nombre: 'Bicicleta',
+    icono: '🚲',
+    precio: 260,
+    tope: 6.8,
+    arranque: 0.10,
+    freno: 0.14,
+    alto: 20,
+    sombra: 24,
+    color: '#E8506B',
+    detalle: '#FFF3C4',
+    comoVa: 'Cuesta arrancarla, pero luego vuela. Y tarda en parar.',
+    alComprar: 'Es la más rápida que tengo. Mira bien por dónde vas.',
+  },
+];
+
+/* Lo que aún no está a la venta. Sale en el taller en gris, con su «pronto»:
+   que se vea que la isla sigue creciendo. */
+const VEHICULOS_PRONTO = [
+  { icono: '🛵', nombre: 'Moto' },
+  { icono: '🚗', nombre: 'Coche' },
+  { icono: '🐴', nombre: 'Caballo' },
+];
+
+const TEXTOS_TALLER = {
+  quien: 'Tià, el del taller',
+  saludo: 'Aquí todo tiene ruedas. Mira lo que hay y tú misma.',
+  sinConchas: 'Vuelve cuando las tengas. Esto no se va a ninguna parte.',
+  yaEsTuyo: 'Eso ya es tuyo. Te espera fuera, ahí aparcado.',
+};
+
+</script>
+<script>
 /* === contenido/mundo.js === */
 /* EL MAPA DE LA ISLA
 
@@ -975,6 +1048,10 @@ const MUNDO = {
     // ------------------------------------------ la tienda de mascotas
     { id: 'bitxos', x: 1560, y: 2960, accion: 'mascotas', dibujo: 'casaBitxos',
       nombre: 'La Casa dels Bitxos', mapa: 'Casa dels Bitxos', personaje: 'Ona' },
+
+    // ------------------------------------ el taller de vehículos (18-09-2026)
+    { id: 'taller', x: 1320, y: 2150, accion: 'vehiculos', dibujo: 'taller',
+      nombre: 'El taller de Tià', mapa: 'Taller de Tià', personaje: 'Tià' },
 
     // ----------------------------------------------------- la feria
     { id: 'tiovivo', x: 4360, y: 3260, accion: 'montar', dibujo: 'tiovivo',
@@ -4134,6 +4211,26 @@ const CHARLAS = {
                    'árboles no dejan pasar el sol.<br><br>Yo duermo allí la siesta.' },
     ],
   },
+
+  tia: {
+    quien: 'Tià, el del taller',
+    saludo: 'Pasa, pasa. Cuidado con las ruedas, que están por el suelo.',
+    opciones: [
+      { texto: '¿Por qué cuestan tanto?',
+        respuesta: 'Porque los monto yo, pieza a pieza, y una rueda buena no se encuentra ' +
+                   'cada día.<br><br>El que quiera ir rápido, que se lo gane.' },
+      { texto: '¿Se puede ir a todas partes?',
+        respuesta: 'A casi todas. Por el agua no, y por las piedras del río tampoco: ' +
+                   'ahí te bajas.<br><br>Cuando el juego te suba a otra cosa, yo te lo aparco.' },
+      { texto: '¿Cuál me llevo?',
+        respuesta: 'El patinete arranca enseguida y para en seco: para el poblado, perfecto.' +
+                   '<br><br>La bici cuesta más de arrancar, pero corre mucho más. Para cruzar ' +
+                   'la isla entera no hay nada mejor.' },
+      { texto: '¿Vas a tener más cosas?',
+        respuesta: 'Estoy con una moto, un coche y hasta con un caballo, que ese come.' +
+                   '<br><br>Aún no andan. Vete pasando y un día los verás ahí fuera.' },
+    ],
+  },
 };
 
 /* A QUIÉN SE LE PUEDE LLEVAR UN OBJETO: lo que sale en los botones de
@@ -4521,6 +4618,16 @@ const Sonido = {
     else                         this.ruido(0.07, 2600, 0.035);   // hierba
   },
 
+  /* Yendo en algo con ruedas no suenan los pasos: suena el rodar, más largo
+     y mucho más flojo, y a un ritmo que depende de lo que corre. */
+  rueda(suelo) {
+    if (suelo === 'agua')        this.ruido(0.16, 1400, 0.055);
+    else if (suelo === 'arena')  this.ruido(0.17, 700, 0.045);
+    else if (suelo === 'camino') this.ruido(0.15, 1900, 0.032);
+    else                         this.ruido(0.16, 2500, 0.026);   // hierba
+  },
+  timbre()  { this.nota(1318, 0.08, 'sine', 0.13); this.nota(1760, 0.16, 'sine', 0.11, 0.08); },
+
   agua()    { this.ruido(0.7, 2200, 0.10); this.ruido(0.5, 900, 0.06); },
   cepillo() { for (let i = 0; i < 5; i++) setTimeout(() => this.ruido(0.07, 3000, 0.05), i * 110); },
   nam()     { this.nota(320, 0.12, 'triangle', 0.16); this.nota(260, 0.14, 'triangle', 0.14, 0.13); },
@@ -4628,6 +4735,8 @@ const Estado = {
       descubiertos: {},         // sitios de la isla que ya ha visitado
       secretos: {},             // cosas escondidas que ya ha encontrado
       mascotas: [],             // animales del animalario (se empieza sin ninguno)
+      vehiculos: [],            // patinete, bici… los del taller de Tià
+      montura: null,            // en qué va montada ahora (null = a pie)
       rarezas: [],              // objetos raros de la mochila
       tope: { dia: '', dadas: 0 },        // conchas de hoy por lo repetible sin fin
       entregado: {},            // encargos ya entregados a su dueño
@@ -4798,6 +4907,22 @@ const Estado = {
     if (!this.actual.mascotas.includes(id)) this.actual.mascotas.push(id);
     setTimeout(() => Pistas.dar('mascota'), 1500);
     if (!this.actual.look.mascota) this.actual.look.mascota = id;   // la primera se pone sola
+    this.guardar();
+  },
+
+  // --- Vehículos ----------------------------------------------------------
+  tieneVehiculo(id) { return (this.actual.vehiculos || []).includes(id); },
+
+  darVehiculo(id) {
+    if (!this.actual.vehiculos) this.actual.vehiculos = [];
+    if (!this.actual.vehiculos.includes(id)) this.actual.vehiculos.push(id);
+    this.guardar();
+  },
+
+  /* En qué va montada: se guarda para que al volver a abrir el juego siga
+     subida donde estaba y no tenga que montarse otra vez. */
+  ponerMontura(id) {
+    this.actual.montura = id;
     this.guardar();
   },
 
@@ -6694,6 +6819,7 @@ const UI = {
     document.getElementById('nombreJugadora').textContent = p.nombre;
     document.getElementById('mandos').classList.toggle('oculto',
       p.control !== 'raton' && !UI.esTactil());
+    if (typeof Vehiculos !== 'undefined') Vehiculos.refrescarBoton();
   },
 
   esTactil() {
@@ -9258,6 +9384,304 @@ const Correo = {
 
 </script>
 <script>
+/* === motor/vehiculos.js === */
+/* EL TALLER DE TIÀ Y LO QUE SE COMPRA EN ÉL (18-09-2026)
+   ──────────────────────────────────────────────────────
+   Tres cosas viven aquí:
+     Taller     → la tienda del poblado donde se compran
+     Vehiculos  → montar, bajarse y rodar (cómo se mueve la jugadora)
+     el dibujo  → cada vehículo pintado con la jugadora encima
+
+   Cómo se conduce, que es lo que cambia respecto a andar: andando se va a
+   velocidad fija y se para en seco; montada hay INERCIA (cuesta arrancar y
+   cuesta parar) y no suenan los pasos, sino las ruedas. Los números de cada
+   vehículo están en contenido/vehiculos.js. */
+
+const Vehiculos = {
+
+  datos(id) { return VEHICULOS.find(v => v.id === id) || null; },
+
+  /* Los que ya ha comprado esta jugadora */
+  mios() { return VEHICULOS.filter(v => Estado.tieneVehiculo(v.id)); },
+
+  puesto() { return Juego.montura ? this.datos(Juego.montura) : null; },
+
+  // ------------------------------------------------ montarse y bajarse
+  /* El botón 🚲 de la barra de arriba y la tecla B: si va a pie se sube, y si
+     va montada se baja. Con más de uno, pregunta en cuál. */
+  alternar() {
+    if (UI.estaAbierto() || Juego.vehiculo || Juego.modoPiedras) return;
+    const mios = this.mios();
+    if (!mios.length) return;
+    if (this.puesto()) return this.bajar();
+    if (mios.length === 1) return this.montar(mios[0].id);
+
+    UI.dialogo('¿En qué vas?', 'Elige y a rodar.',
+      mios.map(v => ({ texto: v.icono + ' ' + v.nombre,
+                       accion: () => { UI.cerrar(); this.montar(v.id); } }))
+        .concat([{ texto: '👟 A pie', accion: () => UI.cerrar() }]));
+  },
+
+  montar(id) {
+    const v = this.datos(id);
+    if (!v || !Estado.tieneVehiculo(id)) return;
+    Juego.montura = id;
+    Juego.vel = { x: 0, y: 0 };
+    Juego.jugador.paso = 0;
+    Estado.ponerMontura(id);
+    Sonido.timbre();
+    this.refrescarBoton();
+  },
+
+  bajar() {
+    if (!Juego.montura) return;
+    Juego.montura = null;
+    Juego.vel = { x: 0, y: 0 };
+    Estado.ponerMontura(null);
+    Sonido.clic();
+    this.refrescarBoton();
+  },
+
+  /* Aparcar: bajarse sin ruido ni aviso. Se usa cuando el juego la mete en
+     otra cosa (una atracción de la feria, el camino de piedras, el barco):
+     no se puede ir en bici subida al tiovivo. */
+  aparcar() {
+    if (!Juego.montura) return;
+    Juego.montura = null;
+    Juego.vel = { x: 0, y: 0 };
+    Estado.ponerMontura(null);
+    this.refrescarBoton();
+  },
+
+  /* El botón solo existe cuando ya tiene algo que montar: hasta entonces la
+     barra de arriba no se llena de botones que no hacen nada. */
+  refrescarBoton() {
+    const b = document.getElementById('bVehiculo');
+    if (!b || !Estado.actual) return;
+    const mios = this.mios();
+    b.classList.toggle('oculto', !mios.length);
+    if (!mios.length) return;
+    const puesto = this.puesto();
+    b.textContent = puesto ? '👟' : (mios[0] ? mios[0].icono : '🚲');
+    b.title = puesto ? 'Bajarte (tecla B)' : 'Montarte (tecla B)';
+  },
+
+  // --------------------------------------------------------- conducir
+  /* RODAR. Sustituye al andar mientras va montada.
+     dx, dy: hacia dónde quiere ir (flechas o ratón), ya normalizado por largo. */
+  rodar(J, dx, dy, largo) {
+    const j = J.jugador, v = this.datos(J.montura);
+    if (!v) return;
+    if (!J.vel) J.vel = { x: 0, y: 0 };
+
+    // se persigue la velocidad que quiere: arranque al pedalear, freno al soltar
+    const objX = largo ? (dx / largo) * v.tope : 0;
+    const objY = largo ? (dy / largo) * v.tope : 0;
+    const k = largo ? v.arranque : v.freno;
+    J.vel.x += (objX - J.vel.x) * k;
+    J.vel.y += (objY - J.vel.y) * k;
+    if (Math.hypot(J.vel.x, J.vel.y) < 0.08) { J.vel.x = 0; J.vel.y = 0; }
+
+    /* Se avanza a trocitos pequeños: lanzada, de un solo salto se colaría
+       dentro de una roca antes de que nadie mire si se puede pasar. */
+    const vel = Math.hypot(J.vel.x, J.vel.y);
+    const antesX = j.x, antesY = j.y;
+    const trozos = Math.max(1, Math.ceil(vel / 3));
+    for (let i = 0; i < trozos; i++) {
+      const nx = j.x + J.vel.x / trozos, ny = j.y + J.vel.y / trozos;
+      if (J.transitable(nx, j.y)) j.x = nx; else J.vel.x *= -0.2;
+      if (J.transitable(j.x, ny)) j.y = ny; else J.vel.y *= -0.2;
+    }
+    if (largo && Math.hypot(j.x - antesX, j.y - antesY) < 0.4) J.chocar(j.x + dx, j.y + dy);
+    else if (largo) J.golpes = 0;
+
+    j.andando = vel > 0.3;
+    j.paso = 0;                              // los pies van montados, no andan
+    if (Math.abs(J.vel.x) > 0.25) j.mirando = J.vel.x < 0 ? -1 : 1;
+    j.suelo = J.sueloEn(j.x, j.y);
+    this.giro = (this.giro || 0) + vel * 0.07;     // las ruedas dan vueltas
+
+    // las ruedas suenan según lo que corre, no según los pasos
+    this.rodado = (this.rodado || 0) + vel;
+    if (this.rodado > 30) { this.rodado = 0; if (j.z === 0) Sonido.rueda(j.suelo); }
+  },
+
+  // ----------------------------------------------------------- dibujo
+  /* Se pinta en dos capas: lo que queda por detrás de la jugadora (ruedas,
+     cuadro, sillín) y lo que le queda por delante (el manillar que agarra).
+     Así parece que va montada de verdad y no encima de una pegatina. */
+  pintar(ctx, x, y, id, mirando, capa) {
+    const v = this.datos(id);
+    if (!v) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(mirando < 0 ? -1 : 1, 1);
+    if (id === 'patinete') this.pintarPatinete(ctx, v, capa);
+    if (id === 'bici')     this.pintarBici(ctx, v, capa);
+    ctx.restore();
+  },
+
+  rueda(ctx, cx, cy, r, color) {
+    ctx.fillStyle = '#2F2A28';
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+    ctx.fillStyle = '#C9C2B4';
+    ctx.beginPath(); ctx.arc(cx, cy, r * 0.62, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8A8378'; ctx.lineWidth = 1.2;      // los radios, girando
+    for (let k = 0; k < 4; k++) {
+      const a = (this.giro || 0) + k * 0.785;
+      ctx.beginPath();
+      ctx.moveTo(cx - Math.cos(a) * r * 0.6, cy - Math.sin(a) * r * 0.6);
+      ctx.lineTo(cx + Math.cos(a) * r * 0.6, cy + Math.sin(a) * r * 0.6);
+      ctx.stroke();
+    }
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(cx, cy, 2.6, 0, 7); ctx.fill();
+  },
+
+  pintarPatinete(ctx, v, capa) {
+    if (capa === 'detras') {
+      this.rueda(ctx, -24, -5, 5, v.detalle);
+      this.rueda(ctx, 26, -5, 5, v.detalle);
+      ctx.fillStyle = v.color;                              // la tabla
+      ctx.beginPath(); ctx.roundRect(-30, -11, 58, 6, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath(); ctx.roundRect(-27, -10, 32, 2, 1); ctx.fill();
+      return;
+    }
+    // el palo y el manillar van por delante: se ve que los agarra
+    ctx.strokeStyle = v.color; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(26, -9); ctx.lineTo(24, -34); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(16, -33); ctx.lineTo(32, -34); ctx.stroke();
+    ctx.fillStyle = v.detalle;                              // los puños
+    ctx.beginPath(); ctx.arc(33, -34, 3.2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(15, -33, 3.2, 0, 7); ctx.fill();
+  },
+
+  pintarBici(ctx, v, capa) {
+    /* El cuadro va bajo, por debajo de la cintura, y el manillar arriba, justo
+       donde caen sus manos: así parece montada y no clavada en la bici. */
+    const g = (this.giro || 0);
+    if (capa === 'detras') {
+      this.rueda(ctx, -25, -13, 13, v.detalle);
+      this.rueda(ctx, 25, -13, 13, v.detalle);
+      ctx.strokeStyle = v.color; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      [[-25, -13, -12, -34], [-25, -13, 0, -16], [0, -16, -12, -34],
+       [0, -16, 16, -31], [-12, -34, 16, -31], [16, -31, 25, -13],
+       [16, -31, 21, -43]].forEach(t => {
+        ctx.beginPath(); ctx.moveTo(t[0], t[1]); ctx.lineTo(t[2], t[3]); ctx.stroke();
+      });
+      ctx.fillStyle = '#3C3A38';                            // el sillín
+      ctx.beginPath(); ctx.ellipse(-13, -36, 9, 3.4, -0.1, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#6B6259'; ctx.lineWidth = 3;       // el pedal de detrás
+      ctx.beginPath(); ctx.moveTo(0, -16);
+      ctx.lineTo(Math.cos(g + 3.14) * 9, -16 + Math.sin(g + 3.14) * 9); ctx.stroke();
+      return;
+    }
+    ctx.strokeStyle = '#6B6259'; ctx.lineWidth = 3;         // el pedal de delante
+    ctx.beginPath(); ctx.moveTo(0, -16);
+    ctx.lineTo(Math.cos(g) * 9, -16 + Math.sin(g) * 9); ctx.stroke();
+    ctx.strokeStyle = v.color; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(13, -42); ctx.lineTo(25, -43); ctx.stroke();
+    ctx.fillStyle = v.detalle;                              // el puño y el timbre
+    ctx.beginPath(); ctx.arc(26, -43, 3.4, 0, 7); ctx.fill();
+    ctx.fillStyle = '#C9C2B4';
+    ctx.beginPath(); ctx.arc(16, -46, 2.6, 0, 7); ctx.fill();
+  },
+
+  /* La miniatura de la tienda: el vehículo solo, sin nadie encima */
+  miniatura(lienzo, id) {
+    const ctx = lienzo.getContext('2d');
+    ctx.clearRect(0, 0, lienzo.width, lienzo.height);
+    const guardado = this.giro;
+    this.giro = 0.6;
+    ctx.save();
+    ctx.translate(lienzo.width / 2, lienzo.height - 14);
+    ctx.scale(1.15, 1.15);
+    this.pintar(ctx, 0, 0, id, 1, 'detras');
+    this.pintar(ctx, 0, 0, id, 1, 'delante');
+    ctx.restore();
+    this.giro = guardado;
+  },
+};
+
+/* ================================================ EL TALLER DE TIÀ ===== */
+const Taller = {
+
+  abrir() { Musica.poner('casa'); this.pintar(); },
+
+  pintar() {
+    const p = Estado.actual;
+
+    const fichas = VEHICULOS.map(v => {
+      const mio = Estado.tieneVehiculo(v.id);
+      const puede = Estado.puedePagar(v.precio);
+      return `<button class="opcion ${mio ? 'puesta' : ''} ${!mio && !puede ? 'bloqueada' : ''}"
+                      data-v="${v.id}">${mio ? '<span class="chapa">✓</span>' : ''}` +
+             `<canvas class="prevista rueda" data-p="${v.id}" width="104" height="80"></canvas>` +
+             `<span>${v.nombre}</span>` +
+             `<small class="comova">${v.comoVa}</small>` +
+             (mio ? '<span class="tuyo">ya es tuyo</span>'
+                  : `<span class="precio">🐚 ${v.precio}</span>`) + '</button>';
+    }).join('');
+
+    const pronto = VEHICULOS_PRONTO.map(v =>
+      `<span class="pronto">${v.icono} ${v.nombre}</span>`).join('');
+
+    UI.abrir(`
+      <div class="quien">${TEXTOS_TALLER.quien}</div>
+      <div class="contador">Tienes 🐚 <b>${p.conchas}</b> conchas</div>
+      <div class="opciones">${fichas}</div>
+      <p class="pista" id="pistaTaller">${TEXTOS_TALLER.saludo}</p>
+      <p class="pista">Tià está montando estos, pero aún no funcionan: ${pronto}</p>
+      <div class="botones"><button class="btn gris" id="charlarTia">Hablar con Tià</button></div>
+    `);
+
+    UI.modal.querySelectorAll('.prevista.rueda').forEach(c =>
+      Vehiculos.miniatura(c, c.dataset.p));
+    UI.modal.querySelectorAll('.opcion').forEach(b =>
+      b.onclick = () => this.comprar(b.dataset.v));
+    document.getElementById('charlarTia').onclick =
+      () => { Sonido.clic(); Juego.hablar({ charla: 'tia' }); };
+  },
+
+  comprar(id) {
+    const v = Vehiculos.datos(id);
+    const p = Estado.actual;
+    const pista = document.getElementById('pistaTaller');
+
+    if (Estado.tieneVehiculo(id)) { pista.textContent = TEXTOS_TALLER.yaEsTuyo; return; }
+
+    if (!Estado.puedePagar(v.precio)) {
+      Sonido.fallo();
+      /* La resta se ve escrita: cuánto vale, cuánto tiene y cuánto le falta.
+         Es la única cuenta del taller, y se lee cada vez que vuelve. */
+      pista.innerHTML = `${v.nombre}: <b>🐚 ${v.precio}</b> · tienes <b>🐚 ${p.conchas}</b> · ` +
+                        `te faltan <b>🐚 ${v.precio - p.conchas}</b>.<br>${TEXTOS_TALLER.sinConchas}`;
+      return;
+    }
+
+    UI.dialogo(TEXTOS_TALLER.quien,
+      `¿Te llevas <b>${v.nombre}</b> por <b>🐚 ${v.precio}</b> conchas?`, [
+      { texto: 'Sí, me lo llevo', accion: () => {
+          p.conchas -= v.precio;
+          Estado.darVehiculo(v.id);
+          Sonido.fiesta();
+          UI.refrescarHud();
+          Vehiculos.refrescarBoton();
+          UI.dialogo(TEXTOS_TALLER.quien,
+            `${v.icono} <b>${v.nombre}</b>, tuyo.<br><br>${v.alComprar}<br><br>` +
+            'Para subirte y bajarte, el botón <b>' + v.icono + '</b> de arriba (o la tecla <b>B</b>).', [
+            { texto: '¡A rodar!', accion: () => { UI.cerrar(); Vehiculos.montar(v.id); } },
+            { texto: 'Seguir mirando', accion: () => this.pintar() },
+          ]);
+        } },
+      { texto: 'Mejor no', accion: () => this.pintar() },
+    ]);
+  },
+};
+
+</script>
+<script>
 /* === motor/paquetes.js === */
 /* LOS PAQUETES DE TEO: leer una instrucción y cumplirla al pie de la letra
    (revisión pedagógica del 14-09-2026)
@@ -9862,7 +10286,7 @@ const Mapa = {
      Los del poblado están tan juntos que salen como uno solo. La leyenda de
      debajo explica los que ya ha encontrado. Para que salga otro, añádelo aquí. */
   ICONOS: {
-    poblado:   ['🏘️', 'el poblado: tu casa, la tienda, el buzón y los animales'],
+    poblado:   ['🏘️', 'el poblado: tu casa, las tiendas, el buzón y los animales'],
     salon:     ['🎲', 'el salón de Coco'],
     taquilla:  ['🎡', 'la feria'],
     farol:     ['💡', 'el Farol'],
@@ -9876,7 +10300,7 @@ const Mapa = {
     ponis:     ['🐴', 'los ponis'],
     ovejas:    ['🐑', 'las ovejas'],
   },
-  POBLADO: ['cabana', 'tienda', 'correos', 'bitxos', 'animalario'],
+  POBLADO: ['cabana', 'tienda', 'correos', 'bitxos', 'animalario', 'taller'],
 
   /* Los puntos que se pintan: [id, icono, texto, x, y, descubierto, lugar] */
   puntos() {
@@ -10627,6 +11051,7 @@ const ICONOS = {
   armario: '👗', tienda: '🛒', animalario: '🐾', juego: '🎲',
   reto: '🔢', letras: '🔤', ver: '👁️', meta: '💎', coger: '✋',
   hablar: '💬', caso: '🔍', montar: '🎠', cuidar: '🧽', paso: '🚧', dar: '🎁', mascotas: '🐾', carta: '✉️',
+  vehiculos: '🛠️',
 };
 
 /* UN SOLO BOTÓN PARA TODO: la barra espaciadora (y el botón verde).
@@ -10638,6 +11063,7 @@ const TECLAS = {
   ver: 'V', hablar: 'H', coger: 'C',
   armario: 'J', tienda: 'J', animalario: 'J', juego: 'J',
   reto: 'J', letras: 'J', meta: 'J', montar: 'J', cuidar: 'J', paso: 'J', mascotas: 'J', carta: 'J',
+  vehiculos: 'J',
 };
 
 const Juego = {
@@ -10666,6 +11092,9 @@ const Juego = {
     this.mascota = { x: MUNDO.inicio.x - 40, y: MUNDO.inicio.y + 10, mirando: 1 };
     this.destino = null;
     this.modoPiedras = null;
+    // si cerró el juego montada, vuelve montada
+    this.montura = Estado.tieneVehiculo(Estado.actual.montura) ? Estado.actual.montura : null;
+    this.vel = { x: 0, y: 0 };
     this.puenteHecho = Estado.tieneCristal('piedras');
     this.camX = this.jugador.x - this.ANCHO / 2;
     this.camY = this.jugador.y - this.ALTO / 2;
@@ -10756,6 +11185,7 @@ const Juego = {
         if (k === 'L') Cuadernos.abrir();
         if (k === 'P') this.pantallaCompleta();
         if (k === 'T') Tutorial.abrir();
+        if (k === 'B') Vehiculos.alternar();
       }
     });
     addEventListener('keyup', e => { this.teclas[e.key] = false; });
@@ -10790,6 +11220,7 @@ const Juego = {
     document.getElementById('bAyuda').onclick = () => Tutorial.abrir();
     document.getElementById('bMochila').onclick = () => Mochila.abrir();
     document.getElementById('bCuadernos').onclick = () => Cuadernos.abrir();
+    document.getElementById('bVehiculo').onclick = () => Vehiculos.alternar();
     document.getElementById('bPantalla').onclick = () => this.pantallaCompleta();
     document.getElementById('bSonido').onclick = () => {
       Sonido.arrancar();
@@ -10890,21 +11321,26 @@ const Juego = {
     }
 
     const largo = Math.hypot(dx, dy);
-    j.andando = largo > 0;
-    if (j.andando) {
-      const v = AJUSTES.velocidad;
-      const nx = j.x + (dx / largo) * v, ny = j.y + (dy / largo) * v;
-      const antesX = j.x, antesY = j.y;
-      if (this.transitable(nx, j.y)) j.x = nx;
-      if (this.transitable(j.x, ny)) j.y = ny;
-      // si quiere andar y no avanza nada, es que hay algo delante
-      if (Math.hypot(j.x - antesX, j.y - antesY) < 0.4) this.chocar(nx, ny);
-      else this.golpes = 0;
-      if (dx !== 0) j.mirando = dx < 0 ? -1 : 1;
-      j.paso += 0.22;
-      j.suelo = this.sueloEn(j.x, j.y);
-      if (j.z === 0 && Math.floor(j.paso * 4) % 6 === 0) Sonido.paso(j.suelo);
-    } else j.paso = 0;
+    /* Montada en algo se rueda (con inercia y sin pasos); a pie, se anda de
+       toda la vida. Lo de rodar está en motor/vehiculos.js. */
+    if (this.montura) Vehiculos.rodar(this, dx, dy, largo);
+    else {
+      j.andando = largo > 0;
+      if (j.andando) {
+        const v = AJUSTES.velocidad;
+        const nx = j.x + (dx / largo) * v, ny = j.y + (dy / largo) * v;
+        const antesX = j.x, antesY = j.y;
+        if (this.transitable(nx, j.y)) j.x = nx;
+        if (this.transitable(j.x, ny)) j.y = ny;
+        // si quiere andar y no avanza nada, es que hay algo delante
+        if (Math.hypot(j.x - antesX, j.y - antesY) < 0.4) this.chocar(nx, ny);
+        else this.golpes = 0;
+        if (dx !== 0) j.mirando = dx < 0 ? -1 : 1;
+        j.paso += 0.22;
+        j.suelo = this.sueloEn(j.x, j.y);
+        if (j.z === 0 && Math.floor(j.paso * 4) % 6 === 0) Sonido.paso(j.suelo);
+      } else j.paso = 0;
+    }
 
     if (j.z > 0 || j.vz !== 0) {
       j.vz += AJUSTES.gravedad;
@@ -10912,11 +11348,14 @@ const Juego = {
       if (j.z <= 0) { if (j.vz > 4) Sonido.aterriza(); j.z = 0; j.vz = 0; }
     }
 
+    /* La mascota sigue a su dueña. Si va montada corre más, que si no se
+       queda atrás para siempre en cuanto coge velocidad. */
     const m = this.mascota;
-    if (Math.hypot(j.x - m.x, j.y - m.y) > 46) {
+    const trote = this.montura ? 0.13 : 0.06;
+    if (Math.hypot(j.x - m.x, j.y - m.y) > (this.montura ? 70 : 46)) {
       m.mirando = j.x < m.x ? -1 : 1;
-      m.x += (j.x - m.x) * 0.06;
-      m.y += (j.y - m.y) * 0.06;
+      m.x += (j.x - m.x) * trote;
+      m.y += (j.y - m.y) * trote;
     }
 
     this.camX += ((j.x - this.ANCHO / 2) - this.camX) * 0.1;
@@ -11214,6 +11653,7 @@ const Juego = {
     if (l.accion === 'tienda')     return Tienda.abrir();
     if (l.accion === 'animalario') return Animalario.abrir();
     if (l.accion === 'mascotas')   return Bitxos.abrir();
+    if (l.accion === 'vehiculos')  return Taller.abrir();
     if (l.accion === 'carta')      return Correo.escribir();
     if (l.accion === 'ver')        return this.mirar(l);
     if (l.accion === 'juego') {
@@ -11382,6 +11822,7 @@ const Juego = {
   },
 
   montar(id) {
+    Vehiculos.aparcar();          // en bici no se sube una al tiovivo
     const p = MUNDO.paseos[id];
     const l = MUNDO.lugares.find(x => x.id === id);
     const a = Object.assign({}, p, { x: l.x, y: l.y, id: id });
@@ -11610,6 +12051,7 @@ const Juego = {
       cols.push({ numeros: arriba ? [bueno, malo] : [malo, bueno],
                   buena: arriba ? 0 : 1, encendida: -1, hundida: -1 });
     }
+    Vehiculos.aparcar();          // las piedras se cruzan a pie
     this.modoPiedras = { reto: reto, cols: cols, col: -1, fila: 1 };
     this.jugador.x = MUNDO.rio.x1 - 34;
     this.jugador.y = (MUNDO.piedras.filaAlta + MUNDO.piedras.filaBaja) / 2;
@@ -11774,12 +12216,15 @@ const Juego = {
     } });
     /* Yendo en algo, se pinta al final de todo: si no, el agua del lago o la
        pista de los coches la taparían por completo. */
+    const suyo = this.montura ? Vehiculos.datos(this.montura) : null;
     const pintarJugadora = () => {
-      this.sombra(ctx, j.x, j.y, this.vehiculo ? 26 : 15, j.z);
+      this.sombra(ctx, j.x, j.y, this.vehiculo ? 26 : (suyo ? suyo.sombra : 15), j.z);
       if (this.vehiculo) this.dibujarVehiculo(ctx, j.x, j.y, this.vehiculo.tipo, j.mirando);
+      if (suyo) Vehiculos.pintar(ctx, j.x, j.y - j.z, suyo.id, j.mirando, 'detras');
       const alto = this.vehiculo ? (this.vehiculo.tipo === 'caballo' ? 30 :
-                   this.vehiculo.tipo === 'tiovivo' ? 0 : 12) : 0;
+                   this.vehiculo.tipo === 'tiovivo' ? 0 : 12) : (suyo ? suyo.alto : 0);
       Avatar.dibujar(ctx, j.x, j.y - j.z - alto, 1.15, Estado.actual.look, j.mirando, j.paso);
+      if (suyo) Vehiculos.pintar(ctx, j.x, j.y - j.z, suyo.id, j.mirando, 'delante');
     };
     if (!this.vehiculo) cosas.push({ y: j.y, f: pintarJugadora });
 
@@ -11823,7 +12268,7 @@ const Juego = {
       nombre = 'Poner ' + this.encajable.nombre.replace('Un ', '').replace('Una ', '');
     } else if (this.lugar && this.lugar.accion) {
       const alto = { cabana: 150, tienda: 142, animalario: 132, salon: 142, farol: 184,
-                     fruta: 114, playa: 110, cartel: 120, cartes: 134 }[this.lugar.dibujo] || 112;
+                     fruta: 114, playa: 110, cartel: 120, cartes: 134, taller: 130 }[this.lugar.dibujo] || 112;
       x = this.lugar.x; y = this.lugar.y - alto - 34;
       accion = this.hayCaso(this.lugar) ? 'caso' : this.lugar.accion;
       nombre = this.lugar.nombre;
@@ -12275,7 +12720,7 @@ const Juego = {
       armario: '240,140,160', tienda: '230,120,90', animalario: '150,190,120',
       juego: '90,180,220', meta: '255,210,90', ver: '150,170,190',
       reto: '255,190,50', letras: '150,130,220', montar: '240,120,90', cuidar: '120,200,180',
-      carta: '245,195,40',
+      carta: '245,195,40', vehiculos: '120,160,210',
     };
     let color = colores[l.accion] || '150,170,190';
     let icono = ICONOS[l.accion] || '';
@@ -13126,6 +13571,44 @@ const Juego = {
     ctx.fillText(['🦎', '🐧', '🦚'][Math.floor(this.t / 2 + 1) % 3], x + 32, y - 30);
   },
 
+  /* EL TALLER DE TIÀ: un cobertizo abierto con una rueda de repuesto fuera,
+     un banco de trabajo y, colgados, los que todavía no vende. */
+  pintar_taller(ctx, x, y) {
+    this.sombra(ctx, x, y + 4, 62, 0);
+    ctx.fillStyle = '#B5AC98';                            // el suelo de cemento
+    ctx.beginPath(); ctx.ellipse(x, y, 66, 20, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#D8CFC0';                            // la nave
+    ctx.fillRect(x - 52, y - 68, 104, 68);
+    ctx.fillStyle = '#C2B8A6';
+    ctx.fillRect(x - 52, y - 68, 104, 7);
+    ctx.fillStyle = '#5E8FBF';                            // el tejado de chapa
+    ctx.beginPath(); ctx.moveTo(x - 64, y - 66); ctx.lineTo(x - 44, y - 92);
+    ctx.lineTo(x + 64, y - 92); ctx.lineTo(x + 64, y - 66); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+    for (let k = 0; k < 5; k++) {
+      ctx.beginPath(); ctx.moveTo(x - 40 + k * 24, y - 90); ctx.lineTo(x - 40 + k * 24, y - 67); ctx.stroke();
+    }
+    ctx.fillStyle = '#2F2A28';                            // el portón abierto
+    ctx.fillRect(x - 34, y - 56, 68, 56);
+    ctx.fillStyle = '#4A443E';
+    ctx.fillRect(x - 30, y - 50, 60, 50);
+    ctx.fillStyle = '#8D5A3B';                            // el banco de trabajo
+    ctx.fillRect(x - 28, y - 24, 56, 6);
+    ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('🔧', x - 16, y - 27); ctx.fillText('🔩', x + 2, y - 27);
+    ctx.fillText('🛞', x + 20, y - 27);
+    // la rueda de repuesto, apoyada fuera
+    ctx.fillStyle = '#2F2A28';
+    ctx.beginPath(); ctx.arc(x + 46, y - 13, 13, 0, 7); ctx.fill();
+    ctx.fillStyle = '#C9C2B4';
+    ctx.beginPath(); ctx.arc(x + 46, y - 13, 7, 0, 7); ctx.fill();
+    // los que todavía no vende, colgados de la pared
+    ctx.font = '14px system-ui';
+    ctx.fillText('🛵', x - 44, y - 40); ctx.fillText('🚗', x + 44, y - 40);
+    ctx.fillStyle = '#3C6E71'; ctx.font = 'bold 12px system-ui';
+    ctx.fillText('TALLER', x + 4, y - 74);
+  },
+
   pintar_tren(ctx, x, y) {
     this.sombra(ctx, x, y + 4, 56, 0);
     ctx.strokeStyle = '#B5AC98'; ctx.lineWidth = 5;         // las vías
@@ -13614,6 +14097,7 @@ const Ampliaciones = {
   navegar(v) {
     const j = Juego.jugador;
     Juego.destino = null;
+    if (typeof Vehiculos !== 'undefined') Vehiculos.aparcar();   // al barco se sube a pie
     if (!v.ruta) {                                     // sin ruta: aparece allí
       j.x = v.destino.x; j.y = v.destino.y;
       return this.llegar(v);
@@ -13641,7 +14125,8 @@ const Ampliaciones = {
   avanzar(J) {
     const v = J.vehiculo, j = J.jugador;
     Hada.sinAccion();
-    let queda = v.tramos[v.tramo].barco ? 3 : 2;       // el barco va algo más rápido que andando
+    // el vehículo va algo más rápido que andando; cada viaje puede pedir su ritmo
+    let queda = v.tramos[v.tramo].barco ? (v.viaje.velocidad || 3) : 2;
     while (queda > 0 && v.tramo < v.tramos.length) {
       const obj = v.tramos[v.tramo].puntos[v.punto];
       if (!obj) { v.tramo++; v.punto = 0; continue; }
@@ -13720,9 +14205,14 @@ TECLAS.barco = 'J';
   const dibujarVehiculo = J.dibujarVehiculo;
   J.dibujarVehiculo = function (ctx, x, y, tipo, mirando) {
     if (tipo !== 'travesia') return dibujarVehiculo.call(this, ctx, x, y, tipo, mirando);
-    if (!Ampliaciones.enBarco() || !this.pintar_barquito) return;
+    if (!Ampliaciones.enBarco()) return;
+    // cada viaje puede traer el suyo (una vagoneta, una cabina…); si no dice nada, es el barco
+    const viaje = this.vehiculo && this.vehiculo.viaje;
+    const propio = viaje && viaje.vehiculo && this['pintar_' + viaje.vehiculo];
+    if (!propio && !this.pintar_barquito) return;
     ctx.save();
     ctx.translate(x, y); ctx.scale(mirando < 0 ? -1 : 1, 1);
+    if (propio) { propio.call(this, ctx, 0, 0); ctx.restore(); return; }
     this.pintar_barquito(ctx, 6, 4);
     this.personajeSimple(ctx, -32, -8, '#3C8DA6', '#2F2A28', false);   // la capitana, al timón
     const fase = (this.t * 0.35) % 1;                                   // un delfín que salta
