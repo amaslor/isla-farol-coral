@@ -1153,8 +1153,15 @@ const TEXTOS_TALLER = {
 
 const MUNDO = {
 
-  ancho: 8400,
-  alto: 4600,
+  /* EL TAMAÑO DEL MUNDO
+     La isla grande ocupa el centro y alrededor queda mar para ir creciendo.
+     Ensanchado el 19-09-2026 a petición de Antonio: al este queda un buen
+     trozo de mar libre para islas nuevas, y al sur también. Una ampliación
+     puede pedir más con `ancho:` y `alto:` (ver motor-ampliaciones.js).
+     Al norte y al oeste el margen es pequeño: para crecer por ahí habría que
+     mover la isla entera, que es harina de otro costal (ver EXPANSIONES.md). */
+  ancho: 11500,
+  alto: 7000,
 
   isla: { cx: 3500, cy: 2300, rx: 3480, ry: 2280 },
   rio: { x1: 5620, x2: 5980 },
@@ -1353,8 +1360,25 @@ const MUNDO = {
 
   /* La feria está vallada: se entra por la puerta del oeste */
   recintos: [
-    { id: 'feria', x: 4700, y: 3340, rx: 780, ry: 560,
+    { id: 'feria', x: 4700, y: 3340, rx: 780, ry: 560, dibujo: 'feria', rotulo: 'FERIA',
       puerta: { x: 3960, y: 3340, rx: 130, ry: 120 } },
+
+    /* EL POBLADO (19-09-2026, lo pidió Antonio: enmarcar la zona donde vive
+       la niña para que la isla tenga bloques). Una empalizada de madera que
+       rodea la cabaña, la tienda de Mila, el salón de Coco, el animalario, la
+       Casa dels Bitxos, Correos, el taller de Tià y las ovejas.
+       CUATRO PUERTAS, para que entrar y salir no sea un lío:
+         · la principal, al este, mirando al centro de la isla, con su arco;
+         · norte y sur, puestas justo donde salen los caminos;
+         · oeste, la que baja a la costa. */
+    { id: 'poblado', x: 1200, y: 2430, rx: 740, ry: 850, dibujo: 'empalizada', rotulo: 'EL POBLADO',
+      puerta: { x: 1940, y: 2430, rx: 130, ry: 165 },        // la principal, la del arco
+      puertas: [
+        { x: 1940, y: 2430, rx: 130, ry: 165, principal: true },   // este: al centro de la isla
+        { x: 1500, y: 1660, rx: 200, ry: 150 },                    // norte: al salón y al bosque
+        { x: 1465, y: 3220, rx: 200, ry: 150 },                    // sur: a la playa
+        { x: 460,  y: 2430, rx: 130, ry: 165 },                    // oeste: a la costa
+      ] },
   ],
 
   zonas: [
@@ -10733,9 +10757,19 @@ const Mapa = {
     const c = document.getElementById('mapaLienzo');
     if (!c) return;
     const ctx = c.getContext('2d');
-    const k = Math.min(this.ANCHO / MUNDO.ancho, this.ALTO / MUNDO.alto);
-    const dx = (this.ANCHO - MUNDO.ancho * k) / 2;
-    const dy = (this.ALTO - MUNDO.alto * k) / 2;
+    /* El plano se ajusta a LO QUE HAY, no al tamaño del mundo (19-09-2026).
+       Si no, al dejar mar libre para islas futuras el mapa se llenaba de azul
+       vacío y la isla se veía diminuta. */
+    const trozos = [{ x: MUNDO.isla.cx, y: MUNDO.isla.cy, rx: MUNDO.isla.rx, ry: MUNDO.isla.ry }]
+      .concat(MUNDO.islotes);
+    const M = 260;                                   // un margen de mar alrededor
+    const x1 = Math.min(...trozos.map(t => t.x - t.rx)) - M;
+    const x2 = Math.max(...trozos.map(t => t.x + t.rx)) + M;
+    const y1 = Math.min(...trozos.map(t => t.y - t.ry)) - M;
+    const y2 = Math.max(...trozos.map(t => t.y + t.ry)) + M;
+    const k = Math.min(this.ANCHO / (x2 - x1), this.ALTO / (y2 - y1));
+    const dx = (this.ANCHO - (x2 - x1) * k) / 2 - x1 * k;
+    const dy = (this.ALTO - (y2 - y1) * k) / 2 - y1 * k;
     const X = x => dx + x * k, Y = y => dy + y * k;
 
     // mar y contorno de la isla
@@ -12186,7 +12220,9 @@ const Juego = {
       const d = Math.pow((nx - x.x) / x.rx, 2) + Math.pow((ny - x.y) / x.ry, 2);
       return d > 0.85 && d < 1.2;
     });
-    if (r) return Hada.decir('🎪 La feria está vallada. La <b>puerta</b> está en este lado ⬅️', 7);
+    if (r) return Hada.decir(r.id === 'poblado'
+      ? '🏡 El poblado está vallado. Tiene <b>cuatro puertas</b>: búscalas.'
+      : '🎪 La feria está vallada. La <b>puerta</b> está en este lado ⬅️', 7);
 
     const b = MUNDO.bloqueos.find(x =>
       Math.pow((nx - x.x) / (x.rx + 30), 2) + Math.pow((ny - x.y) / (x.ry + 30), 2) <= 1);
@@ -12215,8 +12251,8 @@ const Juego = {
     for (const r of MUNDO.recintos) {
       const d = Math.pow((x - r.x) / r.rx, 2) + Math.pow((y - r.y) / r.ry, 2);
       if (d > 0.94 && d < 1.08) {                       // justo encima de la valla
-        const p = r.puerta;
-        const enPuerta = Math.pow((x - p.x) / p.rx, 2) + Math.pow((y - p.y) / p.ry, 2) <= 1;
+        const enPuerta = (r.puertas || [r.puerta]).some(p =>
+          Math.pow((x - p.x) / p.rx, 2) + Math.pow((y - p.y) / p.ry, 2) <= 1);
         if (!enPuerta) return false;
       }
     }
@@ -13209,20 +13245,84 @@ const Juego = {
     });
   },
 
-  /* La valla de la feria, con sus banderines y su puerta */
+  /* LAS VALLAS DE LOS RECINTOS
+     La de la feria (postes con banderines) y la del poblado (empalizada de
+     troncos, 19-09-2026). Las puertas se dejan sin pintar, y la principal
+     lleva arco y cartel. */
   dibujarVallas(ctx) {
     MUNDO.recintos.forEach(r => {
-      const p = r.puerta;
+      const puertas = r.puertas || [r.puerta];
+      const enPuerta = (x, y) => puertas.some(p =>
+        Math.pow((x - p.x) / p.rx, 2) + Math.pow((y - p.y) / p.ry, 2) <= 1);
+
       for (let a = 0; a < 6.28; a += 0.055) {
         const x = r.x + Math.cos(a) * r.rx, y = r.y + Math.sin(a) * r.ry;
-        if (Math.pow((x - p.x) / p.rx, 2) + Math.pow((y - p.y) / p.ry, 2) <= 1) continue;
+        if (enPuerta(x, y)) continue;
+
+        if (r.dibujo === 'empalizada') {
+          // troncos clavados, de dos alturas, con la punta redondeada
+          const alto = 30 + (Math.round(a * 20) % 3) * 5;
+          ctx.fillStyle = '#A9714B';
+          ctx.fillRect(x - 5, y - alto, 10, alto + 4);
+          ctx.fillStyle = '#8A5A3B';
+          ctx.beginPath(); ctx.ellipse(x, y - alto, 5, 4, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.10)';
+          ctx.fillRect(x + 2, y - alto, 3, alto + 4);
+          continue;
+        }
+
         ctx.fillStyle = '#C9BFA8';
         ctx.fillRect(x - 3, y - 26, 6, 30);
         ctx.fillStyle = ['#E8506B', '#FFE066', '#5AA9DC'][Math.round(a * 10) % 3];
         ctx.beginPath();
         ctx.moveTo(x - 3, y - 26); ctx.lineTo(x + 9, y - 21); ctx.lineTo(x - 3, y - 16); ctx.fill();
       }
-      // el arco de la puerta
+
+      // las dos travesañas que unen los troncos de la empalizada
+      if (r.dibujo === 'empalizada') {
+        ctx.strokeStyle = '#8A5A3B'; ctx.lineWidth = 5;
+        [10, 22].forEach(h => {
+          ctx.beginPath();
+          for (let a = 0; a < 6.30; a += 0.055) {
+            const x = r.x + Math.cos(a) * r.rx, y = r.y + Math.sin(a) * r.ry - h;
+            if (enPuerta(x, y + h)) { ctx.stroke(); ctx.beginPath(); continue; }
+            if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        });
+      }
+
+      const p = puertas.find(q => q.principal) || r.puerta;
+      if (!p) return;
+
+      if (r.dibujo === 'empalizada') {
+        // LA PUERTA PRINCIPAL: dos postes gordos, dintel y cartel colgando
+        const y1 = p.y - p.ry, y2 = p.y + p.ry;
+        ctx.fillStyle = '#8A5A3B';
+        [y1, y2].forEach(yy => {
+          ctx.fillRect(p.x - 9, yy - 74, 18, 78);
+          ctx.beginPath(); ctx.ellipse(p.x, yy - 74, 9, 6, 0, 0, 7); ctx.fill();
+        });
+        ctx.fillStyle = '#A9714B';                       // el dintel
+        ctx.fillRect(p.x - 13, y1 - 74, 26, y2 - y1);
+        ctx.fillStyle = '#6B4226';
+        ctx.fillRect(p.x - 13, y1 - 74, 26, 6);
+        ctx.fillStyle = '#FFE9A8';                       // el cartel
+        ctx.beginPath(); ctx.roundRect(p.x - 11, p.y - 86, 22, 172, 7); ctx.fill();
+        ctx.strokeStyle = '#8A5A3B'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = '#6B4226';
+        ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
+        ctx.save(); ctx.translate(p.x + 1, p.y); ctx.rotate(Math.PI / 2);
+        ctx.fillText(r.rotulo || '', 0, 5); ctx.restore();
+        // un farolillo a cada lado, que de noche se verá bonito
+        [y1 - 60, y2 - 60].forEach(yy => {
+          ctx.fillStyle = '#6B4226'; ctx.fillRect(p.x - 2, yy - 6, 4, 10);
+          ctx.fillStyle = '#FFD98A';
+          ctx.beginPath(); ctx.roundRect(p.x - 6, yy + 2, 12, 14, 3); ctx.fill();
+        });
+        return;
+      }
+
       ctx.fillStyle = '#E8506B';
       ctx.fillRect(p.x - 8, p.y - p.ry - 10, 12, p.ry * 2 + 14);
       ctx.fillRect(p.x - 8, p.y + p.ry - 4, 12, 10);
@@ -13233,7 +13333,7 @@ const Juego = {
       ctx.stroke();
       ctx.fillStyle = '#FFF3C4'; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
       ctx.save(); ctx.translate(p.x + 26, p.y); ctx.rotate(Math.PI / 2);
-      ctx.fillText('FERIA', 0, 6); ctx.restore();
+      ctx.fillText(r.rotulo || 'FERIA', 0, 6); ctx.restore();
     });
   },
 
