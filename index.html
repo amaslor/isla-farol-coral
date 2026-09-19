@@ -15281,8 +15281,12 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
 
   islotes: [{ id: 'pins', x: 8100, y: 820, rx: 880, ry: 520 }],
 
-  /* El puente es más largo que antes: la isla se ha ido más al norte */
-  pasarelas: [{ x: 7640, y: 1610, rx: 60, ry: 350, requiere: 'puenteNorte', vertical: true }],
+  /* El puente es más largo que antes: la isla se ha ido más al norte.
+     Ojo con los extremos: la pasarela es una ELIPSE y se afila por las
+     puntas, así que tiene que MONTARSE sobre las dos orillas. Con ry 350
+     quedaban 20 px de agua justo al final y no se podía entrar en la isla
+     (19-09-2026, lo vio Antonio probando). */
+  pasarelas: [{ x: 7640, y: 1560, rx: 60, ry: 400, requiere: 'puenteNorte', vertical: true }],
 
   pasos: [
     { id: 'puenteNorte', x: 7640, y: 1960, dibujo: 'cartel',
@@ -15313,13 +15317,13 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
     { id: 'lenya', x: 8380, y: 1120, accion: 'reto', dibujo: 'lenya',
       nombre: 'El claro de la leña', mapa: 'La Llenya', personaje: 'Pep, el guarda' },
 
-    { id: 'astillero', x: 7620, y: 1160, accion: 'barco', dibujo: 'astillero',
+    { id: 'astillero', x: 7600, y: 1150, accion: 'barco', dibujo: 'astillero',
       nombre: 'El astillero de Martí', mapa: 'La Drassana', personaje: 'Martí, el carpintero',
       viaje: {
         paso: 'barcoPins', personaje: 'Martí, el carpintero',
         pregunta: '¿Te llevo a la isla grande? Se tarda menos que por el puente.',
-        subida: [[7620, 1200]],
-        ruta: [[7520, 1330], [7260, 1470], [6980, 1560], [6820, 1520], [6700, 1470], [6640, 1440]],
+        subida: [[7600, 1195]],
+        ruta: [[7520, 1300], [7260, 1470], [6980, 1560], [6820, 1520], [6700, 1470], [6640, 1440]],
         bajada: [[6600, 1408]],
         destino: { x: 6480, y: 1400 },
         llegada: '⛵ ¡Ya estamos! Esto es la <b>costa norte</b> de la isla grande.' } },
@@ -15332,9 +15336,9 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
         paso: 'barcoPins', personaje: 'Martí, el carpintero',
         pregunta: '¿Nos vamos a l\'Illa dels Pins?',
         subida: [[6600, 1408]],
-        ruta: [[6640, 1440], [6700, 1470], [6820, 1520], [6980, 1560], [7260, 1470], [7520, 1330]],
-        bajada: [[7620, 1200]],
-        destino: { x: 7620, y: 1120 },
+        ruta: [[6640, 1440], [6700, 1470], [6820, 1520], [6980, 1560], [7260, 1470], [7520, 1300]],
+        bajada: [[7600, 1195]],
+        destino: { x: 7640, y: 1120 },
         llegada: '⛵ ¡Tierra! Esto es <b>l\'Illa dels Pins</b>.' } },
   ],
 
