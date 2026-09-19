@@ -672,16 +672,18 @@ const AJUSTES = {
   retosPorSorpresa: 10,
 
   sorpresas: [
-    { id: 'sorpresa1', icono: '🎁', nombre: 'Sorpresa 1',
-      aviso: 'Dile a papá que has llegado a 10 retos: te tiene guardada una sorpresa.' },
-    { id: 'sorpresa2', icono: '🎁', nombre: 'Sorpresa 2',
-      aviso: '¡20 retos! Avisa a papá: toca sorpresa.' },
-    { id: 'sorpresa3', icono: '🎁', nombre: 'Sorpresa 3',
-      aviso: '¡30 retos! Avisa a papá: toca sorpresa.' },
-    { id: 'sorpresa4', icono: '🎁', nombre: 'Sorpresa 4',
-      aviso: '¡40 retos! Avisa a papá: toca sorpresa.' },
-    { id: 'sorpresa5', icono: '🎁', nombre: 'Sorpresa 5',
-      aviso: '¡50 retos! Avisa a papá: toca sorpresa.' },
+    { id: 'pins', icono: '🌲', nombre: "L'Illa dels Pins",
+      pista: 'Ha aparecido un <b>puente nuevo</b> al norte de l\'Illa Petita. Al otro lado hay un pinar, una cascada y gente que no conoces.',
+      aviso: 'Se abre una isla nueva al norte.' },
+    { id: 'mina', icono: '⛏️', nombre: 'La Mina Perduda',
+      pista: 'Se ha abierto una <b>grieta al pie de la montaña</b>, al oeste del río. Dentro hay túneles, una vagoneta y un ascensor que baja muy hondo.',
+      aviso: 'Se abre una mina bajo la montaña.' },
+    { id: 'ropa3', icono: '👗', nombre: 'Ropa nueva en la tienda de Mila',
+      aviso: '¡30 retos! Dile a papá que toca estantería nueva en la tienda de Mila.' },
+    { id: 'moto', icono: '🛵', nombre: 'La moto del taller de Tià',
+      aviso: '¡40 retos! Dile a papá que Tià ya puede traer la moto.' },
+    { id: 'hadaHabla', icono: '🧚', nombre: 'Lumi aprende a hablar',
+      aviso: '¡50 retos! Dile a papá que quieres que Lumi hable de verdad.' },
   ],
 
   // --- Mundo ------------------------------------------------------------
@@ -11283,7 +11285,14 @@ const Sorpresas = {
   progreso() {
     const p = Estado.actual;
     if (!p) return { retos: 0, ganadas: [] };
-    if (!p.progreso) p.progreso = { retos: 0, ganadas: [] };
+    /* Partida vieja que nunca ha tenido barra: se le cuenta lo que ya lleva
+       hecho (retos distintos superados alguna vez), como pidió Antonio el
+       19-09-2026. Se topa en una barra: así la primera sorpresa le cae
+       enseguida, pero no se le abren tres de golpe. */
+    if (!p.progreso) {
+      const yaHechos = Object.keys(p.veces || {}).length;
+      p.progreso = { retos: Math.min(yaHechos, this.cada()), ganadas: [] };
+    }
     return p.progreso;
   },
   hechos() { return this.progreso().retos; },
@@ -11325,7 +11334,10 @@ const Sorpresas = {
      pisar el diálogo del reto que se acaba de ganar. */
   vigilar() {
     setInterval(() => {
-      if (!this.pendiente || !Estado.actual || UI.estaAbierto()) return;
+      if (!Estado.actual) return;
+      // La barra puede estar ya llena al entrar (partida vieja, retos que ya contaban)
+      if (!this.pendiente && this.siguiente() && this.faltan() === 0) this.pendiente = this.siguiente();
+      if (!this.pendiente || UI.estaAbierto()) return;
       const s = this.pendiente;
       this.pendiente = null;
       this.celebrar(s);
@@ -11368,6 +11380,15 @@ const Sorpresas = {
     return trozos.length ? '🎁 ' + trozos.join(' · ') : '';
   },
 };
+
+/* ¿Está abierta esta sorpresa? Lo consultan las ampliaciones para saber si
+   existen o si todavía están dormidas dentro del juego. Fuera del navegador
+   (probar.js, comprobar.js) se dan todas por abiertas, para que las
+   comprobaciones sigan viendo el juego entero. */
+function sorpresaAbierta(id) {
+  if (typeof window === 'undefined') return true;
+  return typeof Sorpresas !== 'undefined' && Sorpresas.abierta(id);
+}
 
 </script>
 <script>
@@ -14608,6 +14629,444 @@ TECLAS.barco = 'J';
 
 </script>
 <script>
+/* === ampliaciones/isla-1-pins.js === */
+/* AMPLIACIÓN 1 · L'ILLA DELS PINS
+   Se llega por un PUENTE nuevo que sale del norte de l'Illa Petita (así que
+   antes hay que haber arreglado el puente colgante). Estado: PREPARADA, APAGADA.
+
+   Qué hay:
+     · El puente del norte (reto de Martí para abrirlo: tablas del 6 al 9 y
+       un problema de dos pasos)
+     · Un pinar, una laguna con cascada y un risco (no se pasa)
+     · Las colmenas de Aina (trabajo diario: tarros de miel)
+     · Las ardillas de Pep (trabajo diario: piñas)
+     · El pino gigante, la cascada y el observatorio (para mirar)
+     · Martí, el carpintero (para charlar)
+     · Una lente perdida que, puesta en el telescopio, deja ver la luna */
+
+/* DORMIDA HASTA QUE LA BARRA DE SORPRESAS LA ABRA (19-09-2026)
+   El código viaja dentro del juego, pero la isla no existe para la jugadora
+   hasta que llena una barra de retos. Ver motor/sorpresas.js. */
+const PINS_ABIERTA = typeof sorpresaAbierta === 'function' ? sorpresaAbierta('pins') : true;
+
+ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
+  id: 'pins',
+
+  islotes: [{ id: 'pins', x: 7640, y: 980, rx: 560, ry: 420 }],
+
+  pasarelas: [{ x: 7640, y: 1645, rx: 60, ry: 300, requiere: 'puenteNorte', vertical: true }],
+
+  pasos: [
+    { id: 'puenteNorte', x: 7640, y: 1960, dibujo: 'cartel',
+      nombre: 'El puente del norte', mapa: 'Pont del Nord',
+      personaje: 'Martí, el carpintero', reto: 'puenteNorteReto',
+      cerrado: 'Un puente largo cruza el mar hacia el norte, hasta una isla llena de pinos. ' +
+               'Le faltan muchos tablones.',
+      abierto: 'El puente aguanta firme. Al otro lado está l\'Illa dels Pins.',
+      alAbrir: 'Martí y tú colocáis los tablones, uno a uno.<br><br>' +
+               '<b>El puente del norte ya se puede cruzar.</b>' },
+  ],
+
+  lugares: [
+    { id: 'colmenas', x: 7250, y: 780, accion: 'reto', dibujo: 'colmenas',
+      nombre: 'Las colmenas de Aina', mapa: 'Els Ruscs', personaje: 'Aina, la de las abejas' },
+    { id: 'ardillas', x: 7880, y: 1150, accion: 'reto', dibujo: 'ardillas',
+      nombre: 'El tocón de las ardillas', mapa: 'Els Esquirols', personaje: 'Pep, el guarda' },
+    { id: 'pinoGigante', x: 7640, y: 740, accion: 'ver', historia: 'pinoGigante', dibujo: 'pinoGigante',
+      nombre: 'El pino gigante', mapa: 'El Pi Gegant' },
+    { id: 'cascada', x: 7390, y: 930, accion: 'ver', historia: 'cascada', dibujo: 'cascada',
+      nombre: 'La cascada', mapa: 'La Cascada' },
+    { id: 'observatorio', x: 8060, y: 1080, accion: 'ver', historia: 'observatorio', dibujo: 'observatorio',
+      nombre: 'El observatorio', mapa: 'L\'Observatori' },
+    { id: 'marti', x: 7520, y: 1260, accion: 'hablar', charla: 'marti', dibujo: 'carpintero',
+      nombre: 'Martí, el carpintero', mapa: 'Martí' },
+  ],
+
+  zonas: [{ tipo: 'bosque', x: 7640, y: 980, rx: 430, ry: 320 }],
+
+  bloqueos: [
+    { dibujo: 'pinar', x: 7910, y: 860, rx: 220, ry: 150,
+      mensaje: 'El pinar está muy tupido. <b>Rodéalo</b>.' },
+    { dibujo: 'lago', x: 7390, y: 1060, rx: 160, ry: 100,
+      mensaje: 'La laguna es fría y honda. Por aquí no.' },
+    { dibujo: 'rocas', x: 7400, y: 660, rx: 130, ry: 60,
+      mensaje: 'Un risco de piedra. Por encima no se pasa.' },
+  ],
+
+  nodos: { pinsBajada: { x: 7640, y: 1330 } },
+  caminos: [['pinsBajada', 'pinoGigante'], ['pinoGigante', 'colmenas'], ['colmenas', 'cascada'],
+            ['pinsBajada', 'ardillas'], ['ardillas', 'observatorio']],
+
+  piezas: [
+    { id: 'lente', x: 7200, y: 1080, icono: '🔍', nombre: 'Una lente redonda',
+      hallazgo: 'Una lente de cristal, grande y redonda, en la orilla de la laguna. No tiene ni un rasguño.',
+      encaja: 'observatorio',
+      alColocar: 'Colocas la lente en el telescopio. Miras por el agujerito… y ves la luna ' +
+                 '<b>enorme</b>, con sus manchas y todo.' },
+  ],
+
+  flores: [[7500, 1150], [7760, 1250], [7300, 1200], [7180, 900]],
+  matas: [[8050, 1220], [7560, 860], [7760, 640]],
+  rocas: [[7250, 1150], [8000, 1260]],
+
+  /* ------------------------------------------------------------ RETOS */
+  retos: {
+
+    puenteNorteReto: {
+      quien: 'Martí, el carpintero',
+      saludo: 'Para llegar a l\'Illa dels Pins hay que arreglar el puente. ¿Me ayudas a contar tablones?',
+      exito: '¡Esos mismos! Clavo el último… y listo.',
+      dormido: 'Me he liado con tanto tablón. Descanso un poco y seguimos.',
+      despierta: 'Ya estoy. Probemos con menos tablones.',
+      moraleja: { titulo: 'Grupos iguales: multiplicar',
+        texto: 'Cada tramo lleva los mismos tablones. Cuando algo se repite igual, se ' +
+               '<b>multiplica</b>.<br><br>7 tramos de 8 tablones: <b>7 × 8 = 56</b>.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const t = AZ(6, 9), c = AZ(6, 9); return { t, c, sol: t * c, mal: t + c }; },
+            enunciado: 'El puente tiene {t} tramos. En cada tramo van {c} tablones. ¿Cuántos tablones hacen falta?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{t} más {c} son {mal}. Eso no llega ni para dos tramos.',
+                       repartir: 'No hay nada que repartir: hay que saber cuántos traer.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos tablones?', sol: '{sol}' }],
+            pistas: ['Son {t} tramos iguales, de {c} tablones cada uno.', 'Es la tabla del {c}: {t} × {c}.'] },
+          { vars: () => { const t = AZ(4, 7), c = AZ(6, 9), y = AZ(5, 15);
+                          return { t, c, y, tot: t * c, sol: t * c - y }; },
+            enunciado: 'Hacen falta {t} tramos de {c} tablones. Martí ya tiene {y} tablones. ¿Cuántos le faltan?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{t} × {c} = {tot} es lo que hace falta en total. Pero ya tiene {y}…',
+                       quitar: 'Antes de quitar hay que saber cuántos hacen falta: {t} tramos de {c}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos hacen falta?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántos le faltan?', sol: '{sol}' }],
+            pistas: ['Primero: {t} × {c} = {tot}.', 'Después: {tot} menos los {y} que ya tiene.'] },
+        ],
+        facil: { enunciado: 'Quedan 3 tramos y cada uno lleva 6 tablones. ¿Cuántos tablones?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '3 × 6', sol: 18 }],
+          pistas: ['Tres veces seis.', '6, 12, 18.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(8, 15), b = AZ(4, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Martí tiene {a} tablones. Tú le traes {b} más. ¿Cuántos tiene ahora?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No se pierde ninguno: ¡le traes más!' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['Tenía {a} y llegan {b}.', 'Cuenta desde {a}.'] },
+          { vars: () => { const t = AZ(3, 6); return { t, sol: t * 2 }; },
+            enunciado: 'Hay {t} tramos. En cada tramo van 2 tablones. ¿Cuántos tablones?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{t} y 2… pero es que CADA tramo lleva 2.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{t} × 2', sol: '{sol}' }],
+            pistas: ['De 2 en 2.', 'Cuenta: 2, 4, 6…'] },
+        ],
+        facil: { enunciado: 'Tengo 4 tablones y traigo 3. ¿Cuántos tengo?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 + 3', sol: 7 }],
+          pistas: ['Cuatro y tres.', 'Siete.'] },
+      },
+    },
+
+    colmenas: {
+      trabajo: true,
+      quien: 'Aina, la de las abejas',
+      saludo: 'Mis abejas han hecho mucha miel. ¿Me ayudas con los tarros?',
+      exito: '¡Justo! Toma, prueba un poquito de miel.',
+      repetido: 'Hoy ya me ayudaste. Mañana hay miel nueva y te pago mejor.',
+      dormido: 'Bzzz… me he mareado con tanta abeja. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos tarros.',
+      moraleja: { titulo: 'Leer antes de contar',
+        texto: 'La misma miel puede pedir cuentas distintas:<br><br>' +
+               '· «<b>cada</b> colmena da…» → multiplicar<br>' +
+               '· «¿cuántas <b>cajas</b> lleno?» → dividir<br>' +
+               '· «¿cuántas <b>más</b>?» → restar para comparar' },
+      mayor: {
+        variantes: [
+          { vars: () => { const c = AZ(4, 9), t = AZ(3, 9); return { c, t, sol: c * t, mal: c + t }; },
+            enunciado: 'Hay {c} colmenas. Cada colmena da {t} tarros de miel. ¿Cuántos tarros hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{c} más {t} son {mal}. Pero CADA colmena da {t}.',
+                       repartir: 'No repartimos: queremos saber cuántos hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos tarros?', sol: '{sol}' }],
+            pistas: ['{c} colmenas, y todas dan lo mismo.', 'La tabla del {t}.'] },
+          { vars: () => { const k = AZ(3, 9), s = AZ(3, 9); return { k, s, n: k * s, sol: s }; },
+            enunciado: 'Tengo {n} tarros. En cada caja caben {k}. ¿Cuántas cajas lleno?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no me dice cuántas cajas salen.',
+                       multiplicar: '{n} × {k} serían muchísimos tarros. ¡No tengo tantos!' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas cajas?', sol: '{sol}' }],
+            pistas: ['{n} tarros, de {k} en {k}.', '¿Cuántas veces cabe {k} en {n}?'] },
+          { vars: () => { const c = AZ(3, 6), t = AZ(4, 9), v = AZ(2, 9);
+                          return { c, t, v, tot: c * t, sol: c * t - v }; },
+            enunciado: 'Hay {c} colmenas y cada una da {t} tarros. Aina vende {v} tarros. ¿Cuántos le quedan?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{c} × {t} = {tot} es la miel que hay. Pero ha vendido {v}…',
+                       quitar: 'Antes de quitar, hay que saber cuántos tarros hay: {c} colmenas de {t}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos tarros hay?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántos le quedan?', sol: '{sol}' }],
+            pistas: ['Primero: {c} × {t} = {tot}.', 'Después: {tot} menos {v}.'] },
+          { vars: () => { const b = AZ(12, 38), a = b + AZ(8, 50); return { a, b, sol: a - b }; },
+            enunciado: 'En la colmena grande hay {a} abejas. En la pequeña hay {b}. ¿Cuántas más tiene la grande?',
+            operacion: 'compara', opciones: ['juntar', 'compara', 'multiplicar'],
+            explica: { juntar: 'Juntarlas dice cuántas hay entre las dos, no cuántas MÁS tiene una.',
+                       multiplicar: 'Aquí no hay grupos iguales.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas más?', sol: '{sol}' }],
+            pistas: ['Compara {a} con {b}.', '{a} menos {b}.'] },
+        ],
+        facil: { enunciado: 'Hay 3 colmenas y cada una da 4 tarros. ¿Cuántos tarros hay?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '3 × 4', sol: 12 }],
+          pistas: ['Tres veces cuatro.', '4, 8, 12.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(5, 15), b = AZ(3, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Aina tiene {a} tarros y llena {b} más. ¿Cuántos tiene ahora?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No se rompe ninguno: ¡llena más!' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'] },
+          { vars: () => { const a = AZ(12, 20), b = AZ(2, 9); return { a, b, sol: a - b }; },
+            enunciado: 'Hay {a} tarros. Un señor se lleva {b}. ¿Cuántos quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si se lleva tarros, quedan menos, no más.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Tenía {a} y se van {b}.', 'Cuenta hacia atrás desde {a}.'] },
+          { vars: () => { const c = AZ(2, 5), t = [2, 5, 10][AZ(0, 2)]; return { c, t, sol: c * t }; },
+            enunciado: 'Hay {c} colmenas. Cada colmena da {t} tarros. ¿Cuántos tarros hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y {t}… pero CADA colmena da {t}.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{c} × {t}', sol: '{sol}' }],
+            pistas: ['Cuenta de {t} en {t}.', '{c} veces {t}.'] },
+        ],
+        facil: { enunciado: 'Hay 4 tarros y lleno 3 más. ¿Cuántos hay?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 + 3', sol: 7 }],
+          pistas: ['Cuatro y tres.', 'Siete.'] },
+      },
+    },
+
+    ardillas: {
+      trabajo: true,
+      quien: 'Pep, el guarda',
+      saludo: 'Las ardillas guardan piñas para el invierno y siempre se pelean. ¿Me ayudas a contar?',
+      exito: '¡Bien contado! Ya no se pelean… hasta mañana.',
+      repetido: 'Hoy ya las ayudaste. Mañana vuelven a liarse y te pago mejor.',
+      dormido: 'Uf, tanta piña me ha dado sueño. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos piñas.',
+      moraleja: { titulo: 'Dos pasos, uno detrás de otro',
+        texto: 'Algunos problemas tienen <b>dos preguntas escondidas</b>.<br><br>' +
+               'Primero se responde la primera, y con ese número se hace la segunda.<br><br>' +
+               'Por eso ayuda leerlo dos veces.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const a = AZ(3, 9), b = AZ(4, 9); return { a, b, sol: a * b, mal: a + b }; },
+            enunciado: 'Hay {a} ardillas. Cada ardilla guarda {b} piñas. ¿Cuántas piñas hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{a} más {b} son {mal}. Pero CADA ardilla tiene {b}.',
+                       repartir: 'No hay que repartir: queremos saber cuántas hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas piñas?', sol: '{sol}' }],
+            pistas: ['{a} ardillas con {b} piñas cada una.', 'La tabla del {b}.'] },
+          { vars: () => { const a = AZ(3, 9), k = AZ(3, 9); return { a, k, n: a * k, sol: k }; },
+            enunciado: 'Hay {n} piñas para {a} ardillas, a partes iguales. ¿Cuántas le tocan a cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántas le tocan a cada una.',
+                       multiplicar: 'Si multiplico, salen muchas más piñas de las que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas a cada una?', sol: '{sol}' }],
+            pistas: ['«A partes iguales» es repartir.', '¿Qué número por {a} da {n}?'] },
+          { vars: () => { const a = AZ(2, 5), c = AZ(1, 4), b = AZ(3, 9);
+                          return { a, c, b, t: a + c, sol: (a + c) * b }; },
+            enunciado: 'Hay {a} ardillas y llegan {c} más. Cada ardilla guarda {b} piñas. ¿Cuántas piñas hay?',
+            operacion: 'dosPasos', opciones: ['juntar', 'multiplicar', 'dosPasos'],
+            explica: { juntar: 'Juntar las ardillas está bien… pero luego falta contar las piñas.',
+                       multiplicar: 'Antes de multiplicar, ¿cuántas ardillas hay en total?' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas ardillas hay?', sol: '{t}' },
+                        { texto: 'Ahora: ¿cuántas piñas?', sol: '{sol}' }],
+            pistas: ['Primero: {a} + {c} = {t} ardillas.', 'Después: {t} × {b}.'] },
+          { vars: () => { const a = AZ(2, 6), k = AZ(4, 9), e = AZ(1, 3);
+                          return { a, k, e, n: a * k, sol: k - e }; },
+            enunciado: 'Reparto {n} piñas entre {a} ardillas. Cada una se come {e}. ¿Cuántas le quedan a cada una?',
+            operacion: 'dosPasos', opciones: ['repartir', 'quitar', 'dosPasos'],
+            explica: { repartir: 'Repartir es el primer paso. Pero luego cada una se come {e}…',
+                       quitar: 'Antes de quitar, hay que saber cuántas le tocan a cada una.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas le tocan a cada una?', sol: '{k}' },
+                        { texto: 'Ahora: ¿cuántas le quedan?', sol: '{sol}' }],
+            pistas: ['Primero: {n} entre {a} son {k}.', 'Después: {k} menos {e}.'] },
+        ],
+        facil: { enunciado: 'Hay 12 piñas para 3 ardillas. ¿Cuántas le tocan a cada una?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '12 : 3', sol: 4 }],
+          pistas: ['Doce entre tres.', 'Cuatro para cada una.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(6, 14), b = AZ(3, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Una ardilla tiene {a} piñas y encuentra {b} más. ¿Cuántas tiene?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'Ha encontrado más: no pierde ninguna.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'] },
+          { vars: () => { const a = AZ(11, 19), b = AZ(2, 8); return { a, b, sol: a - b }; },
+            enunciado: 'Había {a} piñas y se caen {b} al río. ¿Cuántas quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si se caen, quedan menos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Había {a} y se van {b}.', 'Cuenta hacia atrás.'] },
+          { vars: () => { const k = AZ(2, 6); return { k, n: k * 2, sol: k }; },
+            enunciado: 'Hay {n} piñas para 2 ardillas, a partes iguales. ¿Cuántas le tocan a cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'repartir'],
+            explica: { juntar: 'Tienen que tener las dos lo mismo.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{n} : 2', sol: '{sol}' }],
+            pistas: ['Una para ti, una para mí…', 'La mitad de {n}.'] },
+        ],
+        facil: { enunciado: 'Una ardilla tiene 5 piñas y encuentra 2. ¿Cuántas tiene?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '5 + 2', sol: 7 }],
+          pistas: ['Cinco y dos.', 'Siete.'] },
+      },
+    },
+  },
+
+  /* --------------------------------------------------------- HISTORIAS */
+  historias: {
+    pinoGigante: { titulo: 'El pino gigante',
+      texto: 'Para abrazarlo hacen falta cinco personas cogidas de la mano.<br><br>' +
+             'Arriba del todo hay un nido. Desde abajo solo se ve una pluma azul.' },
+    cascada: { titulo: 'La cascada',
+      texto: 'El agua cae desde la roca y hace un ruido que no para nunca.<br><br>' +
+             'Detrás parece que hay un hueco… pero está demasiado alto para subir.' },
+    observatorio: { titulo: 'El observatorio',
+      texto: 'Una casita redonda con un telescopio que apunta al cielo.<br><br>' +
+             'Al telescopio le falta la lente. Sin ella, solo se ve negro.' },
+  },
+
+  charlas: {
+    marti: {
+      quien: 'Martí, el carpintero',
+      saludo: 'Hola. Huele a madera, ¿verdad? Es que siempre estoy serrando.',
+      opciones: [
+        { texto: '¿Me cuentas un chiste?',
+          respuesta: '—¿Por qué está triste el libro de mates?<br><br>—Porque tiene muchos problemas.' },
+        { texto: '¿Quién vive en esta isla?',
+          respuesta: 'Aina, que cuida las abejas. Pep, el guarda del bosque.<br><br>' +
+                     'Y unas ardillas que se creen las dueñas de todo.' },
+        { texto: '¿Qué hay detrás de la cascada?',
+          respuesta: 'Eso digo yo. Algún día haré una escalera para subir a mirar.<br><br>' +
+                     'Pero para eso necesito muchos, muchos tablones.' },
+      ],
+    },
+  },
+
+  /* ----------------------------------------------------------- DIBUJOS */
+  dibujos: {
+    colmenas(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x - 20, y + 2, 50, 0);
+      [-52, -14].forEach(dx => {
+        ctx.fillStyle = '#E9B949'; ctx.fillRect(x + dx - 16, y - 44, 32, 44);
+        ctx.fillStyle = '#D39E2F'; ctx.fillRect(x + dx - 16, y - 30, 32, 3); ctx.fillRect(x + dx - 16, y - 16, 32, 3);
+        ctx.fillStyle = '#8D5A3B'; ctx.fillRect(x + dx - 20, y - 50, 40, 7);
+        ctx.fillStyle = '#5E3A24'; ctx.fillRect(x + dx - 4, y - 8, 8, 5);
+      });
+      ctx.fillStyle = '#2F2A28';                         // las abejas
+      for (let k = 0; k < 6; k++) {
+        const a = this.t * 3 + k;
+        ctx.beginPath(); ctx.arc(x - 32 + Math.cos(a) * 34, y - 64 + Math.sin(a * 1.3) * 12, 2.5, 0, 7); ctx.fill();
+      }
+      this.personajeSimple(ctx, x + 28, y, '#F2C14E', '#8D5A3B', dormido);
+    },
+
+    ardillas(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x - 26, y + 2, 32, 0);
+      ctx.fillStyle = '#8D5A3B'; ctx.fillRect(x - 50, y - 26, 48, 26);          // el tocón
+      ctx.fillStyle = '#C98A5E';
+      ctx.beginPath(); ctx.ellipse(x - 26, y - 26, 24, 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#9C6B3F';                                                 // las piñas
+      [[-40, -30], [-30, -33], [-16, -30]].forEach(p => {
+        ctx.beginPath(); ctx.ellipse(x + p[0], y + p[1], 5, 7, 0, 0, 7); ctx.fill();
+      });
+      ctx.font = '22px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('🐿️', x - 28, y - 40 - Math.abs(Math.sin(this.t * 4)) * 4);
+      this.personajeSimple(ctx, x + 22, y, '#4F7F4A', '#C9C2B4', dormido);
+    },
+
+    pinoGigante(ctx, x, y) {
+      this.sombra(ctx, x, y + 2, 50, 0);
+      ctx.fillStyle = '#7A4B2F'; ctx.fillRect(x - 9, y - 40, 18, 42);
+      ['#2F7D4F', '#378A58', '#3F9761', '#48A46A'].forEach((c, k) => {
+        const w = 74 - k * 15, base = y - 34 - k * 34;
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.moveTo(x - w, base); ctx.lineTo(x, base - 66); ctx.lineTo(x + w, base); ctx.fill();
+      });
+      ctx.fillStyle = '#5AA9DC';                                                 // la pluma
+      ctx.beginPath(); ctx.ellipse(x + 8, y - 190, 3, 8, 0.4, 0, 7); ctx.fill();
+    },
+
+    cascada(ctx, x, y) {
+      ctx.fillStyle = '#8A8378';
+      ctx.beginPath(); ctx.ellipse(x, y - 40, 70, 55, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#A39B8D';
+      ctx.beginPath(); ctx.ellipse(x - 12, y - 52, 52, 38, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#8FD3EA'; ctx.fillRect(x - 14, y - 80, 28, 90);
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      for (let k = 0; k < 6; k++) {
+        const h = (this.t * 70 + k * 16) % 86;
+        ctx.fillRect(x - 11 + (k % 3) * 8, y - 80 + h, 3, 10);
+      }
+      for (let k = 0; k < 4; k++) {                                              // la espuma
+        ctx.beginPath(); ctx.arc(x - 16 + k * 11, y + 10 + Math.sin(this.t * 4 + k) * 2, 7, 0, 7); ctx.fill();
+      }
+    },
+
+    observatorio(ctx, x, y) {
+      this.sombra(ctx, x, y + 4, 50, 0);
+      ctx.fillStyle = '#E8E1D3'; ctx.fillRect(x - 40, y - 50, 80, 50);
+      ctx.fillStyle = '#9AA7B8';
+      ctx.beginPath(); ctx.arc(x, y - 50, 40, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#2F3A4F'; ctx.fillRect(x - 6, y - 90, 12, 40);
+      ctx.fillStyle = '#5E3A24'; ctx.fillRect(x - 11, y - 30, 22, 30);
+      ctx.strokeStyle = '#4A5568'; ctx.lineWidth = 7; ctx.lineCap = 'round';     // el telescopio
+      ctx.beginPath(); ctx.moveTo(x + 2, y - 78); ctx.lineTo(x + 30, y - 106); ctx.stroke();
+      if (Estado.estaEncajado('observatorio')) {                                 // ya ve estrellas
+        ctx.fillStyle = 'rgba(255,236,150,' + (0.5 + Math.sin(this.t * 3) * 0.4) + ')';
+        [[-30, -112], [26, -124], [4, -140]].forEach(p => {
+          ctx.beginPath(); ctx.arc(x + p[0], y + p[1], 4, 0, 7); ctx.fill();
+        });
+      }
+    },
+
+    carpintero(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = '#B5764B';
+      for (let k = 0; k < 4; k++) ctx.fillRect(x - 54, y - 6 - k * 7, 44, 6);
+      this.personajeSimple(ctx, x + 12, y, '#5A7D9A', '#3B2A20', dormido);
+    },
+  },
+
+  obstaculos: {
+    pinar(ctx, b) {
+      ctx.fillStyle = '#6FA85E';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); ctx.fill();
+      const pinos = [];
+      for (let k = 0; k < 18; k++) {
+        const a = k * 0.83, rr = 0.25 + (k % 4) * 0.2;
+        pinos.push([b.x + Math.cos(a) * b.rx * rr, b.y + Math.sin(a) * b.ry * rr]);
+      }
+      pinos.sort((p, q) => p[1] - q[1]).forEach(([px, py]) => {
+        ctx.fillStyle = '#7A4B2F'; ctx.fillRect(px - 4, py - 14, 8, 16);
+        ctx.fillStyle = '#2F7D4F';
+        ctx.beginPath(); ctx.moveTo(px - 26, py - 10); ctx.lineTo(px, py - 66); ctx.lineTo(px + 26, py - 10); ctx.fill();
+        ctx.fillStyle = '#3F9761';
+        ctx.beginPath(); ctx.moveTo(px - 19, py - 38); ctx.lineTo(px, py - 86); ctx.lineTo(px + 19, py - 38); ctx.fill();
+      });
+    },
+  },
+});
+
+</script>
+<script>
 /* === ampliaciones/isla-2-sal.js === */
 /* AMPLIACIÓN 2 · L'ILLA DE LA SAL
    Se llega en BARCO desde un muelle nuevo en la costa sur de la isla grande
@@ -15109,6 +15568,1201 @@ ampliacion({
     },
   },
 });
+
+</script>
+<script>
+/* === ampliaciones/isla-4-mina.js === */
+/* AMPLIACIÓN 4 · LA MINA PERDUDA
+   Se entra por una GRIETA que hay justo encima de la cueva pequeñita, al lado
+   del río, y se BAJA a un mundo subterráneo de dos pisos.
+   Estado: EN LA RECÁMARA, sin publicar (ver LEEME.md).
+
+   ESTO NO ES UNA ISLA. Las salas no son islotes: son huecos excavados en la
+   roca, colocados en una parte del mar donde nadie llega andando. Dentro:
+     · se tapa TODO con roca (ni mar, ni isla, ni arena), y sólo se pinta el
+       piso en el que está la jugadora: al bajar, el escenario cambia entero
+     · no hay ningún camino andando entre la mina y la isla: se entra y se sale
+       por la grieta, y se cambia de piso sólo con el ascensor
+     · hay tramos que se andan (túneles) y tramos que sólo se hacen en vagoneta
+     · suena su propia música
+
+   La historia: hace mucho, una minera —Gemma— bajó buscando un tesoro del que
+   se hablaba en el pueblo. Sus tres páginas de diario, repartidas por la mina,
+   cuentan lo que encontró... y lo que decidió hacer con ello.
+
+   Los cuatro retos siguen las reglas del juego: primero decidir QUÉ OPERACIÓN
+   pide el problema y luego escribir el resultado. */
+
+const Mina = {
+
+  /* ---------------------------------------------------- LA GEOMETRÍA
+     Piso 1 arriba (y≈4620) y piso 2 abajo (y≈5120), unidos por el pozo del
+     ascensor. Todo queda lejos de la isla y rodeado de roca. */
+  /* OJO al sitio (18-09-2026): al sur de la isla y al este del espigón. La
+     primera versión estaba al suroeste y se metía encima de la Isla Tenebrosa
+     de Halloween (islote en 1300,5020 con 1050x600), que está apagada pero
+     existe: al probar, la galería caía dentro de ella. Si algún día se añade
+     otra isla, mirar también las apagadas antes de elegir coordenadas. */
+  SALAS: [
+    { id: 'galeria',  piso: 1, x: 3300, y: 4650, rx: 235, ry: 155 },
+    { id: 'fosiles',  piso: 1, x: 4150, y: 4650, rx: 235, ry: 155 },
+    { id: 'estacion', piso: 1, x: 4950, y: 4700, rx: 225, ry: 150 },
+    { id: 'profunda', piso: 2, x: 4950, y: 5100, rx: 245, ry: 158 },
+    { id: 'camara',   piso: 2, x: 4120, y: 5100, rx: 225, ry: 150 },
+  ],
+  TUNELES: [
+    { piso: 1, x: 3725, y: 4650, rx: 200, ry: 40 },     // galería ↔ fósiles
+    { piso: 2, x: 4525, y: 5100, rx: 195, ry: 40 },     // profunda ↔ cámara
+  ],
+  // Por aquí sólo pasa la vagoneta: se ve el carril, pero no se puede andar
+  RAILES: [[4380, 4680], [4510, 4590], [4620, 4850], [4770, 4810], [4880, 4730]],
+  POZO: { x: 4950, y1: 4650, y2: 5160, ancho: 112 },
+
+  piso: 1,
+  paso: null,          // el fundido a negro al entrar o salir por la grieta
+
+  /* ------------------------------------------------------- DÓNDE ESTOY */
+  enElipse(x, y, e) { return Math.pow((x - e.x) / e.rx, 2) + Math.pow((y - e.y) / e.ry, 2) <= 1; },
+
+  pisable(x, y) {
+    return this.SALAS.find(s => this.enElipse(x, y, s)) ||
+           this.TUNELES.find(t => this.enElipse(x, y, t)) || null;
+  },
+
+  // La burbuja entera de la mina, para saber si estamos bajo tierra
+  dentro(x, y) { return x > 3050 && x < 5350 && y > 4400 && y < 5350; },
+
+  activa() {
+    const j = typeof Juego !== 'undefined' && Juego.jugador;
+    return !!j && this.dentro(j.x, j.y);
+  },
+
+  pisoDe() {
+    const j = Juego.jugador, s = j && this.pisable(j.x, j.y);
+    if (s) this.piso = s.piso;
+    return this.piso;
+  },
+
+  /* ------------------------------------------------------- EL ESCENARIO */
+  pintarFondo(ctx, J) {
+    const x0 = J.camX - 80, y0 = J.camY - 80, w = J.ANCHO + 160, h = J.ALTO + 160;
+    ctx.fillStyle = '#231C18';                                   // la roca: tapa el mar
+    ctx.fillRect(x0, y0, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 3;   // vetas del mineral
+    for (let k = 0; k < 14; k++) {
+      const yy = y0 + ((k * 137) % h);
+      ctx.beginPath(); ctx.moveTo(x0, yy);
+      ctx.bezierCurveTo(x0 + w * 0.3, yy - 40, x0 + w * 0.7, yy + 40, x0 + w, yy);
+      ctx.stroke();
+    }
+
+    const piso = this.pisoDe(), dos = this.enAscensor();
+    // el pozo va DEBAJO del suelo de las salas; sólo se ve entero mientras se viaja
+    if (!dos) this.pintarPozo(ctx);
+    this.SALAS.forEach(s => { if (dos || s.piso === piso) this.pintarSala(ctx, s); });
+    this.TUNELES.forEach(t => { if (dos || t.piso === piso) this.pintarTunel(ctx, t); });
+    if (dos || piso === 1) this.pintarRailes(ctx);
+    if (dos) this.pintarPozo(ctx);
+  },
+
+  /* Sólo mientras baja o sube el ascensor se ven los dos pisos a la vez:
+     es el único momento en que tiene sentido, porque estás entre ellos. */
+  enAscensor() {
+    const v = Ampliaciones.viajando() && Juego.vehiculo;
+    return !!v && v.viaje.vehiculo === 'cabina';
+  },
+
+  // ¿Va rodando en la vagoneta o bajando en el ascensor? (para la música)
+  viajando() {
+    const v = Ampliaciones.viajando() && Juego.vehiculo;
+    return !!v && (v.viaje.vehiculo === 'vagoneta' || v.viaje.vehiculo === 'cabina');
+  },
+
+  /* ¿Se pinta esta cosa? Lo del otro piso, no: para eso cambia el escenario */
+  visible(x, y) {
+    if (!this.dentro(x, y)) return true;
+    if (this.enAscensor()) return true;
+    const s = this.pisable(x, y);
+    return !s || s.piso === this.piso;
+  },
+
+  /* Una sala: el suelo con el borde mordido, no un óvalo perfecto */
+  pintarSala(ctx, s) {
+    const borde = (r, dr) => {
+      ctx.beginPath();
+      for (let a = 0; a <= 32; a++) {
+        const ang = a / 32 * Math.PI * 2;
+        const m = 1 + Math.sin(ang * 3 + s.x) * 0.055 + Math.sin(ang * 7 + s.y) * 0.03;
+        const px = s.x + Math.cos(ang) * (s.rx + dr) * m;
+        const py = s.y + Math.sin(ang) * (s.ry + dr) * m;
+        a ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+    };
+    ctx.fillStyle = '#4C423A'; borde(0, 30);        // la pared excavada
+    ctx.fillStyle = '#6B5D50'; borde(0, 12);
+    ctx.fillStyle = '#8A7A69'; borde(0, 0);         // el suelo de la sala
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';       // un poco de polvo claro
+    ctx.beginPath(); ctx.ellipse(s.x - s.rx * 0.2, s.y - s.ry * 0.25, s.rx * 0.5, s.ry * 0.4, 0, 0, 7); ctx.fill();
+
+    // estalactitas colgando del borde de arriba
+    ctx.fillStyle = '#5A4F45';
+    for (let k = -2; k <= 2; k++) {
+      const px = s.x + k * s.rx * 0.36, py = s.y - s.ry + 6, alto = 26 + ((k + 2) % 3) * 12;
+      ctx.beginPath(); ctx.moveTo(px - 11, py); ctx.lineTo(px, py + alto); ctx.lineTo(px + 11, py);
+      ctx.closePath(); ctx.fill();
+    }
+  },
+
+  pintarTunel(ctx, t) {
+    ctx.fillStyle = '#4C423A'; ctx.fillRect(t.x - t.rx, t.y - t.ry - 22, t.rx * 2, t.ry * 2 + 44);
+    ctx.fillStyle = '#7E6F5F'; ctx.fillRect(t.x - t.rx, t.y - t.ry, t.rx * 2, t.ry * 2);
+    ctx.fillStyle = '#5A4F45';                                   // puntales de madera
+    for (let k = -1; k <= 1; k += 2) {
+      for (let i = 0; i < 3; i++) {
+        const px = t.x - t.rx * 0.6 + i * t.rx * 0.6;
+        ctx.fillRect(px - 5, t.y + k * t.ry - (k > 0 ? 0 : 10), 10, 10);
+      }
+    }
+  },
+
+  pintarRailes(ctx) {
+    const p = this.RAILES;
+    ctx.strokeStyle = '#6B5D50'; ctx.lineWidth = 58; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.beginPath(); p.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    ctx.strokeStyle = '#8A7A69'; ctx.lineWidth = 44;
+    ctx.beginPath(); p.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    // las traviesas y los dos carriles
+    for (let k = 1; k < p.length; k++) {
+      const [x1, y1] = p[k - 1], [x2, y2] = p[k];
+      const d = Math.hypot(x2 - x1, y2 - y1), n = Math.max(1, Math.round(d / 30));
+      const ux = (x2 - x1) / d, uy = (y2 - y1) / d;
+      for (let i = 0; i < n; i++) {
+        const cx = x1 + (x2 - x1) * i / n, cy = y1 + (y2 - y1) * i / n;
+        ctx.strokeStyle = '#5E4B38'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(cx + uy * 16, cy - ux * 16); ctx.lineTo(cx - uy * 16, cy + ux * 16); ctx.stroke();
+      }
+    }
+    ctx.strokeStyle = '#B9B0A4'; ctx.lineWidth = 3;
+    [10, -10].forEach(off => {
+      ctx.beginPath();
+      p.forEach(([x, y], i) => {
+        const [px, py] = p[Math.max(0, i - 1)], [nx, ny] = p[Math.min(p.length - 1, i + 1)];
+        const dx = nx - px, dy = ny - py, d = Math.hypot(dx, dy) || 1;
+        const ox = -dy / d * off, oy = dx / d * off;
+        i ? ctx.lineTo(x + ox, y + oy) : ctx.moveTo(x + ox, y + oy);
+      });
+      ctx.stroke();
+    });
+  },
+
+  pintarPozo(ctx) {
+    const z = this.POZO;
+    ctx.fillStyle = '#1B1512';
+    ctx.fillRect(z.x - z.ancho / 2, z.y1, z.ancho, z.y2 - z.y1);
+    ctx.strokeStyle = '#3E342C'; ctx.lineWidth = 6;                 // las guías del ascensor
+    ctx.beginPath(); ctx.moveTo(z.x - 34, z.y1); ctx.lineTo(z.x - 34, z.y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(z.x + 34, z.y1); ctx.lineTo(z.x + 34, z.y2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(180,170,155,0.22)'; ctx.lineWidth = 4;  // travesaños, para ver que bajas
+    for (let y = z.y1 + 30; y < z.y2; y += 56) {
+      ctx.beginPath(); ctx.moveTo(z.x - z.ancho / 2 + 8, y); ctx.lineTo(z.x + z.ancho / 2 - 8, y); ctx.stroke();
+    }
+  },
+
+  /* La penumbra: sólo se ve bien lo que tienes alrededor */
+  penumbra(J) {
+    const ctx = J.ctx, W = J.ANCHO, H = J.ALTO, j = J.jugador;
+    const px = j.x - J.camX, py = j.y - J.camY;
+    const g = ctx.createRadialGradient(px, py, 110, px, py, Math.max(W, H) * 0.6);
+    g.addColorStop(0, 'rgba(10,6,4,0)');
+    g.addColorStop(0.5, 'rgba(10,6,4,0.35)');
+    g.addColorStop(1, 'rgba(8,5,3,0.9)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  },
+
+  /* ------------------------------------- ENTRAR Y SALIR POR LA GRIETA
+     No es un viaje que se vea: es un corte a negro, como cuando se cierra la
+     puerta de la cueva. El ascensor y la vagoneta sí se ven. */
+  puerta(l) {
+    const v = l.viaje;
+    const cruzar = () => UI.dialogo(v.personaje, v.pregunta, [
+      { texto: v.si || '🕯️ ¡Vamos!', accion: () => { UI.cerrar(); this.cruzar(v); } },
+      { texto: 'Ahora no', accion: () => UI.cerrar() },
+    ]);
+    if (!v.paso || Estado.pasoAbierto(v.paso)) return cruzar();
+
+    UI.dialogo(v.personaje, v.cerrado + '<br><br>✨ <b>Si me ayudas, bajamos.</b>', [
+      { texto: '¡Te ayudo!', accion: () => {
+          Desafio.abrir(v.reto, (bien) => {
+            UI.refrescarHud();
+            if (!bien) return;
+            Estado.abrirPaso(v.paso);
+            Sonido.fiesta();
+            UI.dialogo('🎉 ¡Ya está!', v.alAbrir, [
+              { texto: '🕯️ ¡Adentro!', accion: () => { UI.cerrar(); this.cruzar(v); } },
+            ]);
+          });
+        } },
+      { texto: 'Ahora no', accion: () => UI.cerrar() },
+    ]);
+  },
+
+  cruzar(v) {
+    const j = Juego.jugador;
+    Sonido.clic();
+    Juego.destino = null;
+    this.paso = { t0: Juego.t, dur: 1.7, alMedio: () => {
+      j.x = v.destino.x; j.y = v.destino.y; j.z = 0;
+      Juego.mascota.x = j.x - 40; Juego.mascota.y = j.y + 10;
+      Juego.camX = j.x - Juego.ANCHO / 2; Juego.camY = j.y - Juego.ALTO / 2;
+      Juego.destino = null;
+      setTimeout(() => Hada.decir(v.llegada, 7), 400);
+    } };
+  },
+
+  fundido(J) {
+    const f = this.paso;
+    if (!f) return;
+    const k = (J.t - f.t0) / f.dur;
+    if (k >= 1) { this.paso = null; return; }
+    if (k >= 0.5 && !f.hecho) { f.hecho = true; f.alMedio(); }
+    const a = k < 0.5 ? k * 2 : (1 - k) * 2;
+    J.ctx.fillStyle = 'rgba(0,0,0,' + a.toFixed(3) + ')';
+    J.ctx.fillRect(0, 0, J.ANCHO, J.ALTO);
+  },
+
+  /* El plano que sale con la tecla M cuando estás bajo tierra */
+  plano(ctx, W, H) {
+    ctx.fillStyle = '#231C18'; ctx.fillRect(0, 0, W, H);
+    const x1 = 3080, x2 = 5320, y1 = 4420, y2 = 5320;
+    const k = Math.min(W / (x2 - x1) * 0.86, H / (y2 - y1) * 0.8);
+    const X = x => W / 2 + (x - (x1 + x2) / 2) * k, Y = y => H / 2 + (y - (y1 + y2) / 2) * k;
+    const piso = this.pisoDe();
+
+    this.RAILES.forEach(([x, y], i) => {
+      if (!i) return;
+      const [px, py] = this.RAILES[i - 1];
+      ctx.strokeStyle = piso === 1 ? '#9A8A76' : '#463B32'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(X(px), Y(py)); ctx.lineTo(X(x), Y(y)); ctx.stroke();
+    });
+    const z = this.POZO;
+    ctx.strokeStyle = '#6B5D50'; ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.moveTo(X(z.x), Y(z.y1)); ctx.lineTo(X(z.x), Y(z.y2)); ctx.stroke();
+    this.TUNELES.forEach(t => {
+      ctx.fillStyle = t.piso === piso ? '#9A8A76' : '#463B32';
+      ctx.fillRect(X(t.x - t.rx), Y(t.y - t.ry), t.rx * 2 * k, t.ry * 2 * k);
+    });
+
+    const NOMBRES = { galeria: 'Galería', fosiles: 'Fósiles', estacion: 'Estación',
+                      profunda: 'Mina profunda', camara: 'Cámara de Gemma' };
+    const j = Juego.jugador;
+    this.SALAS.forEach(s => {
+      const suyo = s.piso === piso;
+      ctx.fillStyle = suyo ? '#8A7A69' : '#3A312A';
+      ctx.beginPath(); ctx.ellipse(X(s.x), Y(s.y), s.rx * k, s.ry * k, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = suyo ? '#FFF3D6' : '#6B6058';
+      ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText(NOMBRES[s.id], X(s.x), Y(s.y) + 4);
+    });
+    if (j) {
+      ctx.fillStyle = '#FFE680';
+      ctx.beginPath(); ctx.arc(X(j.x), Y(j.y), 7, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#2F2A28'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.fillStyle = '#C9BBA6'; ctx.font = '14px system-ui';
+    ctx.fillText('Piso ' + piso + ' de 2 · lo apagado es el otro piso', W / 2, H - 16);
+  },
+};
+
+/* DORMIDA HASTA QUE LA BARRA DE SORPRESAS LA ABRA (19-09-2026)
+   El código viaja dentro del juego, pero la isla no existe para la jugadora
+   hasta que llena una barra de retos. Ver motor/sorpresas.js. */
+const MINA_ABIERTA = typeof sorpresaAbierta === 'function' ? sorpresaAbierta('mina') : true;
+
+ampliacion(!MINA_ABIERTA ? { id: 'mina' } : {
+  id: 'mina',
+
+  lugares: [
+    // ------------------------------------ LA GRIETA (arriba, en la isla)
+    /* Incrustada en la ladera sur de la montaña, al oeste del río: la roca de la
+       montaña se abre justo aquí (18-09-2026, lo pidió Antonio). */
+    { id: 'cuevaEntrada', x: 4800, y: 1650, accion: 'cueva', dibujo: 'grieta',
+      nombre: 'La grieta de la roca', mapa: 'L\'Esquerda', personaje: 'Fosca',
+      viaje: {
+        paso: 'farolMina', reto: 'cuevaReto', personaje: 'Fosca',
+        cerrado: 'Soy Fosca. Vivo aquí, en esta grieta del pie de la montaña.<br><br>' +
+                 'Esto no es una cueva cualquiera: baja y baja hasta una mina. Ahí abajo está ' +
+                 'oscurísimo, y sin un farol encendido no se puede entrar.',
+        alAbrir: 'Fosca te da un farol pequeño, con una llama que no se apaga.<br><br>' +
+                 '<b>Ya puedes bajar a la mina cuando quieras.</b>',
+        pregunta: '¿Bajamos a la mina? Sujeta bien el farol.',
+        si: '🕯️ ¡Bajamos!',
+        destino: { x: 3320, y: 4690 },
+        llegada: '🕯️ Estás <b>bajo tierra</b>. Huele a piedra mojada.' } },
+
+    // ------------------------------------------- PISO 1 · la galería
+    { id: 'salidaCueva', x: 3140, y: 4590, accion: 'cueva', dibujo: 'salida',
+      nombre: 'La subida a la superficie', mapa: 'Cap Amunt', personaje: 'Fosca',
+      viaje: {
+        personaje: 'Fosca',
+        pregunta: '¿Subimos otra vez? Se sale por donde entramos.',
+        si: '☀️ ¡Subimos!',
+        destino: { x: 4800, y: 1760 },
+        llegada: '☀️ De vuelta al aire libre. Qué claridad.' } },
+    { id: 'galeria', x: 3400, y: 4730, accion: 'ver', historia: 'galeria', dibujo: 'galeriaSitio',
+      nombre: 'El gancho de la pared', mapa: 'La Galeria' },
+    { id: 'pintura', x: 3280, y: 4540, accion: 'ver', historia: 'pintura', dibujo: 'pintura',
+      nombre: 'La pintura de la pared', mapa: 'La Pintura' },
+    { id: 'diario1', x: 3510, y: 4610, accion: 'ver', historia: 'diario1', dibujo: 'pergamino',
+      nombre: 'Una página amarillenta', mapa: 'Pàgina I' },
+
+    // ------------------------------------------ PISO 1 · los fósiles
+    { id: 'fosiles', x: 4120, y: 4620, accion: 'reto', dibujo: 'fosilesSala',
+      nombre: 'La sala de los fósiles', mapa: 'Sala dels Fòssils', personaje: 'Petra, la paleontóloga' },
+    { id: 'diario2', x: 3990, y: 4740, accion: 'ver', historia: 'diario2', dibujo: 'pergamino',
+      nombre: 'Otra página, con manchas de barro', mapa: 'Pàgina II' },
+    { id: 'carrito', x: 4340, y: 4690, accion: 'carrito', dibujo: 'vagonetaParada',
+      nombre: 'La vagoneta', mapa: 'La Vagoneta',
+      viaje: {
+        personaje: 'La vagoneta de la mina',
+        pregunta: 'Los raíles llegan hasta la estación del ascensor. A pie no se puede: ' +
+                  'hay un tramo excavado en la roca.<br><br>¿Subes a la vagoneta?',
+        si: '🚃 ¡Subo!',
+        vehiculo: 'vagoneta', velocidad: 1.6,
+        subida: [[4380, 4680]],
+        ruta: [[4380, 4680], [4510, 4590], [4620, 4850], [4770, 4810], [4880, 4730]],
+        bajada: [[4900, 4730]],
+        destino: { x: 4900, y: 4730 },
+        llegada: '🚃 La vagoneta frena con un chirrido. Esto es la <b>estación del ascensor</b>.' } },
+
+    // ----------------------------------------- PISO 1 · la estación
+    { id: 'carritoVuelta', x: 4800, y: 4780, accion: 'carrito', dibujo: 'vagonetaVuelta',
+      nombre: 'La vagoneta de vuelta', mapa: 'Tornada',
+      viaje: {
+        personaje: 'La vagoneta de la mina',
+        pregunta: '¿Vuelves en la vagoneta a la sala de los fósiles?',
+        si: '🚃 ¡Vamos!',
+        vehiculo: 'vagoneta', velocidad: 1.6,
+        subida: [[4880, 4730]],
+        ruta: [[4880, 4730], [4770, 4810], [4620, 4850], [4510, 4590], [4380, 4680]],
+        bajada: [[4340, 4730]],
+        destino: { x: 4340, y: 4730 },
+        llegada: '🚃 De vuelta entre los huesos de piedra.' } },
+    { id: 'ascensor', x: 5060, y: 4630, accion: 'ascensor', dibujo: 'ascensorArriba',
+      nombre: 'El ascensor de Timó', mapa: 'L\'Ascensor', personaje: 'Timó, el capataz',
+      viaje: {
+        paso: 'cascoMina', reto: 'ascensorReto', personaje: 'Timó, el capataz',
+        cerrado: 'Soy Timó. Este ascensor baja al piso de abajo, la mina profunda.<br><br>' +
+                 'Ahí abajo cae alguna piedra: sin <b>casco</b>, no dejo bajar a nadie.',
+        alAbrir: 'Timó te da un casco con una lucecita en la punta.<br><br>' +
+                 '<b>Ya puedes bajar al piso de abajo cuando quieras.</b>',
+        pregunta: '¿Bajamos al piso de abajo? Agárrate, que traquetea.',
+        si: '⬇️ ¡Abajo!',
+        vehiculo: 'cabina', velocidad: 1.5,
+        subida: [[4950, 4670]],
+        ruta: [[4950, 4670], [4950, 5100]],
+        bajada: [[4950, 5040]],
+        destino: { x: 4950, y: 5040 },
+        llegada: '⬇️ Llegas al <b>piso de abajo</b>. Aquí el aire es más frío.' } },
+    { id: 'timoCharla', x: 5010, y: 4790, accion: 'hablar', charla: 'timo', dibujo: 'timoSentado',
+      nombre: 'Timó, en su banco', mapa: 'Timó' },
+
+    // ------------------------------------- PISO 2 · la mina profunda
+    { id: 'ascensorVuelta', x: 4950, y: 4980, accion: 'ascensor', dibujo: 'ascensorAbajo',
+      nombre: 'El ascensor, hacia arriba', mapa: 'Cap Amunt',
+      viaje: {
+        personaje: 'Timó, el capataz',
+        pregunta: '¿Subes otra vez al piso de arriba?',
+        si: '⬆️ ¡Arriba!',
+        vehiculo: 'cabina', velocidad: 1.5,
+        subida: [[4950, 5040]],
+        ruta: [[4950, 5040], [4950, 4670]],
+        bajada: [[5020, 4700]],
+        destino: { x: 5020, y: 4700 },
+        llegada: '⬆️ Ya estás arriba, en la estación.' } },
+    { id: 'profunda', x: 5060, y: 5150, accion: 'reto', dibujo: 'profundaSala',
+      nombre: 'La veta de gemas', mapa: 'La Mina Profunda', personaje: 'Blai, el minero de las gemas' },
+
+    // ---------------------------------- PISO 2 · la cámara de Gemma
+    { id: 'cofre', x: 4200, y: 5040, accion: 'ver', historia: 'cofre', dibujo: 'cofre',
+      nombre: 'El cofre de Gemma', mapa: 'El Cofre' },
+    { id: 'diario3', x: 3980, y: 5130, accion: 'ver', historia: 'diario3', dibujo: 'pergamino',
+      nombre: 'La última página, doblada en cuatro', mapa: 'Pàgina III' },
+  ],
+
+  piezas: [
+    { id: 'farol', x: 4780, y: 5180, icono: '🏮', nombre: 'Un farol de minero, apagado',
+      hallazgo: 'Entre unas piedras, un farol viejo. Le queda un poco de aceite.',
+      encaja: 'galeria', arreglo: 'La galería de entrada se ilumina',
+      pista: 'Muy lejos de aquí, nada más entrar en la mina, hay un gancho vacío en la pared.',
+      alColocar: 'Cuelgas el farol del gancho de la pared. La llama prende y la galería ' +
+                 'entera cambia de color.<br><br>Ya no da ningún miedo entrar.' },
+    { id: 'piqueta', x: 4290, y: 5180, icono: '⛏️', nombre: 'Una piqueta con el mango roto',
+      hallazgo: 'Media piqueta, con el mango partido, tirada en el suelo.',
+      encaja: 'fosiles', arreglo: 'Petra por fin puede excavar con cuidado',
+      pista: 'En otro piso de la mina hay alguien que saca huesos de la roca con las manos.',
+      alColocar: 'Le llevas la piqueta a Petra. Ata el mango con cuerda y prueba el filo.<br><br>' +
+                 '«¡Perfecta! Ahora sí que no rompo ningún hueso.»' },
+  ],
+
+  /* ------------------------------------------------------------ RETOS */
+  retos: {
+
+    cuevaReto: {
+      paseo: true,
+      quien: 'Fosca',
+      saludo: 'Antes de darte el farol, ayúdame con una cuenta. Cuido de que nadie se pierda ahí dentro.',
+      exito: 'Buena cuenta. Toma el farol: no se apaga con el viento.',
+      dormido: 'Se me han cerrado los ojos… los murciélagos dormimos de día. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con una cuenta más corta.',
+      moraleja: { titulo: 'Qué pregunta el problema',
+        texto: 'Antes de hacer la cuenta, busca <b>qué te preguntan</b>.<br><br>' +
+               '«¿Cuántos hacen falta?», «¿cuántos quedan?», «¿cuántos para cada uno?» ' +
+               'son preguntas distintas y piden cuentas distintas.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const f = AZ(4, 9), h = AZ(6, 9); return { f, h, sol: f * h, mal: f + h }; },
+            enunciado: 'Cuelgo {f} farolillos en la entrada. Cada uno lleva {h} horas de aceite. ¿Cuántas horas de luz hay en total?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{f} más {h} son {mal}. Pero CADA farolillo da {h} horas.',
+                       repartir: 'No repartimos: queremos el total de horas.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas horas de luz?', sol: '{sol}' }],
+            pistas: ['{f} farolillos iguales.', 'La tabla del {h}: {f} × {h}.'] },
+          { vars: () => { const m = AZ(3, 6), g = AZ(3, 5), y = AZ(2, 8);
+                          return { m, g, y, tot: m * g, sol: m * g - y }; },
+            enunciado: 'Entran {m} exploradores y cada uno necesita {g} velas para todo el día. ' +
+                       'En la cesta ya hay {y} velas. ¿Cuántas faltan por meter?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{m} × {g} = {tot} hacen falta. Pero ya hay {y} en la cesta…',
+                       quitar: 'Antes de quitar, hay que saber cuántas hacen falta: {m} personas de {g}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas velas hacen falta?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántas faltan por meter?', sol: '{sol}' }],
+            pistas: ['Primero: {m} × {g} = {tot}.', 'Después: {tot} menos las {y} que ya hay.'] },
+          { vars: () => { const p = AZ(3, 6), k = AZ(3, 8); return { p, k, n: p * k, sol: k }; },
+            enunciado: 'Hay {n} antorchas para repartir entre las {p} paredes de la entrada, a partes iguales. ¿Cuántas en cada pared?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántas le tocan a cada pared.',
+                       multiplicar: 'Si multiplico salen muchísimas más antorchas de las que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas en cada pared?', sol: '{sol}' }],
+            pistas: ['«A partes iguales» es repartir.', '¿Qué número por {p} da {n}?'] },
+        ],
+        facil: { enunciado: 'Cuelgo 4 farolillos con 5 horas de luz cada uno. ¿Cuántas horas hay en total?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 × 5', sol: 20 }],
+          pistas: ['Cuatro veces cinco.', '5, 10, 15, 20.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(10, 20), b = AZ(3, 9); return { a, b, sol: a - b }; },
+            enunciado: 'Tengo {a} velas en la cesta. Ya he usado {b}. ¿Cuántas me quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si las uso, quedan menos velas, no más.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Tenía {a} y uso {b}.', 'Cuenta hacia atrás desde {a}.'] },
+          { vars: () => { const c = AZ(2, 6); return { c, sol: c * 5 }; },
+            enunciado: 'Cuelgo {c} farolillos. Cada uno da 5 horas de luz. ¿Cuántas horas en total?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y 5… pero CADA farolillo da 5.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{c} × 5', sol: '{sol}' }],
+            pistas: ['De 5 en 5.', '5, 10, 15…'] },
+        ],
+        facil: { enunciado: 'Tengo 8 velas y uso 3. ¿Cuántas me quedan?',
+          operacion: 'quitar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '8 − 3', sol: 5 }],
+          pistas: ['Ocho menos tres.', 'Cinco.'] },
+      },
+    },
+
+    fosiles: {
+      trabajo: true,
+      quien: 'Petra, la paleontóloga',
+      saludo: 'Estoy contando huesos de un dragón de mar, enorme. ¿Me echas una mano con las cuentas?',
+      exito: '¡Apuntado! Mira este hueso: es más grande que tu brazo.',
+      repetido: 'Hoy ya conté estos huesos. Mañana sigo por otra fila y te pago mejor.',
+      dormido: 'De tanto mirar huesos pequeños se me han cerrado los ojos. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos huesos.',
+      moraleja: { titulo: 'Filas de huesos',
+        texto: 'Si sabes cuántas filas y cuántos huesos hay en cada una, <b>multiplicas</b>.<br><br>' +
+               'Si sabes el total y cuántas filas, y quieres saber cuántos hay en cada una, <b>divides</b>.<br><br>' +
+               'Es la misma cuenta, pero al revés.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const f = AZ(3, 9), h = AZ(4, 9); return { f, h, sol: f * h, mal: f + h }; },
+            enunciado: 'El espinazo tiene {f} filas de vértebras. Cada fila tiene {h} huesos. ¿Cuántos huesos hay en el espinazo?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{f} más {h} son {mal}. Pero CADA fila tiene {h} huesos.',
+                       repartir: 'No repartimos: queremos el total de huesos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos huesos?', sol: '{sol}' }],
+            pistas: ['{f} filas y todas tienen lo mismo.', 'La tabla del {h}.'] },
+          { vars: () => { const h = AZ(4, 9), f = AZ(3, 9); return { h, f, n: h * f, sol: f }; },
+            enunciado: 'He encontrado {n} huesos. Los coloco en filas de {h}. ¿Cuántas filas completo?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántas filas salen.',
+                       multiplicar: '{n} × {h} serían muchísimos huesos. ¡No tengo tantos!' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas filas?', sol: '{sol}' }],
+            pistas: ['{n} huesos, de {h} en {h}.', '¿Qué número por {h} da {n}?'] },
+          { vars: () => { const a = AZ(15, 40), d = AZ(6, 25); return { a, b: a + d, sol: d }; },
+            enunciado: 'Ayer conté {a} huesos. Hoy llevo {b}. ¿Cuántos huesos más he contado hoy?',
+            operacion: 'compara', opciones: ['juntar', 'compara', 'repartir'],
+            explica: { juntar: 'Juntarlos dice cuántos hay entre los dos días, no cuántos MÁS.',
+                       repartir: 'No hay nada que repartir.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos más?', sol: '{sol}' }],
+            pistas: ['Compara {b} con {a}.', '{b} menos {a}.'] },
+          { vars: () => { const c = AZ(3, 6), h = AZ(5, 9), r = AZ(4, 14);
+                          return { c, h, r, tot: c * h, sol: c * h - r }; },
+            enunciado: 'Encuentro {c} cajas con {h} huesos cada una. Luego se rompen {r} sin querer. ¿Cuántos huesos quedan enteros?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{c} × {h} = {tot} huesos hay. Pero se rompen {r}…',
+                       quitar: 'Antes de quitar, hay que saber cuántos huesos hay: {c} cajas de {h}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos huesos hay?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántos quedan enteros?', sol: '{sol}' }],
+            pistas: ['Primero: {c} × {h} = {tot}.', 'Después: {tot} menos {r}.'] },
+        ],
+        facil: { enunciado: 'Hay 4 filas de vértebras con 5 huesos cada una. ¿Cuántos huesos hay?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 × 5', sol: 20 }],
+          pistas: ['Cuatro veces cinco.', '5, 10, 15, 20.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(5, 14), b = AZ(3, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Por la mañana encuentro {a} huesos. Por la tarde encuentro {b} más. ¿Cuántos encuentro en total?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No se pierde ningún hueso: se encuentran más.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'] },
+          { vars: () => { const a = AZ(12, 20), b = AZ(3, 9); return { a, b, sol: a - b }; },
+            enunciado: 'Tengo {a} huesos en la mesa. Guardo {b} en una caja. ¿Cuántos quedan en la mesa?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si los guardas, quedan menos en la mesa.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Tenía {a} y se van {b}.', 'Cuenta hacia atrás desde {a}.'] },
+          { vars: () => { const c = AZ(2, 9); return { c, sol: c * 10 }; },
+            enunciado: 'Hay {c} cajas. Cada caja tiene 10 huesos. ¿Cuántos huesos hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y 10… pero CADA caja tiene 10.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{c} × 10', sol: '{sol}' }],
+            pistas: ['De 10 en 10.', '10, 20, 30…'] },
+        ],
+        facil: { enunciado: 'Encuentro 6 huesos y luego 3 más. ¿Cuántos encuentro?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '6 + 3', sol: 9 }],
+          pistas: ['Seis y tres.', 'Nueve.'] },
+      },
+    },
+
+    ascensorReto: {
+      paseo: true,
+      quien: 'Timó, el capataz',
+      saludo: 'Antes de darte un casco, ayúdame a repartir la carga del ascensor. ¿Vale?',
+      exito: '¡Bien repartido! Toma tu casco: la luz se enciende sola en la oscuridad.',
+      dormido: 'Con este ruido de máquinas me he quedado frito. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos cajas.',
+      moraleja: { titulo: 'Qué pregunta el problema',
+        texto: 'Antes de hacer la cuenta, busca <b>qué te preguntan</b>.<br><br>' +
+               '«¿Cuántas caben?», «¿cuántas hacen falta?», «¿cuántas para cada vagón?» ' +
+               'son preguntas distintas y piden cuentas distintas.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const v = AZ(3, 6), s = AZ(4, 9); return { v, s, sol: v * s, mal: v + s }; },
+            enunciado: 'El ascensor lleva {v} vagones. En cada vagón caben {s} sacos de piedra. ¿Cuántos sacos caben en total?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{v} más {s} son {mal}. Pero CADA vagón lleva {s}.',
+                       repartir: 'No repartimos: queremos el total que cabe.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos sacos caben?', sol: '{sol}' }],
+            pistas: ['{v} vagones iguales.', 'La tabla del {s}.'] },
+          { vars: () => { const m = AZ(3, 6), s = AZ(3, 8), tot = m * s, c = AZ(2, tot - 1);
+                          return { m, s, c, tot, sol: tot - c }; },
+            enunciado: 'Bajan {m} mineros y cada uno lleva {s} herramientas. Ya hay {c} herramientas abajo. ¿Cuántas faltan por bajar?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{m} × {s} = {tot} hacen falta. Pero ya hay {c} abajo…',
+                       quitar: 'Antes de quitar, hay que saber cuántas hacen falta: {m} mineros de {s}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas herramientas hacen falta?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántas faltan por bajar?', sol: '{sol}' }],
+            pistas: ['Primero: {m} × {s} = {tot}.', 'Después: {tot} menos las {c} que ya hay.'] },
+          { vars: () => { const p = AZ(3, 6), k = AZ(3, 9); return { p, k, n: p * k, sol: k }; },
+            enunciado: 'Bajan {n} cascos y se reparten entre {p} vagones, a partes iguales. ¿Cuántos en cada vagón?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántos le tocan a cada vagón.',
+                       multiplicar: 'Si multiplico salen muchísimos más cascos de los que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos en cada vagón?', sol: '{sol}' }],
+            pistas: ['«A partes iguales» es repartir.', '¿Qué número por {p} da {n}?'] },
+        ],
+        facil: { enunciado: 'El ascensor lleva 4 vagones con 5 sacos cada uno. ¿Cuántos sacos caben?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 × 5', sol: 20 }],
+          pistas: ['Cuatro veces cinco.', '5, 10, 15, 20.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(10, 20), b = AZ(3, 9); return { a, b, sol: a - b }; },
+            enunciado: 'En el ascensor caben {a} sacos. Ya hay {b} subidos. ¿Cuántos más caben?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si juntas, salen más sacos de los que caben.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Caben {a} y ya hay {b}.', 'Cuenta desde {b} hasta {a}.'] },
+          { vars: () => { const c = AZ(2, 6); return { c, sol: c * 5 }; },
+            enunciado: 'Bajo {c} vagones con 5 cascos cada uno. ¿Cuántos cascos bajo?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y 5… pero CADA vagón lleva 5.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{c} × 5', sol: '{sol}' }],
+            pistas: ['De 5 en 5.', '5, 10, 15…'] },
+        ],
+        facil: { enunciado: 'En el ascensor caben 8 sacos y ya hay 3. ¿Cuántos más caben?',
+          operacion: 'quitar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '8 − 3', sol: 5 }],
+          pistas: ['Ocho menos tres.', 'Cinco.'] },
+      },
+    },
+
+    profunda: {
+      trabajo: true,
+      quien: 'Blai, el minero de las gemas',
+      saludo: 'He sacado gemas de la veta y hay que repartirlas entre los mineros. ¿Me ayudas?',
+      exito: '¡Repartidas! Mira cómo brilla esta, tiene un punto azul dentro.',
+      repetido: 'Hoy ya repartí estas gemas. Mañana sale una veta nueva y te pago mejor.',
+      dormido: 'Con la piedra tan calentita me he quedado dormido. Vuelve luego.',
+      despierta: 'Ya estoy. Vamos con menos gemas.',
+      moraleja: { titulo: 'Repartir de verdad',
+        texto: 'Si sabes cuántas gemas hay y entre cuántos se reparten, <b>divides</b>.<br><br>' +
+               'Si primero hay que juntar dos montones y LUEGO repartir, es un problema de ' +
+               '<b>dos pasos</b>: primero una cuenta, después la otra.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const g = AZ(3, 6), m = AZ(3, 9); return { g, m, n: g * m, sol: m }; },
+            enunciado: 'Hay {n} gemas para repartir entre {g} mineros, a partes iguales. ¿Cuántas le tocan a cada uno?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar no dice cuántas le tocan a cada minero.',
+                       multiplicar: 'Si multiplico salen muchísimas más gemas de las que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas para cada uno?', sol: '{sol}' }],
+            pistas: ['«A partes iguales» es repartir.', '¿Qué número por {g} da {n}?'] },
+          { vars: () => { const v1 = AZ(6, 15), v2 = AZ(6, 15), m = AZ(3, 6);
+                          return { v1, v2, m, tot: v1 + v2 }; },
+            enunciado: 'Saco {v1} gemas de una veta y {v2} de otra. Las reparto entre {m} mineros, a partes iguales, y sobran algunas en la bolsa. ¿Cuántas gemas junto antes de repartir?',
+            operacion: 'juntar', opciones: ['juntar', 'repartir', 'dosPasos'],
+            explica: { repartir: 'Antes de repartir hay que saber cuántas gemas hay en total.',
+                       dosPasos: 'Aquí solo preguntamos el total: eso es un solo paso, juntar.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas gemas junto?', sol: '{tot}' }],
+            pistas: ['{v1} de una veta y {v2} de otra.', '{v1} + {v2}.'] },
+          { vars: () => { const c = AZ(3, 6), g = AZ(4, 9), v = AZ(2, 10);
+                          return { c, g, v, tot: c * g, sol: c * g - v }; },
+            enunciado: 'Encuentro {c} cofrecillos con {g} gemas cada uno. Vendo {v} gemas. ¿Cuántas gemas me quedan?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{c} × {g} = {tot} gemas tengo. Pero vendo {v}…',
+                       quitar: 'Antes de quitar, hay que saber cuántas gemas hay: {c} cofrecillos de {g}.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas gemas tengo?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántas me quedan?', sol: '{sol}' }],
+            pistas: ['Primero: {c} × {g} = {tot}.', 'Después: {tot} menos {v}.'] },
+          { vars: () => { const g = AZ(3, 9), p = AZ(6, 9); return { g, p, sol: g * p, mal: g + p }; },
+            enunciado: 'Cada minero necesita {p} monedas para comprar herramientas. Somos {g} mineros. ¿Cuántas monedas hacen falta en total?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'quitar'],
+            explica: { juntar: '{g} más {p} son {mal}. Pero CADA minero necesita {p}.',
+                       quitar: 'No hay nada que quitar.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas monedas?', sol: '{sol}' }],
+            pistas: ['{g} mineros, {p} monedas cada uno.', 'La tabla del {p}.'] },
+        ],
+        facil: { enunciado: 'Hay 20 gemas para repartir entre 4 mineros. ¿Cuántas le tocan a cada uno?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '20 ÷ 4', sol: 5 }],
+          pistas: ['¿Qué número por 4 da 20?', 'Cinco.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(5, 14), b = AZ(3, 9); return { a, b, sol: a + b }; },
+            enunciado: 'Saco {a} gemas por la mañana y {b} más por la tarde. ¿Cuántas saco en total?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No se pierde ninguna gema: se sacan más.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['{a} y {b} más.', 'Cuenta desde {a}.'] },
+          { vars: () => { const a = AZ(11, 19), b = AZ(2, 8); return { a, b, sol: a - b }; },
+            enunciado: 'Tengo {a} gemas y regalo {b}. ¿Cuántas me quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si regalas, te quedan menos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Tenía {a} y regalo {b}.', 'Cuenta hacia atrás.'] },
+          { vars: () => { const g = AZ(3, 8); return { g, sol: g * 2 }; },
+            enunciado: 'Hay {g} mineros y cada uno lleva 2 gemas en la mano. ¿Cuántas gemas hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{g} y 2… pero CADA minero lleva 2.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{g} × 2', sol: '{sol}' }],
+            pistas: ['De 2 en 2.', 'El doble de {g}.'] },
+        ],
+        facil: { enunciado: 'Saco 4 gemas y llegan 4 más. ¿Cuántas hay?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '4 + 4', sol: 8 }],
+          pistas: ['Cuatro y cuatro.', 'Ocho.'] },
+      },
+    },
+  },
+
+  /* --------------------------------------------------------- HISTORIAS */
+  historias: {
+    galeria: { titulo: 'El gancho de la pared',
+      texto: 'Un gancho de hierro clavado en la roca, a la altura de tu cabeza. Estuvo hecho ' +
+             'para colgar algo que diera luz, pero está vacío.<br><br>' +
+             'Arriba, entre las estalactitas, revolotean unos murciélagos que no te hacen ningún caso.' },
+    pintura: { titulo: 'La pintura de la pared',
+      texto: 'Alguien pintó aquí, hace muchísimo, con un color rojizo que ya casi no se ve: ' +
+             'una fila de personas pequeñas caminando hacia una montaña con una estrella encima.<br><br>' +
+             'Nadie sabe quién la pintó. Ni por qué.' },
+    diario1: { titulo: 'Una página amarillenta',
+      texto: '«Me llamo Gemma. Llevo tres días bajando. En el pueblo dicen que aquí abajo ' +
+             'hay un tesoro escondido, de cuando la isla no tenía Farol y todo era más difícil.<br><br>' +
+             'Si algo me pasa, que sepan que no bajé por miedo. Bajé por curiosidad.»' },
+    diario2: { titulo: 'Otra página, con manchas de barro',
+      texto: '«He encontrado huesos enormes, más grandes que los de cualquier cabra o vaca. ' +
+             'Debieron de ser de un animal como no he visto nunca, mitad pez y mitad dragón.<br><br>' +
+             'Sigo bajando. Cada vez hace más frío.»' },
+    diario3: { titulo: 'La última página, doblada en cuatro',
+      texto: '«Encontré el tesoro: un cofre de gemas, más de las que puedo cargar.<br><br>' +
+             'Pero he pensado que un tesoro escondido no sirve de nada. Lo he dejado aquí, con ' +
+             'esta nota: quien las encuentre, que las use para algo que ayude a todos, no solo a uno.<br><br>' +
+             '— Gemma»' },
+    cofre: { titulo: 'El cofre de Gemma',
+      texto: 'Un cofre de madera vieja, abierto, con unas pocas gemas todavía dentro: rojas, ' +
+             'azules, verdes, cada una del tamaño de una uña.<br><br>' +
+             'Las demás debió de llevárselas Gemma. Cuentan en el pueblo que, poco después, ' +
+             'el Farol de Coral tuvo luz nueva durante muchos inviernos.' },
+  },
+
+  charlas: {
+    timo: {
+      quien: 'Timó, el capataz',
+      saludo: 'Hola. Llevo el ascensor desde hace años. Antes lo llevaba mi padre.',
+      opciones: [
+        { texto: '¿Me cuentas un chiste?',
+          respuesta: '—¿Por qué las piedras nunca se resfrían?<br><br>—Porque van siempre bien abrigadas… de tierra.' },
+        { texto: '¿Conociste a Gemma?',
+          respuesta: 'No, eso fue antes de mi padre. Pero cuenta la leyenda que bajó sola y no ' +
+                     'volvió a subir con nada en los bolsillos.<br><br>Dicen que lo dejó todo aquí abajo, para quien lo necesitara.' },
+        { texto: '¿Por qué hace falta un casco?',
+          respuesta: 'Alguna piedra suelta cae de vez en cuando. Con casco, ni te enteras.<br><br>Sin casco, no te dejo bajar. Es la única norma.' },
+        { texto: '¿Y la vagoneta?',
+          respuesta: 'Va por los raíles hasta la sala de los fósiles. Ese tramo no se puede andar: ' +
+                     'la galería está excavada justo para el carril.<br><br>Súbete y déjala rodar.' },
+      ],
+    },
+  },
+
+  /* ----------------------------------------------------------- DIBUJOS */
+  dibujos: {
+    // ---------- arriba, en la isla
+    /* La boca de la mina, abierta en la ladera: la peña se funde con la montaña
+       que hay justo detrás, y los maderos dicen que esto es una mina. */
+    grieta(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x, y + 8, 76, 0);
+      ctx.fillStyle = '#6E6058';                                    // la peña, como la montaña
+      ctx.beginPath();
+      ctx.moveTo(x - 96, y + 22); ctx.lineTo(x - 78, y - 58); ctx.lineTo(x - 34, y - 104);
+      ctx.lineTo(x + 18, y - 116); ctx.lineTo(x + 74, y - 74); ctx.lineTo(x + 96, y + 22);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#584C44';                                    // la cara en sombra
+      ctx.beginPath();
+      ctx.moveTo(x + 18, y - 116); ctx.lineTo(x + 74, y - 74); ctx.lineTo(x + 96, y + 22);
+      ctx.lineTo(x + 30, y + 22); ctx.closePath(); ctx.fill();
+
+      ctx.fillStyle = '#3B332C';                                    // el hueco, excavado
+      ctx.beginPath();
+      ctx.moveTo(x - 44, y + 22); ctx.lineTo(x - 40, y - 42);
+      ctx.quadraticCurveTo(x, y - 76, x + 40, y - 42);
+      ctx.lineTo(x + 44, y + 22); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#0D0A08';                                    // la oscuridad de dentro
+      ctx.beginPath();
+      ctx.moveTo(x - 30, y + 22); ctx.lineTo(x - 27, y - 34);
+      ctx.quadraticCurveTo(x, y - 62, x + 27, y - 34);
+      ctx.lineTo(x + 30, y + 22); ctx.closePath(); ctx.fill();
+
+      ctx.fillStyle = '#7A4B2F';                                    // los maderos del marco
+      ctx.fillRect(x - 52, y - 48, 13, 72);
+      ctx.fillRect(x + 39, y - 48, 13, 72);
+      ctx.fillStyle = '#8D5A3B';
+      ctx.fillRect(x - 60, y - 60, 120, 15);
+      ctx.fillStyle = '#5E3A24';
+      ctx.fillRect(x - 60, y - 60, 120, 4);
+
+      const chispa = 0.4 + Math.sin(this.t * 2) * 0.18;             // el farol de dentro
+      ctx.fillStyle = 'rgba(255,214,110,' + chispa.toFixed(2) + ')';
+      ctx.beginPath(); ctx.ellipse(x, y + 6, 16, 10, 0, 0, 7); ctx.fill();
+
+      this.pintar_fosca(ctx, x + 66, y - 86, dormido);              // Fosca, colgada del saliente
+    },
+    /* Fosca es un murciélago: no lleva monigote, se dibuja ella entera */
+    fosca(ctx, x, y, dormido) {
+      const alas = dormido ? 0 : Math.sin(this.t * 4) * 9;
+      ctx.save(); ctx.translate(x, y);
+      ctx.strokeStyle = '#3A3230'; ctx.lineWidth = 3;                 // las patitas, agarradas
+      ctx.beginPath(); ctx.moveTo(-5, -14); ctx.lineTo(-5, -20);
+      ctx.moveTo(5, -14); ctx.lineTo(5, -20); ctx.stroke();
+      ctx.fillStyle = '#3A3230';
+      ctx.beginPath(); ctx.moveTo(-10, -4); ctx.lineTo(-28, -12 + alas); ctx.lineTo(-10, 9); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(10, -4); ctx.lineTo(28, -12 - alas); ctx.lineTo(10, 9); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 14, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-9, 10); ctx.lineTo(-4, 18); ctx.lineTo(-1, 10); ctx.fill();  // orejas
+      ctx.beginPath(); ctx.moveTo(9, 10); ctx.lineTo(4, 18); ctx.lineTo(1, 10); ctx.fill();
+      ctx.fillStyle = '#FFF3C4';                                      // los ojos (está boca abajo)
+      if (dormido) {
+        ctx.fillRect(-6, 7, 5, 2); ctx.fillRect(1, 7, 5, 2);
+      } else {
+        ctx.beginPath(); ctx.arc(-4, 7, 2.2, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(4, 7, 2.2, 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    },
+
+    // ---------- piso 1
+    salida(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = '#3B342E';                                    // la rampa que sube
+      ctx.beginPath(); ctx.moveTo(x - 46, y + 14); ctx.lineTo(x - 18, y - 76);
+      ctx.lineTo(x + 26, y - 76); ctx.lineTo(x + 48, y + 14); ctx.closePath(); ctx.fill();
+      const luz = 0.5 + Math.sin(this.t * 1.2) * 0.08;
+      ctx.fillStyle = 'rgba(255,240,190,' + luz.toFixed(2) + ')';   // la luz del día, al fondo
+      ctx.beginPath(); ctx.ellipse(x + 4, y - 66, 20, 12, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#8A7A69';
+      ctx.fillRect(x - 40, y + 2, 78, 8);
+      this.pintar_fosca(ctx, x + 46, y - 50, dormido);    // Fosca espera aquí para subir
+    },
+    galeriaSitio(ctx, x, y) {
+      ctx.fillStyle = '#4C423A';                                    // el saliente de la pared
+      ctx.beginPath(); ctx.ellipse(x, y - 6, 42, 26, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#6B6058'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y - 60); ctx.lineTo(x, y - 34);   // el gancho
+      ctx.quadraticCurveTo(x + 14, y - 26, x + 4, y - 18); ctx.stroke();
+      if (Estado.estaEncajado('galeria')) {                         // con el farol puesto
+        const p = 0.75 + Math.sin(this.t * 3) * 0.2;
+        ctx.fillStyle = 'rgba(255,214,110,' + (p * 0.35).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc(x + 4, y - 4, 92, 0, 7); ctx.fill();
+        ctx.fillStyle = '#B0A89E'; ctx.fillRect(x - 10, y - 20, 22, 26);
+        ctx.fillStyle = 'rgba(255,230,140,' + p.toFixed(2) + ')';
+        ctx.fillRect(x - 6, y - 16, 14, 18);
+        ctx.fillStyle = '#5E3A24';
+        ctx.beginPath(); ctx.moveTo(x - 12, y - 20); ctx.lineTo(x + 1, y - 30); ctx.lineTo(x + 14, y - 20); ctx.fill();
+      }
+    },
+    pintura(ctx, x, y) {
+      ctx.fillStyle = '#5A4F45';
+      ctx.beginPath(); ctx.ellipse(x, y - 10, 82, 50, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#B15A3E'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      for (let i = 0; i < 4; i++) {
+        const px = x - 48 + i * 27;
+        ctx.beginPath(); ctx.moveTo(px, y + 2); ctx.lineTo(px, y - 12); ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, y - 18, 4.5, 0, 7); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(x + 32, y - 22); ctx.lineTo(x + 46, y - 44); ctx.lineTo(x + 60, y - 22);
+      ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = '#E8C33D'; ctx.font = '15px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('★', x + 46, y - 46);
+    },
+    pergamino(ctx, x, y) {
+      this.sombra(ctx, x, y + 4, 24, 0);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(-0.08);
+      ctx.fillStyle = '#E4D3A6'; ctx.fillRect(-26, -18, 52, 34);
+      ctx.strokeStyle = '#B99B5E'; ctx.lineWidth = 2; ctx.strokeRect(-26, -18, 52, 34);
+      ctx.strokeStyle = '#C9B486'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(-18, -8 + i * 8); ctx.lineTo(18, -8 + i * 8); ctx.stroke(); }
+      ctx.restore();
+    },
+    fosilesSala(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = '#5A4F45';                                    // la pared excavada
+      ctx.beginPath(); ctx.ellipse(x - 10, y - 6, 120, 62, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#E4DCCB'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x - 82, y + 16); ctx.quadraticCurveTo(x - 20, y - 40, x + 54, y - 6); ctx.stroke();
+      ctx.fillStyle = '#E4DCCB';
+      for (let i = 0; i < 6; i++) {                                 // las vértebras
+        const t = i / 5, px = x - 82 + t * 136, py = y + 16 - Math.sin(t * Math.PI) * 44;
+        ctx.beginPath(); ctx.ellipse(px, py, 8, 5, 0, 0, 7); ctx.fill();
+      }
+      ctx.beginPath(); ctx.ellipse(x + 62, y - 10, 18, 12, 0.3, 0, 7); ctx.fill();   // la cabeza
+      this.personajeSimple(ctx, x - 6, y + 34, '#C97B4A', '#2F2A28', dormido);
+    },
+    vagonetaParada(ctx, x, y) {
+      if (Ampliaciones.viajando()) return;
+      this.pintar_vagoneta(ctx, x, y - 4);
+    },
+    vagonetaVuelta(ctx, x, y) {
+      if (Ampliaciones.viajando()) return;
+      this.pintar_vagoneta(ctx, x, y - 4);
+    },
+    // el que se ve rodando durante el viaje (lo usa dibujarVehiculo)
+    vagoneta(ctx, x, y) {
+      const bote = Math.sin(this.t * 14) * 1.5;
+      ctx.save(); ctx.translate(x, y + bote);
+      ctx.fillStyle = '#7A4B2F'; ctx.fillRect(-38, -26, 76, 34);
+      ctx.fillStyle = '#9C6440'; ctx.fillRect(-38, -26, 76, 7);
+      ctx.fillStyle = '#5E3A24'; ctx.fillRect(-38, -4, 76, 6);
+      ctx.fillStyle = '#B0A89E';                                    // piedras dentro
+      [[-22, -12], [-6, -16], [12, -12], [24, -14]].forEach(([dx, dy]) => {
+        ctx.beginPath(); ctx.arc(dx, dy, 5, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#2F2A28';                                    // las ruedas
+      [-20, 20].forEach(dx => { ctx.beginPath(); ctx.arc(dx, 12, 10, 0, 7); ctx.fill(); });
+      ctx.strokeStyle = '#8A8177'; ctx.lineWidth = 2;
+      [-20, 20].forEach(dx => {
+        const g = this.t * 9;
+        ctx.beginPath(); ctx.moveTo(dx - Math.cos(g) * 7, 12 - Math.sin(g) * 7);
+        ctx.lineTo(dx + Math.cos(g) * 7, 12 + Math.sin(g) * 7); ctx.stroke();
+      });
+      ctx.restore();
+    },
+    // Timó no se pinta aquí: está sentado en su banco, al lado (si no, salen dos)
+    ascensorArriba(ctx, x, y) {
+      if (Ampliaciones.viajando()) return;
+      this.pintar_jaula(ctx, x, y);
+    },
+    ascensorAbajo(ctx, x, y) {
+      if (Ampliaciones.viajando()) return;
+      this.pintar_jaula(ctx, x, y);
+    },
+    jaula(ctx, x, y) {
+      ctx.fillStyle = '#3A2718'; ctx.fillRect(x - 40, y - 96, 8, 96); ctx.fillRect(x + 32, y - 96, 8, 96);
+      ctx.fillStyle = '#6B5D50'; ctx.fillRect(x - 34, y - 52, 68, 54);
+      ctx.fillStyle = '#463B32'; ctx.fillRect(x - 28, y - 46, 56, 44);
+      ctx.strokeStyle = '#8A8177'; ctx.lineWidth = 3;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath(); ctx.moveTo(x - 26 + i * 17, y - 46); ctx.lineTo(x - 26 + i * 17, y - 2); ctx.stroke();
+      }
+      ctx.fillStyle = '#FFE68A'; ctx.beginPath(); ctx.arc(x + 2, y - 60, 5, 0, 7); ctx.fill();
+    },
+    // la cabina que se ve bajando por el pozo (la usa dibujarVehiculo)
+    cabina(ctx, x, y) {
+      ctx.save(); ctx.translate(x, y);
+      ctx.strokeStyle = '#8A8177'; ctx.lineWidth = 3;               // el cable
+      ctx.beginPath(); ctx.moveTo(0, -46); ctx.lineTo(0, -260); ctx.stroke();
+      ctx.fillStyle = '#6B5D50'; ctx.fillRect(-42, -52, 84, 10);
+      ctx.fillStyle = 'rgba(70,59,50,0.55)'; ctx.fillRect(-40, -42, 80, 52);
+      ctx.strokeStyle = '#8A8177'; ctx.lineWidth = 4;               // la jaula
+      [-40, -20, 20, 40].forEach(dx => {
+        ctx.beginPath(); ctx.moveTo(dx, -42); ctx.lineTo(dx, 12); ctx.stroke();
+      });
+      ctx.beginPath(); ctx.moveTo(-40, 12); ctx.lineTo(40, 12); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,230,140,0.5)';                      // la luz de la cabina
+      ctx.beginPath(); ctx.ellipse(0, -14, 44, 30, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    },
+    timoSentado(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = '#5E3A24';
+      ctx.fillRect(x - 6, y - 22, 46, 6);
+      ctx.fillRect(x - 2, y - 16, 5, 16); ctx.fillRect(x + 31, y - 16, 5, 16);
+      ctx.save(); ctx.translate(x - 26, y); ctx.rotate(-0.3);
+      ctx.strokeStyle = '#8D5A3B'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(0, -38); ctx.stroke();
+      ctx.strokeStyle = '#6B6058'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(-10, -34); ctx.lineTo(10, -34); ctx.stroke();
+      ctx.restore();
+      this.personajeSimple(ctx, x + 18, y, '#D9A441', '#2F2A28', dormido);
+    },
+
+    // ---------- piso 2
+    profundaSala(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = '#4C423A';                                    // la veta
+      ctx.beginPath(); ctx.ellipse(x - 10, y - 10, 130, 66, 0, 0, 7); ctx.fill();
+      const gemas = [['#C94F5C', -92, -18], ['#3C8DA6', -44, 12], ['#4FAE6B', 16, -30],
+                     ['#E8C33D', 62, 6], ['#B77BD6', 100, -20]];
+      gemas.forEach(([c, dx, dy], i) => {
+        const brillo = 0.6 + Math.sin(this.t * 2 + i) * 0.4;
+        ctx.fillStyle = 'rgba(255,255,255,' + (brillo * 0.16).toFixed(2) + ')';
+        ctx.beginPath(); ctx.arc(x + dx, y + dy, 18, 0, 7); ctx.fill();
+        ctx.fillStyle = c;
+        ctx.save(); ctx.translate(x + dx, y + dy);
+        ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(9, 0); ctx.lineTo(0, 10); ctx.lineTo(-9, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      });
+      this.personajeSimple(ctx, x - 70, y + 42, '#6B6058', '#2F2A28', dormido);
+    },
+    cofre(ctx, x, y) {
+      this.sombra(ctx, x, y + 10, 44, 0);
+      ctx.fillStyle = '#5E3A24'; ctx.fillRect(x - 42, y - 14, 84, 30);
+      ctx.fillStyle = '#3A2718';
+      ctx.beginPath(); ctx.ellipse(x, y - 14, 42, 16, 0, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#8D5A3B';
+      ctx.beginPath(); ctx.ellipse(x, y - 18, 36, 12, 0, Math.PI, 0); ctx.fill();
+      const gemas = [['#C94F5C', -20], ['#3C8DA6', 0], ['#E8C33D', 20]];
+      gemas.forEach(([c, dx], i) => {
+        const bob = Math.sin(this.t * 2 + i) * 2;
+        ctx.fillStyle = c;
+        ctx.save(); ctx.translate(x + dx, y - 20 + bob);
+        ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 0); ctx.lineTo(0, 6); ctx.lineTo(-6, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      });
+    },
+  },
+});
+
+/* ------------------------------------------------- ENGANCHES AL MOTOR
+   Todo lo que el motor no sabía hacer y se añade aquí, sin tocarlo:
+   la roca que tapa la isla, la penumbra, el suelo de piedra, las acciones
+   nuevas (grieta, vagoneta, ascensor), la música y el plano de la mina. */
+(function engancharMina() {
+  if (!MINA_ABIERTA) return;                  // dormida: ni se dibuja ni se enchufa nada
+  if (typeof Juego === 'undefined') return;    // probar.js sortea cuentas sin motor: nada que enganchar
+  const J = Juego;
+
+  if (typeof ICONOS !== 'undefined') { ICONOS.cueva = '🕳️'; ICONOS.carrito = '🚃'; ICONOS.ascensor = '🛗'; }
+  if (typeof TECLAS !== 'undefined') { TECLAS.cueva = 'J'; TECLAS.carrito = 'J'; TECLAS.ascensor = 'J'; }
+
+  // Dentro de la mina se anda por las salas y los túneles; lo demás es roca
+  const transitable = J.transitable;
+  J.transitable = function (x, y) {
+    if (Mina.pisable(x, y)) return true;
+    return transitable.call(this, x, y);
+  };
+
+  // Lo que está en el otro piso no se pinta: cada piso es su propio escenario
+  ['salida', 'galeriaSitio', 'pintura', 'pergamino', 'fosilesSala', 'vagonetaParada',
+   'vagonetaVuelta', 'ascensorArriba', 'ascensorAbajo', 'timoSentado', 'profundaSala', 'cofre']
+    .forEach(n => {
+      const f = J['pintar_' + n];
+      if (!f) return;
+      J['pintar_' + n] = function (ctx, x, y, hecho, dormido) {
+        if (!Mina.visible(x, y)) return;
+        return f.call(this, ctx, x, y, hecho, dormido);
+      };
+    });
+
+  // y tampoco los objetos sueltos (el farol y la piqueta brillan en el suelo)
+  const brillo = J.brillo;
+  if (brillo) J.brillo = function (ctx, x, y, icono, r) {
+    if (!Mina.visible(x, y)) return;
+    return brillo.apply(this, arguments);
+  };
+
+  // El suelo suena a piedra
+  const sueloEn = J.sueloEn;
+  J.sueloEn = function (x, y) {
+    if (Mina.dentro(x, y)) return 'camino';
+    return sueloEn.call(this, x, y);
+  };
+
+  // La roca lo tapa todo: ni mar, ni arena, ni isla
+  const dibujarIsla = J.dibujarIsla;
+  J.dibujarIsla = function (ctx) {
+    if (!Mina.activa()) return dibujarIsla.call(this, ctx);
+    Mina.pintarFondo(ctx, this);
+  };
+
+  /* LOS DOS MUNDOS NO SE MEZCLAN. Mientras se pinta, el juego sólo ve uno:
+     bajo tierra, sólo las cosas de la mina (así no se cuela nada de ninguna
+     otra isla, ni encendida ni apagada); en la superficie, todo MENOS la mina
+     (así no se ven trozos de cueva flotando en el mar). Se guardan las listas
+     ya separadas y se rehacen sólo si alguna cambia (al coger una pieza). */
+  const LISTAS = ['lugares', 'piezas', 'secretos', 'flores', 'matas', 'rocas',
+                  'palmeras', 'bloqueos', 'zonas', 'islotes', 'pasarelas'];
+  const X = o => Array.isArray(o) ? o[0] : o.x;     // las flores y las rocas van como [x,y]
+  const Y = o => Array.isArray(o) ? o[1] : o.y;
+  let enteras = null, soloMina = null, soloFuera = null, huella = '';
+
+  const separar = () => {
+    const h = LISTAS.map(k => (MUNDO[k] || []).length).join(',');
+    if (huella === h && enteras) return;
+    huella = h; enteras = {}; soloMina = {}; soloFuera = {};
+    LISTAS.forEach(k => {
+      const l = MUNDO[k] || [];
+      enteras[k] = l;
+      soloMina[k] = l.filter(o => Mina.dentro(X(o), Y(o)));
+      soloFuera[k] = l.filter(o => !Mina.dentro(X(o), Y(o)));
+    });
+  };
+
+  // Encima de todo: la penumbra de la cueva y el fundido de la grieta
+  const dibujar = J.dibujar;
+  J.dibujar = function () {
+    separar();
+    const bajoTierra = Mina.activa();
+    const listas = bajoTierra ? soloMina : soloFuera;
+    const nodos = MUNDO.nodos, tramos = this._tramosAmp;
+    LISTAS.forEach(k => { MUNDO[k] = listas[k]; });
+    if (bajoTierra) { MUNDO.nodos = {}; this._tramosAmp = []; }   // ni caminitos encima de la roca
+    try { dibujar.apply(this, arguments); }
+    finally {
+      LISTAS.forEach(k => { MUNDO[k] = enteras[k]; });
+      MUNDO.nodos = nodos; this._tramosAmp = tramos;
+    }
+    if (bajoTierra) Mina.penumbra(this);
+    Mina.fundido(this);
+  };
+
+  // Mientras se cruza la grieta no se anda
+  const actualizar = J.actualizar;
+  J.actualizar = function () {
+    if (Mina.paso) { this.teclas = {}; this.destino = null; }
+    return actualizar.apply(this, arguments);
+  };
+
+  // Las tres maneras de moverse: la grieta (corte a negro), la vagoneta y el ascensor
+  const interactuar = J.interactuar;
+  J.interactuar = function (tecla) {
+    if (Ampliaciones.viajando() || Mina.paso) return;
+    const l = this.lugar || this.lugarEn(this.jugador.x, this.jugador.y, 95);
+    const suyo = l && ['cueva', 'carrito', 'ascensor'].includes(l.accion);
+    if (!this.cogible && !this.entregable && !this.encajable && suyo &&
+        (!tecla || tecla === 'Enter' || tecla === 'J')) {
+      this.teclas = {};
+      Sonido.clic();
+      return l.accion === 'cueva' ? Mina.puerta(l) : Ampliaciones.barco(l);
+    }
+    return interactuar.call(this, tecla);
+  };
+
+  // Su propia música: lenta y grave, de sitio hondo
+  if (typeof TEMAS !== 'undefined' && typeof Musica !== 'undefined') {
+    TEMAS.mina = { tempo: 0.5, onda: 'sine', vol: 0.05,
+      melodia: ['la3','-','-','-','do4','-','-','-', 'mi3','-','-','-','la3','-','-','-',
+                'fa3','-','-','-','do4','-','-','-', 'mi3','-','-','-','-','-','-','-'],
+      bajo:    ['la3','-','-','-','-','-','-','-', 'fa3','-','-','-','-','-','-','-',
+                'do3','-','-','-','-','-','-','-', 'mi3','-','-','-','-','-','-','-'] };
+
+    /* La vagoneta y el ascensor: la misma mina, pero con el traqueteo del
+       hierro. Antes sonaba la música de las atracciones y parecía la feria. */
+    TEMAS.minaViaje = { tempo: 0.26, onda: 'triangle', vol: 0.045,
+      melodia: ['la3','-','do4','-','mi3','-','do4','-', 'la3','-','do4','-','re4','-','do4','-',
+                'fa3','-','la3','-','do4','-','la3','-', 'mi3','-','sol3','-','la3','-','-','-'],
+      bajo:    ['la3','-','-','-','la3','-','-','-', 'fa3','-','-','-','fa3','-','-','-',
+                'do3','-','-','-','do3','-','-','-', 'mi3','-','-','-','mi3','-','-','-'] };
+
+    const segunSitio = Musica.segunSitio;
+    Musica.segunSitio = function () {
+      if (Mina.activa() && !UI.estaAbierto()) return this.poner(Mina.viajando() ? 'minaViaje' : 'mina');
+      return segunSitio.apply(this, arguments);
+    };
+
+    /* Mientras dura un viaje el motor no vuelve a elegir música (sale antes de
+       preguntarla), así que aquí se pone la de la mina en cuanto arranca. */
+    const navegar = Ampliaciones.navegar;
+    Ampliaciones.navegar = function (v) {
+      const r = navegar.call(this, v);
+      if (v.vehiculo === 'vagoneta' || v.vehiculo === 'cabina') Musica.poner('minaViaje');
+      return r;
+    };
+  }
+
+  // La tecla M bajo tierra enseña el plano de la mina, no la isla
+  if (typeof Mapa !== 'undefined' && Mapa.pintar) {
+    const pintar = Mapa.pintar;
+    Mapa.pintar = function () {
+      if (!Mina.activa()) return pintar.apply(this, arguments);
+      const c = document.getElementById('mapaLienzo');
+      if (c) Mina.plano(c.getContext('2d'), this.ANCHO, this.ALTO);
+    };
+
+    const abrir = Mapa.abrir;
+    Mapa.abrir = function () {
+      abrir.apply(this, arguments);
+      if (!Mina.activa()) return;
+      const t = document.querySelector('.quien');
+      if (t) t.textContent = 'Plano de la mina';
+      const c = document.querySelector('.contador');
+      if (c) c.remove();
+      const p = document.querySelector('.pista');
+      if (p) p.innerHTML = 'Estás <b>bajo tierra</b>: desde aquí no se ve la isla.<br>' +
+        'Se sale por donde entraste, y para cambiar de piso está el <b>ascensor</b>.';
+    };
+  }
+})();
 
 </script>
 <script>
