@@ -99,7 +99,7 @@
   #mandos .accion{background:var(--verde); color:#fff; font-size:26px}
   .cruceta{display:flex; flex-direction:column; align-items:center; gap:6px}
   .cruceta div{display:flex; gap:6px}
-  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo{font-size:20px; border:0; border-radius:10px;
+  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa{font-size:20px; border:0; border-radius:10px;
            padding:4px 8px; background:rgba(255,255,255,.85); cursor:pointer; margin-right:6px}
 
   /* Los avisos van abajo: arriba taparían las piedras del río */
@@ -284,7 +284,7 @@
     #hud .barrita{width:34px}
     #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
     #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
-    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo{font-size:17px; padding:3px 5px; margin-right:0}
+    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa{font-size:17px; padding:3px 5px; margin-right:0}
     #volverInicio{font-size:17px; text-decoration:none; padding:0 3px}
 
     /* El hada, más pequeña y por debajo de la barra de arriba */
@@ -505,6 +505,7 @@
     <button id="bMochila" title="Mochila">🎒</button>
     <button id="bCuadernos" title="Mis cuadernos (tecla L)">📔</button>
     <button id="bMapa" title="Mapa (tecla M)">🗺️</button>
+    <button id="bCasa" title="Volver a casa (tecla I)">🏠</button>
     <button id="bVehiculo" class="oculto" title="Montarte (tecla B)">🚲</button>
     <button id="bPantalla" title="Pantalla completa (tecla P)">⛶</button>
     <button id="bSonido" title="Sonido">🔊</button>
@@ -11921,6 +11922,7 @@ const Juego = {
         const k = e.key.toUpperCase();
         if (k === 'J' || k === 'C' || k === 'V' || k === 'H' || e.key === 'Enter') this.interactuar(k);
         if (k === 'M') Mapa.abrir();
+        if (k === 'I') this.volverACasa();
         if (k === 'L') Cuadernos.abrir();
         if (k === 'P') this.pantallaCompleta();
         if (k === 'T') Tutorial.abrir();
@@ -11956,6 +11958,7 @@ const Juego = {
     document.getElementById('bSalirPuente').onclick = () => this.salirDePiedras();
     document.getElementById('bBajar').onclick = () => this.bajar();
     document.getElementById('bMapa').onclick = () => Mapa.abrir();
+    document.getElementById('bCasa').onclick = () => this.volverACasa();
     document.getElementById('bAyuda').onclick = () => Tutorial.abrir();
     document.getElementById('bMochila').onclick = () => Mochila.abrir();
     document.getElementById('bCuadernos').onclick = () => Cuadernos.abrir();
@@ -12411,6 +12414,28 @@ const Juego = {
     }
     if (l.accion === 'meta') return this.farol();
     Desafio.abrir(l.id, () => UI.refrescarHud());     // reto y letras
+  },
+
+  /* VOLVER A CASA (19-09-2026, lo pidió Antonio)
+     El botón 🏠 de la barra de arriba (o la tecla I). Estés donde estés —en
+     otra isla, en la mina, al otro lado del río— te deja en la puerta de tu
+     cabaña, dentro del poblado. Se baja de lo que lleve montado, porque el
+     patinete no viaja contigo.
+
+     No funciona en mitad de una travesía en barco ni saltando por las piedras
+     del río: ahí hay que terminar lo que se está haciendo. */
+  volverACasa() {
+    if (UI.estaAbierto() || this.vehiculo || this.modoPiedras) return;
+    const j = this.jugador;
+    if (typeof Vehiculos !== 'undefined') Vehiculos.aparcar();
+    const lejos = Math.hypot(j.x - MUNDO.inicio.x, j.y - MUNDO.inicio.y) > 400;
+    j.x = MUNDO.inicio.x; j.y = MUNDO.inicio.y; j.z = 0;
+    j.andando = false;
+    this.destino = null; this.destinoLugar = null;
+    if (this.mascota) { this.mascota.x = j.x - 40; this.mascota.y = j.y + 10; }
+    Sonido.clic();
+    if (typeof Musica !== 'undefined') Musica.segunSitio();
+    if (lejos && typeof Hada !== 'undefined') Hada.decir('🏠 Ya estás en casa.', 4);
   },
 
   /* EL FAROL DE CORAL (rehecho el 19-09-2026, regla 31)
@@ -13258,31 +13283,34 @@ const Juego = {
     const c = document.createElement('canvas');
     c.width = 112; c.height = 64;                   // dos baldosas, a la traba
     const g = c.getContext('2d');
-    g.fillStyle = '#E9E1CF';
-    g.fillRect(0, 0, 112, 64);
-    g.fillStyle = '#E2D8C2';
+    g.clearRect(0, 0, 112, 64);
+    g.strokeStyle = 'rgba(122,112,88,0.20)'; g.lineWidth = 2;
     [[2, 2, 52, 28], [58, 2, 52, 28], [-26, 34, 52, 28], [30, 34, 52, 28], [86, 34, 52, 28]]
-      .forEach(([x, y, w, h]) => { g.fillRect(x, y, w, h); });
-    g.strokeStyle = 'rgba(160,150,130,0.45)'; g.lineWidth = 2;
-    [[2, 2, 52, 28], [58, 2, 52, 28], [-26, 34, 52, 28], [30, 34, 52, 28], [86, 34, 52, 28]]
-      .forEach(([x, y, w, h]) => { g.strokeRect(x, y, w, h); });
+      .forEach(([x, y, w, h]) => {
+        g.fillStyle = (x + y) % 3 === 0 ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)';
+        g.fillRect(x, y, w, h);
+        g.strokeRect(x, y, w, h);
+      });
     this._baldosa = g.canvas;
     return this._baldosa;
   },
 
+  /* EL SUELO DEL POBLADO
+     Suave a propósito (19-09-2026): la primera versión era un empedrado claro
+     que cantaba demasiado contra la hierba y a Gala no le gustó. Ahora es la
+     misma hierba un punto más clara, con las juntas de las baldosas apenas
+     insinuadas: se nota que es pueblo sin dar el cante. */
   sueloDeRecintos(ctx) {
     MUNDO.recintos.filter(r => r.dibujo === 'empalizada').forEach(r => {
       ctx.save();
       ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx, r.ry, 0, 0, 7); ctx.clip();
-      ctx.fillStyle = '#E9E1CF';                    // el tono claro de pueblo
-      ctx.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2);
+      const caja = [r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2];
+      ctx.fillStyle = 'rgba(238,236,206,0.42)';     // un velo claro sobre la hierba
+      ctx.fillRect(...caja);
       try {
         const pat = ctx.createPattern(this.patronBaldosa(), 'repeat');
-        if (pat) { ctx.fillStyle = pat; ctx.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2); }
-      } catch (e) { /* si el navegador no deja patrones, queda el tono liso */ }
-      // una orla de tierra pisada pegada a la valla, para que no corte en seco
-      ctx.strokeStyle = 'rgba(190,175,145,0.55)'; ctx.lineWidth = 26;
-      ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx - 13, r.ry - 13, 0, 0, 7); ctx.stroke();
+        if (pat) { ctx.globalAlpha = 0.6; ctx.fillStyle = pat; ctx.fillRect(...caja); ctx.globalAlpha = 1; }
+      } catch (e) { /* si el navegador no deja patrones, queda el velo liso */ }
       ctx.restore();
     });
   },
