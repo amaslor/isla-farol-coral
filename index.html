@@ -10971,6 +10971,20 @@ const TEMAS = {
     bajo:    ['do3','-','do3','-','sol3','-','sol3','-', 'fa3','-','fa3','-','sol3','-','sol3','-',
               'do3','-','do3','-','mi3','-','mi3','-', 'fa3','-','sol3','-','do3','-','-','-'] },
 
+  /* EL MODO PREMIO (19-09-2026, lo pidió Antonio)
+     La fanfarria de encajar un Cristal Mayor en el Farol: rápida, subiendo y
+     con repique al final. Dura lo que la ceremonia (unos 4 segundos y medio) y
+     suena un poco más fuerte que las demás, que para eso es EL momento. */
+  premio: { tempo: 0.13, onda: 'square', vol: 0.075,
+    melodia: ['do4','mi4','sol4','do5','-','sol4','do5','mi5',
+              '-','re5','do5','-','sol4','la4','si4','do5',
+              '-','do5','si4','do5','re5','-','mi5','-',
+              'sol5','-','mi5','do5','sol5','-','-','-'],
+    bajo:    ['do3','-','do3','-','sol3','-','sol3','-',
+              'fa3','-','fa3','-','sol3','-','sol3','-',
+              'mi3','-','mi3','-','sol3','-','sol3','-',
+              'do3','-','do3','-','do3','-','-','-'] },
+
   // El Farol: solemne y bonita, para el final del juego
   farol: { tempo: 0.46, onda: 'triangle', vol: 0.055,
     melodia: ['do4','-','sol4','-','do5','-','-','-', 'si4','-','sol4','-','mi4','-','-','-',
@@ -11026,6 +11040,7 @@ const Musica = {
   /* Qué música toca según dónde esté la jugadora */
   segunSitio() {
     if (!Sonido.ctx || !Estado.actual) return;
+    if (Juego.ceremonia) return;               // el modo premio tiene la suya
     if (UI.estaAbierto()) return;              // los modales ponen la suya
     const j = Juego.jugador;
     if (!j) return;
@@ -12277,10 +12292,8 @@ const Juego = {
     Estado.guardar();
 
     this.ceremonia = { t0: this.t, color: Sorpresas.color(s), s: s };
-    Sonido.fiesta();
-    setTimeout(() => Sonido.cristal(), 500);
-    setTimeout(() => Sonido.fiesta(), 1400);
-    if (typeof Musica !== 'undefined') Musica.poner('farol');
+    Sonido.cristal();
+    if (typeof Musica !== 'undefined') Musica.poner('premio');   // la fanfarria
 
     setTimeout(() => this.finCeremonia(s), 4200);
   },
@@ -12300,6 +12313,8 @@ const Juego = {
   /* Se acabó la luz: ahora sí, el premio y lo que se abre */
   finCeremonia(s) {
     this.ceremonia = null;
+    if (typeof Musica !== 'undefined') Musica.poner('farol');    // se acabó la fanfarria
+    Sonido.fiesta();                                             // el remate, con el cartel
     const regalo = this.regaloDe(s);
     const cargada = typeof Ampliaciones !== 'undefined' && Ampliaciones.lista.includes(s.id);
     const cuerpo = '<b>El ' + Sorpresas.comoSeLlama(s) + ' encaja en su hueco.</b><br><br>' +
