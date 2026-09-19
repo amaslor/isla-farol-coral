@@ -1304,7 +1304,7 @@ const MUNDO = {
   /* Cómo es el paseo de cada atracción: qué se monta, dónde y cuánto dura */
   paseos: {
     barca:   { vehiculo: 'barca',   segundos: 55, reto: 'barcaReto',   personaje: 'Quim',
-               zona: { x: 4760, y: 2400, rx: 495, ry: 310 }, arranque: { x: 4380, y: 2380 } },
+               zona: { x: 4760, y: 2360, rx: 495, ry: 272 }, arranque: { x: 4380, y: 2360 } },
     caballo: { vehiculo: 'caballo', segundos: 55, reto: 'caballoReto', personaje: 'Neus',
                zona: { x: 3900, y: 1900, rx: 380, ry: 250 }, arranque: { x: 3900, y: 1900 } },
     /* La pista de los coches es justo lo que se ve dentro de la barandilla.
@@ -1381,7 +1381,9 @@ const MUNDO = {
       mensaje: 'La montaña es muy escarpada. Hay un <b>sendero</b> en la ladera este, pero está cortado.' },
     { dibujo: 'volcan',     x: 5480, y: 940,  rx: 380, ry: 280,
       mensaje: 'Al volcán ni te acerques, que está dormido y <b>ronca</b>.' },
-    { dibujo: 'lago',       x: 4760, y: 2400, rx: 520, ry: 330,
+    /* El lago subió un poco y encogió el 19-09-2026: entre su orilla sur y la
+       valla de la feria quedaban DIEZ píxeles de paso y no se podía pasar. */
+    { dibujo: 'lago',       x: 4760, y: 2360, rx: 520, ry: 292,
       mensaje: 'El lago está hondo. Quim te deja su <b>barca</b> si resuelves su reto.' },
     { dibujo: 'acantilado', x: 6560, y: 4060, rx: 340, ry: 230,
       mensaje: 'Se acaba la isla de golpe. Por aquí no.' },
@@ -1389,7 +1391,11 @@ const MUNDO = {
       mensaje: 'Demasiadas piedras. Rodea por el camino.' },
     { dibujo: 'rocas',      x: 1420, y: 900,  rx: 260, ry: 170,
       mensaje: 'Aquí hay un pedregal. Busca el camino.' },
-    { dibujo: 'arboleda',   x: 2100, y: 1500, rx: 700, ry: 500,
+    /* EL BOSQUE YA NO CIERRA (19-09-2026, lo pidió Antonio: «molesta
+       bastante»). Se cruza por donde se quiera; los dos senderos se quedan
+       dibujados, pero solo como dibujo. `pasable` hace que el motor lo pinte
+       y no lo tenga en cuenta para andar. */
+    { dibujo: 'arboleda',   x: 2100, y: 1500, rx: 700, ry: 500, pasable: true,
       paso:  { x: 2100, y: 1500, rx: 110, ry: 540 },
       paso2: { x: 2100, y: 1500, rx: 750, ry: 100 },
       mensaje: 'Los árboles están muy juntos. Hay <b>dos senderos</b> que cruzan el bosque.' },
@@ -12208,7 +12214,7 @@ const Juego = {
     // La feria está vallada: solo se cruza la valla por la puerta
     for (const r of MUNDO.recintos) {
       const d = Math.pow((x - r.x) / r.rx, 2) + Math.pow((y - r.y) / r.ry, 2);
-      if (d > 0.90 && d < 1.14) {                       // justo encima de la valla
+      if (d > 0.94 && d < 1.08) {                       // justo encima de la valla
         const p = r.puerta;
         const enPuerta = Math.pow((x - p.x) / p.rx, 2) + Math.pow((y - p.y) / p.ry, 2) <= 1;
         if (!enPuerta) return false;
@@ -12216,6 +12222,7 @@ const Juego = {
     }
 
     for (const b of MUNDO.bloqueos) {
+      if (b.pasable) continue;            // solo es dibujo: se cruza andando
       const enBloqueo = Math.pow((x - b.x) / b.rx, 2) + Math.pow((y - b.y) / b.ry, 2) <= 1;
       if (!enBloqueo) continue;
       // la meseta de arriba, que sí se pisa
