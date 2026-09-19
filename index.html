@@ -702,27 +702,19 @@ const AJUSTES = {
   retosPorSorpresa: 10,
 
   sorpresas: [
-    /* DE TEMPORADA. Van las primeras a propósito: mientras dura la fecha, el
-       Cristal Mayor que caiga es este y no lo siguiente de la cola. Fuera de
-       esas fechas se saltan y todo sigue su orden. */
-    { id: 'tenebrosa', icono: '🦇', nombre: 'La Isla Tenebrosa',
-      cuando: ['10-24', '11-07'],
-      cristal: { nombre: 'Cristal de Ánima', color: '#8C6FD4' },
-      pista: 'En la costa oeste hay un <b>muelle</b> que no estaba, con una barca y un barquero que no habla mucho. Dice que al otro lado del mar hay una isla donde siempre es de noche.',
-      aviso: 'Se abre la Isla Tenebrosa, al otro lado del mar.' },
+    /* TODO VA POR RETOS, NADA POR CALENDARIO (19-09-2026, lo pidió Antonio).
+       Antes Halloween y la Isla Tenebrosa aparecían el 24 de octubre. Ahora se
+       ganan como lo demás. El orden de abajo está puesto para que, al ritmo de
+       un cristal cada cuatro o cinco días, la fiesta de Halloween les caiga a
+       finales de octubre por su propio pie.
 
-    { id: 'lluvia', icono: '🌧️', nombre: 'El otoño llega a la isla',
-      cuando: ['10-01', '11-30'],
-      cristal: { nombre: 'Cristal de Lluvia', color: '#8FD3F4' },
-      aviso: '¡Toca otoño! Dile a papá lo del chubasquero y la lluvia.' },
+       Si llega la semana del 24-10 y todavía no han llegado, se enciende el
+       interruptor `porCalendario` de aquí abajo y entonces SÍ se activa por
+       fecha, como antes. Es una palabra.
 
-    /* LA COLA DE SIEMPRE, de 10 en 10 cristales.
-       REGLA DE LOS PREMIOS (19-09-2026, la puso Antonio): el premio de un
-       Cristal Mayor es algo TANGIBLE QUE NO SE PUEDE COMPRAR y que se ve en el
-       momento (la moto, un chubasquero, una mascota). Que aparezca ya puesto.
-       Cosas nuevas que comprar puede haber, pero como acompañamiento: ellas ya
-       se gastan las conchas en ropa, así que el regalo no puede ser «más cosas
-       a la venta». */
+       `clima: true` marca las que cambian el aspecto de la isla (lluvia,
+       Halloween, nieve). Solo manda el ÚLTIMO clima ganado: cada uno sustituye
+       al anterior y se queda hasta que llegue el siguiente. */
     { id: 'pins', icono: '🌲', nombre: "L'Illa dels Pins",
       cristal: { nombre: 'Cristal Transparente', color: '#BFE9FF' },
       regalo: { tipo: 'conjuntos', id: 'coral', nota: 'te lo pones y <b>brilla en la oscuridad</b>' },
@@ -739,41 +731,64 @@ const AJUSTES = {
       cristal: { nombre: 'Cristal de Noche', color: '#B08CFF' },
       aviso: '¡30 retos! Dile a papá que quieres que Lumi hable de verdad.' },
 
-    /* Cuando exista la moto, el regalo será LA MOTO (regalada, no a la venta),
-       y el casco viene con ella. Mientras tanto, el casco ya se da. */
+    { id: 'lluvia', icono: '🌧️', nombre: 'El otoño llega a la isla', clima: true,
+      cristal: { nombre: 'Cristal de Lluvia', color: '#8FD3F4' },
+      aviso: '¡40 retos! Dile a papá lo del otoño: el chubasquero, la lluvia y el viento.' },
+
     { id: 'moto', icono: '🛵', nombre: 'La moto de Tià, y un taller más grande',
       cristal: { nombre: 'Cristal de Fuego', color: '#FF9130' },
       regalo: { tipo: 'complementos', id: 'casco', nota: 'con su lamparita encendida' },
-      aviso: '¡40 retos! Dile a papá que Tià ya puede traerte la moto.' },
+      aviso: '¡50 retos! Dile a papá que Tià ya puede traerte la moto.' },
 
     { id: 'mascotas2', icono: '🐾', nombre: 'Un animal que no está en venta',
       cristal: { nombre: 'Cristal de Mar', color: '#5FD1C6' },
-      aviso: '¡50 retos! Dile a papá que Ona tiene algo para ti.' },
+      aviso: '¡60 retos! Dile a papá que Ona tiene algo para ti.' },
+
+    { id: 'halloween', icono: '🎃', nombre: 'La isla se vuelve tenebrosa', clima: true,
+      cristal: { nombre: 'Cristal de Calabaza', color: '#FF8A3C' },
+      pista: 'La isla ha cambiado: los árboles están pelados, hay calabazas por todas partes y el cielo se ha puesto morado. Y en la tienda de Mila hay una estantería que da un poco de miedo.',
+      aviso: 'La isla entera se disfraza.' },
+
+    { id: 'tenebrosa', icono: '🦇', nombre: 'La Isla Tenebrosa',
+      cristal: { nombre: 'Cristal de Ánima', color: '#8C6FD4' },
+      pista: 'En la costa oeste hay un <b>muelle</b> que no estaba, con una barca y un barquero que no habla mucho. Dice que al otro lado del mar hay una isla donde siempre es de noche.',
+      aviso: 'Se abre la Isla Tenebrosa, al otro lado del mar.' },
 
     { id: 'cabana2', icono: '🏠', nombre: 'Decorar la cabaña por dentro',
       cristal: { nombre: 'Cristal de Hierba', color: '#8FD46A' },
-      aviso: '¡60 retos! Dile a papá que quieres decorar tu cabaña.' },
+      aviso: '¡90 retos! Dile a papá que quieres decorar tu cabaña.' },
 
     { id: 'juego2', icono: '🎲', nombre: 'Un juego nuevo en el salón de Coco',
       cristal: { nombre: 'Cristal de Rosa', color: '#FF9ED2' },
-      aviso: '¡70 retos! Dile a papá que Coco quiere enseñarte un juego nuevo.' },
+      aviso: '¡100 retos! Dile a papá que Coco quiere enseñarte un juego nuevo.' },
+
+    { id: 'nieve', icono: '❄️', nombre: 'El invierno: nieve y lago helado', clima: true,
+      cristal: { nombre: 'Cristal de Hielo', color: '#CDE9FF' },
+      aviso: '¡110 retos! Dile a papá lo del invierno: la nieve, el lago helado y los patines.' },
 
     { id: 'monedas', icono: '🪙', nombre: 'Pagar con monedas en la tienda',
       cristal: { nombre: 'Cristal de Plata', color: '#D9E3EC' },
-      aviso: '¡80 retos! Dile a papá que quieres pagar con monedas de verdad.' },
+      aviso: '¡120 retos! Dile a papá que quieres pagar con monedas de verdad.' },
 
     { id: 'cromos', icono: '📕', nombre: 'El álbum de cromos de la isla',
       cristal: { nombre: 'Cristal de Sol', color: '#FFE066' },
-      aviso: '¡90 retos! Dile a papá lo del álbum de cromos.' },
+      aviso: '¡130 retos! Dile a papá lo del álbum de cromos.' },
 
     { id: 'huerto', icono: '🌱', nombre: 'Un huerto para plantar',
       cristal: { nombre: 'Cristal de Semilla', color: '#A8D86A' },
-      aviso: '¡100 retos! Dile a papá que quieres un huerto.' },
+      aviso: '¡140 retos! Dile a papá que quieres un huerto.' },
 
-    { id: 'dianoche', icono: '🌙', nombre: 'Que se haga de noche en la isla',
+    { id: 'dianoche', icono: '🌙', nombre: 'Que se haga de noche en la isla', clima: true,
       cristal: { nombre: 'Cristal de Luna', color: '#9DB4E8' },
-      aviso: '¡110 retos! Dile a papá lo del día y la noche.' },
+      aviso: '¡150 retos! Dile a papá lo del día y la noche.' },
   ],
+
+  /* EL INTERRUPTOR DE EMERGENCIA (19-09-2026)
+     En false, Halloween y la Isla Tenebrosa SOLO se consiguen con sus
+     cristales, como todo lo demás. Si llega el 24 de octubre y no han
+     llegado por su pie, se pone `halloween: true` y ese día se activan
+     también por calendario, como antes. */
+  porCalendario: { halloween: false },
 
   /* Cuando se acaba la lista de arriba, los Cristales Mayores siguen saliendo
      con estos nombres y colores, uno tras otro y dando la vuelta si hace falta.
@@ -11596,6 +11611,23 @@ const Sorpresas = {
     this.pintar();
   },
 
+  /* EL CLIMA DE LA ISLA (19-09-2026)
+     Algunas expansiones cambian el aspecto de la isla entera: la lluvia de
+     otoño, Halloween, la nieve. Manda **el último que se haya ganado**: cada
+     uno sustituye al anterior y se queda hasta que llegue el siguiente. Así la
+     isla va cambiando con el tiempo sin depender del calendario, y no se
+     pierde nada por no haber jugado una semana concreta.
+
+     Ojo: esto mira lo abierto EN EL APARATO (vale para las dos jugadoras), no
+     la partida de cada una: la isla no puede estar nevada y lluviosa a la vez
+     según quién juegue. */
+  climaActivo() {
+    const abiertas = this.abiertas();
+    let cual = null;
+    this.todas().forEach(s => { if (s.clima && abiertas.includes(s.id)) cual = s.id; });
+    return cual;
+  },
+
   /* Los colores de los cristales ya encajados en el Farol, en orden.
      Lo usa el dibujo de la hoguera (Juego.pintar_farol). */
   coloresPuestos() {
@@ -11683,8 +11715,21 @@ const Sorpresas = {
    existen o si todavía están dormidas dentro del juego. Fuera del navegador
    (probar.js, comprobar.js) se dan todas por abiertas, para que las
    comprobaciones sigan viendo el juego entero. */
+/* ¿Es este el clima que manda ahora en la isla? Lo consultan las ampliaciones
+   que la repintan (Halloween, y las de lluvia y nieve cuando se hagan). */
+function climaDeLaIsla() {
+  if (typeof Sorpresas === 'undefined') return null;
+  try { if (typeof window !== 'undefined' && /prueba/.test(location.pathname)) return Sorpresas.climaActivo(); } catch (e) {}
+  return Sorpresas.climaActivo();
+}
+
 function sorpresaAbierta(id) {
   if (typeof window === 'undefined') return true;
+  /* En la página de pruebas (prueba-ampliaciones.html) se dan TODAS por
+     abiertas: esa página existe para ver lo que hay, y si las expansiones
+     salen dormidas los botones de la barrita 🧪 llevan a sitios vacíos.
+     Publicado, esto nunca se cumple (19-09-2026). */
+  try { if (/prueba/.test(location.pathname)) return true; } catch (e) {}
   return typeof Sorpresas !== 'undefined' && Sorpresas.abierta(id);
 }
 
@@ -17371,23 +17416,36 @@ const HALLOWEEN = {
     const d = new Date(), dos = n => String(n).padStart(2, '0');
     return d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate());
   },
-  islaAbierta() { return this.hoy() >= this.isla; },
-
-  /* LA ISLA SE GANA (19-09-2026, lo pidió Antonio)
-     Antes aparecía sola el 24 de octubre. Ahora, durante la fiesta hay que
-     ganarse su Cristal de Ánima y llevarlo al Farol. Si la fiesta se acaba sin
-     conseguirlo, se abre igual: nadie se queda sin la isla más grande del
-     juego por dos retos de diferencia. Fuera de la fiesta, por tanto, está
-     siempre abierta. */
-  islaGanada() {
-    if (!this.islaAbierta()) return false;
-    if (typeof sorpresaAbierta === 'function' && sorpresaAbierta('tenebrosa')) return true;
-    const md = this.hoy().slice(5);
-    return md < this.fiesta[0] || md > this.fiesta[1];     // fuera de la fiesta, abierta
+  /* TODO VA POR RETOS, NADA POR CALENDARIO (19-09-2026, lo pidió Antonio).
+     Antes la isla aparecía sola el 24 de octubre y la fiesta iba por fechas.
+     Ahora las dos cosas se ganan con su Cristal Mayor, como el resto del
+     juego. Las fechas solo vuelven a contar si se enciende el interruptor
+     AJUSTES.porCalendario.halloween, que está para el caso de que llegue la
+     semana del 24-10 y todavía no hayan llegado por su pie. */
+  enPruebas() {
+    try { return /prueba/.test(location.pathname); } catch (e) { return false; }
   },
+  porFecha() {
+    return !!(typeof AJUSTES !== 'undefined' && AJUSTES.porCalendario && AJUSTES.porCalendario.halloween);
+  },
+
+  islaAbierta() { return this.hoy() >= this.isla; },     // solo lo usa el modo calendario
+
+  /* ¿Está la isla grande disfrazada? Manda el clima que se haya ganado. */
   enFiesta() {
-    const h = this.hoy(), md = h.slice(5);
-    return h >= this.isla && md >= this.fiesta[0] && md <= this.fiesta[1];
+    if (typeof window === 'undefined') return true;              // node: se comprueba todo
+    if (this.enPruebas()) return /halloween/.test(location.hash);
+    if (typeof climaDeLaIsla === 'function' && climaDeLaIsla() === 'halloween') return true;
+    const md = this.hoy().slice(5);
+    return this.porFecha() && this.hoy() >= this.isla && md >= this.fiesta[0] && md <= this.fiesta[1];
+  },
+
+  /* ¿Existe ya la Isla Tenebrosa (el muelle, la barca y la isla)? */
+  islaGanada() {
+    if (typeof window === 'undefined') return true;              // node: se comprueba todo
+    if (this.enPruebas()) return true;                           // la página de pruebas lo enseña todo
+    if (typeof sorpresaAbierta === 'function' && sorpresaAbierta('tenebrosa')) return true;
+    return this.porFecha() && this.islaAbierta();
   },
 };
 
