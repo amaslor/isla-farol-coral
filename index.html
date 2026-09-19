@@ -15240,7 +15240,12 @@ TECLAS.barco = 'J';
 /* === ampliaciones/isla-1-pins.js === */
 /* AMPLIACIÓN 1 · L'ILLA DELS PINS
    Se llega por un PUENTE nuevo que sale del norte de l'Illa Petita (así que
-   antes hay que haber arreglado el puente colgante). Estado: PREPARADA, APAGADA.
+   antes hay que haber arreglado el puente colgante)… o, cuando te lo ganes,
+   EN BARCO directamente desde la isla grande.
+
+   AGRANDADA el 19-09-2026, a petición de Antonio: era la primera expansión
+   del juego y se quedaba pequeña para ser un premio de verdad. La isla pasó
+   de 560x420 a 880x520 (dos veces y media de superficie) y se alejó al este.
 
    Qué hay:
      · El puente del norte (reto de Martí para abrirlo: tablas del 6 al 9 y
@@ -15250,7 +15255,21 @@ TECLAS.barco = 'J';
      · Las ardillas de Pep (trabajo diario: piñas)
      · El pino gigante, la cascada y el observatorio (para mirar)
      · Martí, el carpintero (para charlar)
-     · Una lente perdida que, puesta en el telescopio, deja ver la luna */
+     · Una lente perdida que, puesta en el telescopio, deja ver la luna
+
+   Y lo que se añadió el 19-09-2026 (idea de Antonio: «si se llama isla de
+   pinos, algo tendrá que ver con la madera»):
+     · EL HACHA, escondida en la isla grande. Sin ella no se puede cortar.
+     · EL CLARO DE LA LEÑA: reto de cortar troncos, una vez al día. Cada
+       visita son 4 tablones.
+     · EL ASTILLERO DE MARTÍ: cuenta los tablones que llevas, te dice
+       cuántos te faltan (resta escrita, como el taller de Tià) y, con 20,
+       construye el barco.
+     · EL BARCO DE LOS PINOS: cuando está construido, une la costa norte de
+       la isla grande con l'Illa dels Pins, sin dar la vuelta por el puente.
+
+   Lo pedagógico de todo esto es lo mismo que en el taller de Tià: el precio.
+   Hay que volver varios días, y cada día saber cuánto llevas y cuánto falta. */
 
 /* DORMIDA HASTA QUE LA BARRA DE SORPRESAS LA ABRA (19-09-2026)
    El código viaja dentro del juego, pero la isla no existe para la jugadora
@@ -15260,9 +15279,10 @@ const PINS_ABIERTA = typeof sorpresaAbierta === 'function' ? sorpresaAbierta('pi
 ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
   id: 'pins',
 
-  islotes: [{ id: 'pins', x: 7640, y: 980, rx: 560, ry: 420 }],
+  islotes: [{ id: 'pins', x: 8100, y: 820, rx: 880, ry: 520 }],
 
-  pasarelas: [{ x: 7640, y: 1645, rx: 60, ry: 300, requiere: 'puenteNorte', vertical: true }],
+  /* El puente es más largo que antes: la isla se ha ido más al norte */
+  pasarelas: [{ x: 7640, y: 1610, rx: 60, ry: 350, requiere: 'puenteNorte', vertical: true }],
 
   pasos: [
     { id: 'puenteNorte', x: 7640, y: 1960, dibujo: 'cartel',
@@ -15276,46 +15296,88 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
   ],
 
   lugares: [
-    { id: 'colmenas', x: 7250, y: 780, accion: 'reto', dibujo: 'colmenas',
+    { id: 'colmenas', x: 7820, y: 560, accion: 'reto', dibujo: 'colmenas',
       nombre: 'Las colmenas de Aina', mapa: 'Els Ruscs', personaje: 'Aina, la de las abejas' },
-    { id: 'ardillas', x: 7880, y: 1150, accion: 'reto', dibujo: 'ardillas',
+    { id: 'ardillas', x: 8520, y: 680, accion: 'reto', dibujo: 'ardillas',
       nombre: 'El tocón de las ardillas', mapa: 'Els Esquirols', personaje: 'Pep, el guarda' },
-    { id: 'pinoGigante', x: 7640, y: 740, accion: 'ver', historia: 'pinoGigante', dibujo: 'pinoGigante',
+    { id: 'pinoGigante', x: 8120, y: 470, accion: 'ver', historia: 'pinoGigante', dibujo: 'pinoGigante',
       nombre: 'El pino gigante', mapa: 'El Pi Gegant' },
-    { id: 'cascada', x: 7390, y: 930, accion: 'ver', historia: 'cascada', dibujo: 'cascada',
+    { id: 'cascada', x: 7420, y: 840, accion: 'ver', historia: 'cascada', dibujo: 'cascada',
       nombre: 'La cascada', mapa: 'La Cascada' },
-    { id: 'observatorio', x: 8060, y: 1080, accion: 'ver', historia: 'observatorio', dibujo: 'observatorio',
+    { id: 'observatorio', x: 8780, y: 1010, accion: 'ver', historia: 'observatorio', dibujo: 'observatorio',
       nombre: 'El observatorio', mapa: 'L\'Observatori' },
-    { id: 'marti', x: 7520, y: 1260, accion: 'hablar', charla: 'marti', dibujo: 'carpintero',
+    { id: 'marti', x: 7860, y: 1150, accion: 'hablar', charla: 'marti', dibujo: 'carpintero',
       nombre: 'Martí, el carpintero', mapa: 'Martí' },
+
+    /* --- LA MADERA (19-09-2026) --------------------------------------- */
+    { id: 'lenya', x: 8380, y: 1120, accion: 'reto', dibujo: 'lenya',
+      nombre: 'El claro de la leña', mapa: 'La Llenya', personaje: 'Pep, el guarda' },
+
+    { id: 'astillero', x: 7620, y: 1160, accion: 'barco', dibujo: 'astillero',
+      nombre: 'El astillero de Martí', mapa: 'La Drassana', personaje: 'Martí, el carpintero',
+      viaje: {
+        paso: 'barcoPins', personaje: 'Martí, el carpintero',
+        pregunta: '¿Te llevo a la isla grande? Se tarda menos que por el puente.',
+        subida: [[7620, 1200]],
+        ruta: [[7520, 1330], [7260, 1470], [6980, 1560], [6820, 1520], [6700, 1470], [6640, 1440]],
+        bajada: [[6600, 1408]],
+        destino: { x: 6480, y: 1400 },
+        llegada: '⛵ ¡Ya estamos! Esto es la <b>costa norte</b> de la isla grande.' } },
+
+    /* El otro extremo del barco, en la costa norte de la isla grande. Va en
+       esta ampliación porque sin ella no tendría a dónde llevar. */
+    { id: 'muelleNorte', x: 6560, y: 1400, accion: 'barco', dibujo: 'muellePins',
+      nombre: 'El barco de los Pinos', mapa: 'Moll del Nord', personaje: 'Martí, el carpintero',
+      viaje: {
+        paso: 'barcoPins', personaje: 'Martí, el carpintero',
+        pregunta: '¿Nos vamos a l\'Illa dels Pins?',
+        subida: [[6600, 1408]],
+        ruta: [[6640, 1440], [6700, 1470], [6820, 1520], [6980, 1560], [7260, 1470], [7520, 1330]],
+        bajada: [[7620, 1200]],
+        destino: { x: 7620, y: 1120 },
+        llegada: '⛵ ¡Tierra! Esto es <b>l\'Illa dels Pins</b>.' } },
   ],
 
-  zonas: [{ tipo: 'bosque', x: 7640, y: 980, rx: 430, ry: 320 }],
+  zonas: [{ tipo: 'bosque', x: 8100, y: 820, rx: 700, ry: 400 }],
 
   bloqueos: [
-    { dibujo: 'pinar', x: 7910, y: 860, rx: 220, ry: 150,
-      mensaje: 'El pinar está muy tupido. <b>Rodéalo</b>.' },
-    { dibujo: 'lago', x: 7390, y: 1060, rx: 160, ry: 100,
+    /* El pinar ya no cierra el paso, como el bosque de la isla grande
+       (19-09-2026): se cruza por donde se quiera y sigue dibujado. */
+    { dibujo: 'pinar', x: 8420, y: 480, rx: 300, ry: 190, pasable: true,
+      mensaje: 'El pinar está muy tupido, pero se puede cruzar.' },
+    { dibujo: 'lago', x: 7430, y: 1000, rx: 180, ry: 110,
       mensaje: 'La laguna es fría y honda. Por aquí no.' },
-    { dibujo: 'rocas', x: 7400, y: 660, rx: 130, ry: 60,
+    { dibujo: 'rocas', x: 7500, y: 560, rx: 150, ry: 70,
       mensaje: 'Un risco de piedra. Por encima no se pasa.' },
   ],
 
-  nodos: { pinsBajada: { x: 7640, y: 1330 } },
-  caminos: [['pinsBajada', 'pinoGigante'], ['pinoGigante', 'colmenas'], ['colmenas', 'cascada'],
-            ['pinsBajada', 'ardillas'], ['ardillas', 'observatorio']],
+  nodos: { pinsBajada: { x: 7640, y: 1230 }, pinsCruce: { x: 8100, y: 900 } },
+  caminos: [['pinsBajada', 'astillero'], ['pinsBajada', 'marti'], ['marti', 'pinsCruce'], ['pinsCruce', 'pinoGigante'],
+            ['pinoGigante', 'colmenas'], ['colmenas', 'cascada'],
+            ['pinsCruce', 'ardillas'], ['ardillas', 'observatorio'],
+            ['pinsCruce', 'lenya']],
 
   piezas: [
-    { id: 'lente', x: 7200, y: 1080, icono: '🔍', nombre: 'Una lente redonda',
+    /* El hacha vive LEJOS, en la isla grande (la regla de siempre: la pieza
+       nunca está donde sirve, para que haya que explorar y leer). */
+    { id: 'hacha', x: 2380, y: 1180, icono: '🪓', nombre: 'Un hacha vieja',
+      hallazgo: 'Un hacha clavada en un tocón, junto a las ruinas del reloj. El mango es de ' +
+                'madera clara, de esa que solo crece <b>al otro lado del mar, donde los pinos</b>.',
+      encaja: 'lenya',
+      alColocar: 'Sacas el hacha y Pep te enseña a dar el golpe: ni muy fuerte ni muy flojo, ' +
+                 'en el mismo sitio. El tronco se abre limpio.<br><br>' +
+                 '<b>Ya se puede cortar leña en el claro.</b>' },
+
+    { id: 'lente', x: 8640, y: 1120, icono: '🔍', nombre: 'Una lente redonda',
       hallazgo: 'Una lente de cristal, grande y redonda, en la orilla de la laguna. No tiene ni un rasguño.',
       encaja: 'observatorio',
       alColocar: 'Colocas la lente en el telescopio. Miras por el agujerito… y ves la luna ' +
                  '<b>enorme</b>, con sus manchas y todo.' },
   ],
 
-  flores: [[7500, 1150], [7760, 1250], [7300, 1200], [7180, 900]],
-  matas: [[8050, 1220], [7560, 860], [7760, 640]],
-  rocas: [[7250, 1150], [8000, 1260]],
+  flores: [[7700, 1080], [8000, 1180], [7480, 1120], [8600, 1080], [8300, 400]],
+  matas: [[8700, 800], [7700, 700], [8000, 340], [8850, 620], [7380, 1130]],
+  rocas: [[7300, 950], [8850, 900], [8200, 1220]],
 
   /* ------------------------------------------------------------ RETOS */
   retos: {
@@ -15373,6 +15435,80 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
           operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
           mecanica: 'cerradura', preguntas: [{ texto: '4 + 3', sol: 7 }],
           pistas: ['Cuatro y tres.', 'Siete.'] },
+      },
+    },
+
+    /* EL CLARO DE LA LEÑA (19-09-2026)
+       NO lleva `trabajo: true` a propósito: así cuenta como reto normal, se
+       puede hacer una vez al día (regla 30) y queda apuntado en `veces`, que
+       es lo que usa el astillero para saber cuántas cargas de leña llevas. */
+    lenya: {
+      quien: 'Pep, el guarda',
+      saludo: 'Con esa hacha ya puedes cortar. Pero hay que saber cuánta leña sacamos, que si no cortamos de más.',
+      exito: '¡Eso es! Cuatro tablones más para el montón de Martí.',
+      dormido: 'Uf, me he hecho un lío contando troncos. Descanso un rato.',
+      despierta: 'Ya estoy despierto. Vamos con menos troncos.',
+      moraleja: { titulo: 'Cada tronco, los mismos tablones',
+        texto: 'Si de <b>cada</b> tronco salen los mismos tablones, se <b>multiplica</b>.<br><br>' +
+               'Y si sabes cuántos tablones quieres y cuántos salen de cada tronco, ' +
+               '<b>divides</b> para saber cuántos troncos cortar.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const t = AZ(4, 9), c = AZ(3, 8); return { t, c, sol: t * c, mal: t + c }; },
+            enunciado: 'Cortamos {t} troncos y de cada tronco salen {c} tablones. ¿Cuántos tablones sacamos?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{t} más {c} son {mal}, y eso no cuenta lo que da CADA tronco.',
+                       repartir: 'Aquí no se reparte nada: se junta lo que da cada tronco.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos tablones?', sol: '{sol}' }],
+            pistas: ['Son {t} troncos iguales, de {c} tablones cada uno.', 'La tabla del {c}: {t} × {c}.'] },
+
+          { vars: () => { const c = AZ(3, 6), t = AZ(4, 8); return { c, t, tot: c * t, sol: t }; },
+            enunciado: 'Martí necesita {tot} tablones y de cada tronco salen {c}. ¿Cuántos troncos hay que cortar?',
+            operacion: 'repartir', opciones: ['multiplicar', 'repartir', 'quitar'],
+            explica: { multiplicar: 'Si multiplicas sacas muchos más tablones de los que hacen falta.',
+                       quitar: 'No se quita nada: hay que ver cuántas veces cabe {c} en {tot}.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos troncos?', sol: '{sol}' }],
+            pistas: ['¿Cuántas veces cabe {c} en {tot}?', '{tot} entre {c}.'] },
+
+          { vars: () => { const t = AZ(3, 7), c = AZ(4, 7), y = AZ(5, 12);
+                          return { t, c, y, tot: t * c, sol: t * c - y }; },
+            enunciado: 'De {t} troncos salen {c} tablones cada uno. Martí ya tenía {y} tablones guardados. ¿Cuántos tablones nuevos ponemos en el montón?',
+            operacion: 'multiplicar', opciones: ['multiplicar', 'juntar', 'dosPasos'],
+            explica: { juntar: 'Los {y} de antes ya estaban: lo que preguntan es lo que sale HOY.',
+                       dosPasos: 'Los {y} guardados no hacen falta para esto: solo lo que damos hoy.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos tablones nuevos?', sol: '{tot}' }],
+            pistas: ['Cuidado: pregunta por los de HOY.', '{t} troncos × {c} tablones.'] },
+        ],
+        facil: { enunciado: 'Cortamos 3 troncos y de cada uno salen 4 tablones. ¿Cuántos tablones?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '3 × 4', sol: 12 }],
+          pistas: ['Tres veces cuatro.', '4, 8, 12.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(6, 14), b = AZ(3, 8); return { a, b, sol: a + b }; },
+            enunciado: 'En el montón hay {a} tablones y hoy ponemos {b} más. ¿Cuántos hay ahora?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No se lleva nadie ninguno: ponemos más.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['Había {a} y llegan {b}.', 'Cuenta desde {a}.'] },
+          { vars: () => { const t = AZ(2, 5); return { t, sol: t * 3 }; },
+            enunciado: 'Cortamos {t} troncos y de cada uno salen 3 tablones. ¿Cuántos tablones?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: 'Es que CADA tronco da 3, no 3 en total.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{t} × 3', sol: '{sol}' }],
+            pistas: ['De 3 en 3.', '3, 6, 9…'] },
+          { vars: () => { const a = AZ(9, 16), b = AZ(3, 7); return { a, b, sol: a - b }; },
+            enunciado: 'Había {a} tablones y Martí se lleva {b} al astillero. ¿Cuántos quedan en el claro?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Se los lleva: en el claro quedan menos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+            pistas: ['Se van {b} de {a}.', 'Cuenta hacia atrás desde {a}.'] },
+        ],
+        facil: { enunciado: 'Hay 5 tablones y ponemos 3 más. ¿Cuántos hay?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '5 + 3', sol: 8 }],
+          pistas: ['Cinco y tres.', '6, 7, 8.'] },
       },
     },
 
@@ -15565,12 +15701,95 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
         { texto: '¿Qué hay detrás de la cascada?',
           respuesta: 'Eso digo yo. Algún día haré una escalera para subir a mirar.<br><br>' +
                      'Pero para eso necesito muchos, muchos tablones.' },
+        { texto: '¿Qué estás construyendo?',
+          respuesta: 'Un barco. Lo tengo ahí, con las costillas al aire, esperando madera.<br><br>' +
+                     'Si lo terminamos, va y viene a tu isla sin dar toda la vuelta por el puente. ' +
+                     'Pásate por <b>el astillero</b> y te digo cuánta madera falta.' },
+        { texto: '¿De dónde saco la madera?',
+          respuesta: 'Del <b>claro de la leña</b>, al este. Pep te enseña a cortar.<br><br>' +
+                     'Pero con las manos no se corta un pino: hace falta <b>un hacha</b>, y la ' +
+                     'única que había se la dejó alguien olvidada en la isla grande.' },
       ],
     },
   },
 
   /* ----------------------------------------------------------- DIBUJOS */
   dibujos: {
+
+    /* EL CLARO DE LA LEÑA: troncos apilados y un tocón con el hacha si ya
+       está puesta (19-09-2026) */
+    lenya(ctx, x, y) {
+      this.sombra(ctx, x, y + 2, 44, 0);
+      ctx.fillStyle = '#8A5A3B';                       // el tocón
+      ctx.beginPath(); ctx.ellipse(x - 26, y - 6, 20, 11, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#A9714B';
+      ctx.beginPath(); ctx.ellipse(x - 26, y - 12, 20, 11, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#8A5A3B'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(x - 26, y - 12, 12, 6, 0, 0, 7); ctx.stroke();
+      if (typeof Estado !== 'undefined' && Estado.actual && Estado.estaEncajado('lenya')) {
+        ctx.strokeStyle = '#6B4226'; ctx.lineWidth = 3.5;    // el hacha clavada
+        ctx.beginPath(); ctx.moveTo(x - 20, y - 16); ctx.lineTo(x - 4, y - 52); ctx.stroke();
+        ctx.fillStyle = '#B9C0C7';
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - 56); ctx.lineTo(x + 14, y - 50);
+        ctx.lineTo(x + 10, y - 34); ctx.lineTo(x - 12, y - 42); ctx.fill();
+      }
+      // el montón de leña
+      for (let k = 0; k < 6; k++) {
+        const fila = k < 3 ? 0 : 1, i = k % 3;
+        ctx.fillStyle = k % 2 ? '#A9714B' : '#8A5A3B';
+        ctx.beginPath();
+        ctx.roundRect(x + 6 + i * 20, y - 12 - fila * 15, 18, 13, 4); ctx.fill();
+        ctx.fillStyle = '#E0C9A6';
+        ctx.beginPath(); ctx.ellipse(x + 8 + i * 20, y - 6 - fila * 15, 3.5, 5, 0, 0, 7); ctx.fill();
+      }
+    },
+
+    /* EL ASTILLERO: el barco a medio hacer sobre sus maderos; cuando está
+       construido, se ve entero y con la vela puesta */
+    astillero(ctx, x, y) {
+      const hecho = typeof Estado !== 'undefined' && Estado.actual && Estado.pasoAbierto('barcoPins');
+      this.sombra(ctx, x, y + 4, 56, 0);
+      ctx.fillStyle = '#8A5A3B';                       // las cunas de madera
+      [-34, 0, 34].forEach(d => ctx.fillRect(x + d - 4, y - 14, 8, 18));
+      ctx.fillStyle = hecho ? '#C9704B' : '#B98A63';   // el casco
+      ctx.beginPath();
+      ctx.moveTo(x - 56, y - 20); ctx.lineTo(x + 56, y - 20);
+      ctx.quadraticCurveTo(x + 40, y + 4, x - 40, y + 4); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let k = 0; k < 5; k++) ctx.fillRect(x - 50 + k * 22, y - 19, 3, 20);
+      if (hecho) {
+        ctx.fillStyle = '#6B4226';                     // el mástil
+        ctx.fillRect(x - 3, y - 86, 6, 66);
+        ctx.fillStyle = '#FFFFFF';                     // la vela
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y - 84); ctx.quadraticCurveTo(x + 40, y - 60, x + 2, y - 28); ctx.fill();
+        ctx.fillStyle = '#E8927E';
+        ctx.beginPath(); ctx.moveTo(x - 3, y - 86); ctx.lineTo(x - 22, y - 80); ctx.lineTo(x - 3, y - 74); ctx.fill();
+      } else {
+        ctx.strokeStyle = '#8A5A3B'; ctx.lineWidth = 3;   // las cuadernas a la vista
+        for (let k = 0; k < 4; k++) {
+          ctx.beginPath();
+          ctx.moveTo(x - 36 + k * 24, y - 20);
+          ctx.quadraticCurveTo(x - 36 + k * 24, y - 44, x - 30 + k * 24, y - 50); ctx.stroke();
+        }
+      }
+    },
+
+    /* EL MUELLE DEL NORTE, en la isla grande */
+    muellePins(ctx, x, y) {
+      this.sombra(ctx, x, y + 2, 30, 0);
+      ctx.fillStyle = '#A9714B';
+      ctx.fillRect(x - 40, y - 10, 80, 14);
+      ctx.fillStyle = '#8A5A3B';
+      [-34, -10, 14, 32].forEach(d => ctx.fillRect(x + d, y + 2, 7, 16));
+      ctx.fillStyle = '#6B4226';
+      ctx.beginPath(); ctx.roundRect(x + 24, y - 34, 9, 26, 3); ctx.fill();
+      ctx.fillStyle = '#2F7D4F';                        // el pino del cartel
+      ctx.beginPath(); ctx.moveTo(x + 14, y - 34); ctx.lineTo(x + 28, y - 58);
+      ctx.lineTo(x + 42, y - 34); ctx.fill();
+    },
+
     colmenas(ctx, x, y, hecho, dormido) {
       this.sombra(ctx, x - 20, y + 2, 50, 0);
       [-52, -14].forEach(dx => {
@@ -15672,6 +15891,116 @@ ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
     },
   },
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+   LA MADERA Y EL BARCO (19-09-2026)
+
+   Lo pidió Antonio: «si se llama isla de pinos, algo tendrá que ver con la
+   madera». El trato es el mismo que el del taller de Tià, y lo pedagógico es
+   el precio: hay que volver varios días, y cada día saber cuánto llevas y
+   cuánto te falta (una multiplicación y una resta, escritas).
+
+     · Sin el hacha puesta, en el claro no se corta.
+     · Cada visita al claro (una al día) son 4 tablones.
+     · El barco necesita 20 tablones, o sea cinco días de leña.
+     · Construido, une la costa norte de la isla grande con l'Illa dels Pins
+       sin dar la vuelta por el puente.
+
+   Se guarda en lo que ya guarda el juego: las veces que se ha hecho el reto
+   del claro (`veces`) y el paso abierto (`pasos`). No hay nada nuevo que
+   guardar, así que ninguna partida se estropea. */
+(function laMaderaDeLosPinos() {
+  if (!PINS_ABIERTA || typeof Juego === 'undefined') return;
+
+  const POR_CARGA = 4;          // tablones que salen de cada visita al claro
+  const PARA_EL_BARCO = 20;     // lo que pide Martí
+
+  const cargas   = () => Estado.vecesHecho('lenya');
+  const tablones = () => cargas() * POR_CARGA;
+  const hayHacha = () => Estado.estaEncajado('lenya');
+  const hecho    = () => Estado.pasoAbierto('barcoPins');
+
+  /* El claro, sin hacha, no se puede trabajar */
+  function sinHacha() {
+    UI.dialogo('El claro de la leña',
+      'Troncos cortados por la mitad, un tocón enorme y ni una herramienta.<br><br>' +
+      'Pep se encoge de hombros: «Aquí se corta leña, sí. Pero <b>con las manos no</b>.»<br><br>' +
+      '🪓 Hace falta <b>un hacha</b>. Dicen que hay una clavada en un tocón, ' +
+      'lejos de aquí, en la isla grande.');
+  }
+
+  /* El astillero: la cuenta de siempre, escrita y despacio */
+  function astillero() {
+    const c = cargas(), t = tablones(), faltan = PARA_EL_BARCO - t;
+
+    if (!hayHacha() && c === 0) {
+      return UI.dialogo('Martí, el carpintero',
+        'Un barco a medio hacer, con las costillas al aire.<br><br>' +
+        '«Lo tengo parado por falta de madera. Si encuentras <b>un hacha</b> y cortas leña ' +
+        'en el claro, yo pongo las manos.»<br><br>' +
+        '🪵 Hacen falta <b>' + PARA_EL_BARCO + ' tablones</b>.');
+    }
+
+    const cuenta = c === 0
+      ? 'Todavía no has cortado ninguna carga.<br><br>'
+      : 'Llevas <b>' + c + (c === 1 ? ' carga' : ' cargas') + '</b> de leña, y de cada carga salen ' +
+        POR_CARGA + ' tablones:<br><br>' +
+        '<b>' + c + ' × ' + POR_CARGA + ' = ' + t + ' tablones</b><br><br>';
+
+    if (faltan > 0) {
+      return UI.dialogo('Martí, el carpintero',
+        cuenta + 'Para el barco hacen falta <b>' + PARA_EL_BARCO + '</b>:<br><br>' +
+        '<b>' + PARA_EL_BARCO + ' − ' + t + ' = ' + faltan + '</b><br><br>' +
+        '🪵 Te faltan <b>' + faltan + ' tablones</b>, o sea ' +
+        Math.ceil(faltan / POR_CARGA) + ' ' + (Math.ceil(faltan / POR_CARGA) === 1 ? 'carga' : 'cargas') +
+        ' más. En el claro se corta <b>una al día</b>.');
+    }
+
+    UI.dialogo('Martí, el carpintero',
+      cuenta + 'Para el barco hacían falta <b>' + PARA_EL_BARCO + '</b>… ' +
+      '<b>y los tienes.</b><br><br>¿Lo montamos?', [
+      { texto: '🪵 ¡Construir el barco!', accion: () => {
+          Estado.abrirPaso('barcoPins');
+          Estado.darConchas(AJUSTES.conchasPorArreglar || 1);
+          UI.refrescarHud();
+          Sonido.fiesta();
+          setTimeout(() => Sonido.cristal(), 500);
+          UI.dialogo('⛵ ¡EL BARCO DE LOS PINOS!',
+            'Martí clava el último tablón, iza la vela y el barco entra en el agua de ' +
+            'costado, haciendo una ola.<br><br>' +
+            '«Este va y viene entre tu isla y la mía. Ya no hace falta dar toda la vuelta ' +
+            'por el puente.»<br><br>' +
+            '⛵ Sale de aquí y llega a la <b>costa norte</b> de la isla grande.', [
+            { texto: '¡Vamos a probarlo!', accion: () => {
+                UI.cerrar();
+                Hada.decir('¡Lo has construido tú, tablón a tablón! ⛵', 8);
+              } },
+          ]);
+        } },
+      { texto: 'Ahora no', accion: () => UI.cerrar() },
+    ]);
+  }
+
+  /* El muelle de la isla grande, antes de que el barco exista */
+  function muelleVacio() {
+    UI.dialogo('El muelle del norte',
+      'Un muelle de madera nuevo, con un cartel con un pino pintado. No hay ningún barco ' +
+      'amarrado.<br><br>' +
+      '«Aquí atracará el barco de Martí —dice el cartel—, <b>cuando alguien lo construya</b>.»');
+  }
+
+  const interactuar = Juego.interactuar;
+  Juego.interactuar = function (tecla) {
+    const l = this.lugar || this.lugarEn(this.jugador.x, this.jugador.y, 95);
+    const libre = !this.cogible && !this.entregable && !this.encajable;
+    if (libre && l && (!tecla || tecla === 'Enter' || tecla === 'J' || tecla === TECLAS[l.accion])) {
+      if (l.id === 'lenya' && !hayHacha())   { this.teclas = {}; Sonido.clic(); return sinHacha(); }
+      if (l.id === 'astillero' && !hecho())  { this.teclas = {}; Sonido.clic(); return astillero(); }
+      if (l.id === 'muelleNorte' && !hecho()) { this.teclas = {}; Sonido.clic(); return muelleVacio(); }
+    }
+    return interactuar.call(this, tecla);
+  };
+})();
 
 </script>
 <script>
