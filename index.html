@@ -731,20 +731,41 @@ const AJUSTES = {
       cristal: { nombre: 'Cristal de Fuego', color: '#FF9130' },
       regalo: { tipo: 'complementos', id: 'casco', nota: 'con su lamparita encendida' },
       aviso: '¡40 retos! Dile a papá que Tià ya puede traer la moto.' },
+    { id: 'mascotas2', icono: '🐾', nombre: 'Mascotas nuevas en la Casa dels Bitxos',
+      cristal: { nombre: 'Cristal de Mar', color: '#5FD1C6' },
+      aviso: '¡50 retos! Dile a papá que Ona ha recibido animales nuevos.' },
+    { id: 'cabana2', icono: '🏠', nombre: 'Decorar la cabaña por dentro',
+      cristal: { nombre: 'Cristal de Hierba', color: '#8FD46A' },
+      aviso: '¡60 retos! Dile a papá que quieres decorar tu cabaña.' },
     { id: 'hadaHabla', icono: '🧚', nombre: 'Lumi aprende a hablar',
       cristal: { nombre: 'Cristal de Noche', color: '#B08CFF' },
-      aviso: '¡50 retos! Dile a papá que quieres que Lumi hable de verdad.' },
+      aviso: '¡70 retos! Dile a papá que quieres que Lumi hable de verdad.' },
+    { id: 'juego2', icono: '🎲', nombre: 'Un juego nuevo en el salón de Coco',
+      cristal: { nombre: 'Cristal de Rosa', color: '#FF9ED2' },
+      aviso: '¡80 retos! Dile a papá que Coco quiere enseñarte un juego nuevo.' },
+    { id: 'monedas', icono: '🪙', nombre: 'Pagar con monedas en la tienda',
+      cristal: { nombre: 'Cristal de Plata', color: '#D9E3EC' },
+      aviso: '¡90 retos! Dile a papá que quieres pagar con monedas de verdad.' },
+    { id: 'cromos', icono: '📕', nombre: 'El álbum de cromos de la isla',
+      cristal: { nombre: 'Cristal de Sol', color: '#FFE066' },
+      aviso: '¡100 retos! Dile a papá lo del álbum de cromos.' },
+    { id: 'huerto', icono: '🌱', nombre: 'Un huerto para plantar',
+      cristal: { nombre: 'Cristal de Semilla', color: '#A8D86A' },
+      aviso: '¡110 retos! Dile a papá que quieres un huerto.' },
+    { id: 'dianoche', icono: '🌙', nombre: 'Que se haga de noche en la isla',
+      cristal: { nombre: 'Cristal de Luna', color: '#9DB4E8' },
+      aviso: '¡120 retos! Dile a papá lo del día y la noche.' },
   ],
 
   /* Cuando se acaba la lista de arriba, los Cristales Mayores siguen saliendo
      con estos nombres y colores, uno tras otro y dando la vuelta si hace falta.
      Así la hoguera del Farol nunca deja de crecer. */
   cristalesExtra: [
-    { nombre: 'Cristal de Mar',    color: '#5FD1C6' },
-    { nombre: 'Cristal de Hierba', color: '#8FD46A' },
-    { nombre: 'Cristal de Rosa',   color: '#FF9ED2' },
-    { nombre: 'Cristal de Plata',  color: '#D9E3EC' },
-    { nombre: 'Cristal de Sol',    color: '#FFE066' },
+    { nombre: 'Cristal de Lluvia', color: '#8FD3F4' },
+    { nombre: 'Cristal de Arena',  color: '#E8C87A' },
+    { nombre: 'Cristal de Coral',  color: '#FF9AA2' },
+    { nombre: 'Cristal de Musgo',  color: '#7FB069' },
+    { nombre: 'Cristal de Humo',   color: '#B9B0A8' },
   ],
 
   // --- Mundo ------------------------------------------------------------
@@ -11487,6 +11508,9 @@ const Sorpresas = {
      los nombres y colores de AJUSTES.cristalesExtra, dando la vuelta si hace
      falta: la hoguera del Farol nunca deja de crecer. */
   generico(n) {
+    /* El nombre y el color salen del número, no de cuántas expansiones haya en
+       la cola. Así el hueco de un cristal ya colocado no cambia de color
+       porque Antonio añada o quite una expansión más tarde. */
     const extra = AJUSTES.cristalesExtra || [{ nombre: 'Cristal Nuevo', color: '#BFE9FF' }];
     return {
       id: 'cristal' + (n + 1),
