@@ -15001,6 +15001,7 @@ const Ampliaciones = {
   registrar(d) {
     this.lista.push(d.id);
     if (d.alto) MUNDO.alto = Math.max(MUNDO.alto, d.alto);     // más mar hacia el sur
+    if (d.ancho) MUNDO.ancho = Math.max(MUNDO.ancho, d.ancho); // y más hacia el este
     ['islotes', 'pasarelas', 'pasos', 'lugares', 'bloqueos', 'zonas', 'piezas',
      'secretos', 'flores', 'matas', 'rocas', 'palmeras']
       .forEach(k => (d[k] || []).forEach(x => MUNDO[k].push(x)));
@@ -15278,6 +15279,11 @@ const PINS_ABIERTA = typeof sorpresaAbierta === 'function' ? sorpresaAbierta('pi
 
 ampliacion(!PINS_ABIERTA ? { id: 'pins' } : {
   id: 'pins',
+
+  /* El mundo se ensancha para que quepa: la cámara no pasa de MUNDO.ancho y
+     sin esto la isla se salía por la derecha, medio kilómetro de isla al que
+     no se podía llegar (19-09-2026, lo vio Antonio jugando). */
+  ancho: 9400,
 
   islotes: [{ id: 'pins', x: 8100, y: 820, rx: 880, ry: 520 }],
 
