@@ -12938,6 +12938,7 @@ const Juego = {
     this.dibujarZonas(ctx);
     this.dibujarEspigones(ctx);
     this.caminos(ctx);
+    this.sueloDeRecintos(ctx);
     this.dibujarVallas(ctx);
     this.dibujarRio(ctx);
 
@@ -13242,6 +13243,47 @@ const Juego = {
     ctx.strokeStyle = '#F0E2BC'; ctx.lineWidth = 26;
     this.tramos().forEach(c => {
       ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(c[2], c[3]); ctx.stroke();
+    });
+  },
+
+  /* EL SUELO EMPEDRADO DEL POBLADO (19-09-2026, lo pidió Antonio)
+     Dentro de la empalizada el suelo es de baldosas claras, para que se note
+     que eso es pueblo y no campo. Se pinta DESPUÉS de los caminos: los de
+     tierra mueren en las puertas y dentro ya es todo plaza.
+
+     Las baldosas van en un patrón que se fabrica una sola vez (son más de mil
+     y pintarlas una a una en cada fotograma se notaría en el iPad). */
+  patronBaldosa() {
+    if (this._baldosa) return this._baldosa;
+    const c = document.createElement('canvas');
+    c.width = 112; c.height = 64;                   // dos baldosas, a la traba
+    const g = c.getContext('2d');
+    g.fillStyle = '#E9E1CF';
+    g.fillRect(0, 0, 112, 64);
+    g.fillStyle = '#E2D8C2';
+    [[2, 2, 52, 28], [58, 2, 52, 28], [-26, 34, 52, 28], [30, 34, 52, 28], [86, 34, 52, 28]]
+      .forEach(([x, y, w, h]) => { g.fillRect(x, y, w, h); });
+    g.strokeStyle = 'rgba(160,150,130,0.45)'; g.lineWidth = 2;
+    [[2, 2, 52, 28], [58, 2, 52, 28], [-26, 34, 52, 28], [30, 34, 52, 28], [86, 34, 52, 28]]
+      .forEach(([x, y, w, h]) => { g.strokeRect(x, y, w, h); });
+    this._baldosa = g.canvas;
+    return this._baldosa;
+  },
+
+  sueloDeRecintos(ctx) {
+    MUNDO.recintos.filter(r => r.dibujo === 'empalizada').forEach(r => {
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx, r.ry, 0, 0, 7); ctx.clip();
+      ctx.fillStyle = '#E9E1CF';                    // el tono claro de pueblo
+      ctx.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2);
+      try {
+        const pat = ctx.createPattern(this.patronBaldosa(), 'repeat');
+        if (pat) { ctx.fillStyle = pat; ctx.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2); }
+      } catch (e) { /* si el navegador no deja patrones, queda el tono liso */ }
+      // una orla de tierra pisada pegada a la valla, para que no corte en seco
+      ctx.strokeStyle = 'rgba(190,175,145,0.55)'; ctx.lineWidth = 26;
+      ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx - 13, r.ry - 13, 0, 0, 7); ctx.stroke();
+      ctx.restore();
     });
   },
 
