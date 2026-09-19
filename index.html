@@ -13278,39 +13278,110 @@ const Juego = {
 
      Las baldosas van en un patrón que se fabrica una sola vez (son más de mil
      y pintarlas una a una en cada fotograma se notaría en el iPad). */
-  patronBaldosa() {
-    if (this._baldosa) return this._baldosa;
+  /* EL SUELO DEL POBLADO (rehecho el 19-09-2026)
+     No es un tapiz repetido: eso se notaba postizo. Es un empedrado montado
+     como el de un pueblo de verdad:
+
+       · CALLES: las losas siguen cada camino, colocadas de través, como los
+         adoquines de una calzada. Cada calle va en su dirección.
+       · PLAZAS: delante de cada casa hay una plazoleta de losas cuadradas,
+         cada una girada a su aire, y un cerco de piedra alrededor.
+       · Y por el resto, tierra clara con alguna losa suelta, para que no
+         parezca alfombra.
+
+     Suave a propósito: a Gala no le gustó la primera versión, que cantaba
+     demasiado contra la hierba. Se dibuja UNA SOLA VEZ en un lienzo aparte y
+     luego se estampa; si se pintara losa a losa en cada fotograma, en el iPad
+     se notaría. */
+  sueloDelPoblado(r) {
+    if (this._sueloPoblado) return this._sueloPoblado;
+    const ESC = 0.8;                                 // se guarda algo más chico
     const c = document.createElement('canvas');
-    c.width = 112; c.height = 64;                   // dos baldosas, a la traba
+    c.width = Math.round(r.rx * 2 * ESC);
+    c.height = Math.round(r.ry * 2 * ESC);
     const g = c.getContext('2d');
-    g.clearRect(0, 0, 112, 64);
-    g.strokeStyle = 'rgba(122,112,88,0.20)'; g.lineWidth = 2;
-    [[2, 2, 52, 28], [58, 2, 52, 28], [-26, 34, 52, 28], [30, 34, 52, 28], [86, 34, 52, 28]]
-      .forEach(([x, y, w, h]) => {
-        g.fillStyle = (x + y) % 3 === 0 ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)';
-        g.fillRect(x, y, w, h);
-        g.strokeRect(x, y, w, h);
-      });
-    this._baldosa = g.canvas;
-    return this._baldosa;
+    g.scale(ESC, ESC);
+    g.translate(-(r.x - r.rx), -(r.y - r.ry));
+
+    const azar = (n) => {                            // siempre el mismo «azar»
+      const x = Math.sin(n * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const losa = (x, y, w, h, a, tono) => {
+      g.save(); g.translate(x, y); g.rotate(a);
+      g.fillStyle = tono;
+      g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 3); g.fill();
+      g.strokeStyle = 'rgba(120,110,86,0.16)'; g.lineWidth = 1.6; g.stroke();
+      g.restore();
+    };
+    const TONOS = ['rgba(255,252,236,0.30)', 'rgba(244,240,218,0.26)',
+                   'rgba(232,228,204,0.24)', 'rgba(250,246,226,0.20)'];
+
+    // la tierra clara del pueblo, de fondo
+    g.fillStyle = 'rgba(238,236,206,0.34)';
+    g.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2);
+
+    // alguna losa suelta por los rincones, sin orden
+    for (let k = 0; k < 90; k++) {
+      const a = azar(k) * 6.28, d = 0.35 + azar(k + 500) * 0.6;
+      losa(r.x + Math.cos(a) * r.rx * d, r.y + Math.sin(a) * r.ry * d,
+           26 + azar(k + 9) * 10, 18 + azar(k + 3) * 6, azar(k + 77) * 3, TONOS[k % 4]);
+    }
+
+    // LAS PLAZAS de delante de cada casa
+    MUNDO.lugares.forEach(l => {
+      if (!l.accion) return;
+      if (Math.pow((l.x - r.x) / r.rx, 2) + Math.pow((l.y - r.y) / r.ry, 2) > 0.92) return;
+      const giro = azar(l.x + l.y) * 1.2;            // cada plaza, a su aire
+      const RADIO = 96;
+      g.save(); g.translate(l.x, l.y + 24); g.rotate(giro);
+      for (let fx = -2; fx <= 2; fx++) for (let fy = -2; fy <= 2; fy++) {
+        const px = fx * 38, py = fy * 26;
+        if (Math.hypot(px, py * 1.5) > RADIO) continue;
+        losa(px, py, 34, 22, 0, TONOS[(fx + fy + 4) % 4]);
+      }
+      g.restore();
+      g.strokeStyle = 'rgba(150,140,112,0.22)'; g.lineWidth = 5;   // el cerco
+      g.beginPath(); g.ellipse(l.x, l.y + 24, RADIO, RADIO * 0.62, giro, 0, 7); g.stroke();
+    });
+
+    // LAS CALLES: losas de través siguiendo cada camino
+    this.tramos().forEach(t => {
+      const [x1, y1, x2, y2] = t;
+      const largo = Math.hypot(x2 - x1, y2 - y1);
+      if (!largo) return;
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const PASO = 26;
+      for (let d = 0; d <= largo; d += PASO) {
+        const x = x1 + (x2 - x1) * d / largo, y = y1 + (y2 - y1) * d / largo;
+        if (Math.pow((x - r.x) / r.rx, 2) + Math.pow((y - r.y) / r.ry, 2) > 1) continue;
+        // dos hileras, a la traba, atravesadas al camino
+        const n = Math.round(d / PASO);
+        [-1, 1].forEach(lado => {
+          const dx = Math.cos(ang + Math.PI / 2) * 17 * lado;
+          const dy = Math.sin(ang + Math.PI / 2) * 17 * lado;
+          const corre = n % 2 ? PASO / 2 : 0;
+          losa(x + dx + Math.cos(ang) * corre, y + dy + Math.sin(ang) * corre,
+               22, 30, ang, TONOS[(n + (lado > 0 ? 1 : 0)) % 4]);
+        });
+      }
+    });
+
+    this._sueloPoblado = c;
+    return c;
   },
 
-  /* EL SUELO DEL POBLADO
-     Suave a propósito (19-09-2026): la primera versión era un empedrado claro
-     que cantaba demasiado contra la hierba y a Gala no le gustó. Ahora es la
-     misma hierba un punto más clara, con las juntas de las baldosas apenas
-     insinuadas: se nota que es pueblo sin dar el cante. */
   sueloDeRecintos(ctx) {
     MUNDO.recintos.filter(r => r.dibujo === 'empalizada').forEach(r => {
       ctx.save();
       ctx.beginPath(); ctx.ellipse(r.x, r.y, r.rx, r.ry, 0, 0, 7); ctx.clip();
-      const caja = [r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2];
-      ctx.fillStyle = 'rgba(238,236,206,0.42)';     // un velo claro sobre la hierba
-      ctx.fillRect(...caja);
       try {
-        const pat = ctx.createPattern(this.patronBaldosa(), 'repeat');
-        if (pat) { ctx.globalAlpha = 0.6; ctx.fillStyle = pat; ctx.fillRect(...caja); ctx.globalAlpha = 1; }
-      } catch (e) { /* si el navegador no deja patrones, queda el velo liso */ }
+        const suelo = this.sueloDelPoblado(r);
+        ctx.drawImage(suelo, r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2);
+      } catch (e) {                                  // por si el aparato no puede
+        ctx.fillStyle = 'rgba(238,236,206,0.40)';
+        ctx.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2);
+      }
       ctx.restore();
     });
   },
