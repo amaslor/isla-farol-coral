@@ -1164,6 +1164,16 @@ const MUNDO = {
   ancho: 11500,
   alto: 7000,
 
+  /* …Y HACIA ARRIBA Y HACIA LA IZQUIERDA (19-09-2026, lo pidió Antonio)
+     El mundo ya no empieza en la esquina (0,0): puede seguir hacia el norte y
+     hacia el oeste con coordenadas negativas. Así la isla grande queda en el
+     centro y se le pueden ir poniendo islas alrededor por los cuatro lados,
+     sin mover de sitio nada de lo que ya existe (que es lo que rompería las
+     partidas guardadas). Una ampliación puede pedir más sitio con `oeste:` y
+     `norte:`, igual que pide `ancho:` y `alto:`. */
+  oeste: -2600,
+  norte: -2000,
+
   isla: { cx: 3500, cy: 2300, rx: 3480, ry: 2280 },
   rio: { x1: 5620, x2: 5980 },
   piedras: { primeraX: 5670, separacion: 58, filaAlta: 2250, filaBaja: 2370, columnas: 6 },
@@ -11849,7 +11859,8 @@ const Juego = {
     this.prepararEscondites();
 
     this.nubes = Array.from({ length: 7 }, () => ({
-      x: Math.random() * MUNDO.ancho, y: Math.random() * MUNDO.alto,
+      x: (MUNDO.oeste || 0) + Math.random() * (MUNDO.ancho - (MUNDO.oeste || 0)),
+      y: (MUNDO.norte || 0) + Math.random() * (MUNDO.alto - (MUNDO.norte || 0)),
       r: 60 + Math.random() * 80, v: 4 + Math.random() * 6,
     }));
     this.mariposas = Array.from({ length: 12 }, () => ({
@@ -12106,7 +12117,8 @@ const Juego = {
     this.camX += ((j.x - this.ANCHO / 2) - this.camX) * 0.1;
     this.camY += ((j.y - this.ALTO / 2) - this.camY) * 0.1;
 
-    this.nubes.forEach(n => { n.x += n.v * 0.06; if (n.x > MUNDO.ancho + 200) n.x = -200; });
+    this.nubes.forEach(n => { n.x += n.v * 0.06;
+      if (n.x > MUNDO.ancho + 200) n.x = (MUNDO.oeste || 0) - 200; });
     this.mariposas.forEach(b => {
       b.a += (Math.random() - 0.5) * 0.4;
       b.x += Math.cos(b.a) * 0.8; b.y += Math.sin(b.a) * 0.8;
@@ -12940,8 +12952,11 @@ const Juego = {
   // ===================================================== DIBUJO ==========
   dibujar() {
     const ctx = this.ctx, W = this.ANCHO, H = this.ALTO;
-    this.camX = Math.max(-40, Math.min(MUNDO.ancho - W + 40, this.camX));
-    this.camY = Math.max(-40, Math.min(MUNDO.alto - H + 40, this.camY));
+    /* El mundo puede empezar en negativo: hay mar al norte y al oeste para ir
+       poniendo islas nuevas alrededor de la grande (19-09-2026). */
+    const O = MUNDO.oeste || 0, N = MUNDO.norte || 0;
+    this.camX = Math.max(O - 40, Math.min(MUNDO.ancho - W + 40, this.camX));
+    this.camY = Math.max(N - 40, Math.min(MUNDO.alto - H + 40, this.camY));
     const cx = Math.round(this.camX), cy = Math.round(this.camY);
 
     ctx.fillStyle = '#4FB8D8'; ctx.fillRect(0, 0, W, H);
@@ -15273,6 +15288,8 @@ const Ampliaciones = {
     this.lista.push(d.id);
     if (d.alto) MUNDO.alto = Math.max(MUNDO.alto, d.alto);     // más mar hacia el sur
     if (d.ancho) MUNDO.ancho = Math.max(MUNDO.ancho, d.ancho); // y más hacia el este
+    if (d.oeste) MUNDO.oeste = Math.min(MUNDO.oeste || 0, d.oeste);   // hacia el oeste
+    if (d.norte) MUNDO.norte = Math.min(MUNDO.norte || 0, d.norte);   // y hacia el norte
     ['islotes', 'pasarelas', 'pasos', 'lugares', 'bloqueos', 'zonas', 'piezas',
      'secretos', 'flores', 'matas', 'rocas', 'palmeras']
       .forEach(k => (d[k] || []).forEach(x => MUNDO[k].push(x)));
