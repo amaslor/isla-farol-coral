@@ -13336,47 +13336,77 @@ const Juego = {
 
       const p = puertas.find(q => q.principal) || r.puerta;
       if (!p) return;
-
-      if (r.dibujo === 'empalizada') {
-        // LA PUERTA PRINCIPAL: dos postes gordos, dintel y cartel colgando
-        const y1 = p.y - p.ry, y2 = p.y + p.ry;
-        ctx.fillStyle = '#8A5A3B';
-        [y1, y2].forEach(yy => {
-          ctx.fillRect(p.x - 9, yy - 74, 18, 78);
-          ctx.beginPath(); ctx.ellipse(p.x, yy - 74, 9, 6, 0, 0, 7); ctx.fill();
-        });
-        ctx.fillStyle = '#A9714B';                       // el dintel
-        ctx.fillRect(p.x - 13, y1 - 74, 26, y2 - y1);
-        ctx.fillStyle = '#6B4226';
-        ctx.fillRect(p.x - 13, y1 - 74, 26, 6);
-        ctx.fillStyle = '#FFE9A8';                       // el cartel
-        ctx.beginPath(); ctx.roundRect(p.x - 11, p.y - 86, 22, 172, 7); ctx.fill();
-        ctx.strokeStyle = '#8A5A3B'; ctx.lineWidth = 3; ctx.stroke();
-        ctx.fillStyle = '#6B4226';
-        ctx.font = 'bold 14px system-ui'; ctx.textAlign = 'center';
-        ctx.save(); ctx.translate(p.x + 1, p.y); ctx.rotate(Math.PI / 2);
-        ctx.fillText(r.rotulo || '', 0, 5); ctx.restore();
-        // un farolillo a cada lado, que de noche se verá bonito
-        [y1 - 60, y2 - 60].forEach(yy => {
-          ctx.fillStyle = '#6B4226'; ctx.fillRect(p.x - 2, yy - 6, 4, 10);
-          ctx.fillStyle = '#FFD98A';
-          ctx.beginPath(); ctx.roundRect(p.x - 6, yy + 2, 12, 14, 3); ctx.fill();
-        });
-        return;
-      }
-
-      ctx.fillStyle = '#E8506B';
-      ctx.fillRect(p.x - 8, p.y - p.ry - 10, 12, p.ry * 2 + 14);
-      ctx.fillRect(p.x - 8, p.y + p.ry - 4, 12, 10);
-      ctx.strokeStyle = '#E8506B'; ctx.lineWidth = 11;
-      ctx.beginPath();
-      ctx.moveTo(p.x - 2, p.y - p.ry - 6);
-      ctx.quadraticCurveTo(p.x + 40, p.y - p.ry - 60, p.x - 2, p.y + p.ry);
-      ctx.stroke();
-      ctx.fillStyle = '#FFF3C4'; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
-      ctx.save(); ctx.translate(p.x + 26, p.y); ctx.rotate(Math.PI / 2);
-      ctx.fillText(r.rotulo || 'FERIA', 0, 6); ctx.restore();
+      this.puertaPrincipal(ctx, r, p);
     });
+  },
+
+  /* LA PUERTA PRINCIPAL DE UN RECINTO (rehecha el 19-09-2026)
+     Antes se pintaba una viga de lado a lado del vano y parecía justo lo
+     contrario de lo que es: una barrera cerrando el paso (lo vio Antonio en
+     una captura). Ahora se ve lo que tiene que verse: **dos pilares, uno a
+     cada lado, y el hueco abierto entre ellos**, con las hojas de la puerta
+     abiertas hacia fuera, el umbral marcado en el suelo y el cartel
+     horizontal, fuera del paso. */
+  puertaPrincipal(ctx, r, p) {
+    const vertical = p.ry >= p.rx;               // el vano es vertical: se pasa de lado
+    const a = vertical ? { x: p.x, y: p.y - p.ry } : { x: p.x - p.rx, y: p.y };
+    const b = vertical ? { x: p.x, y: p.y + p.ry } : { x: p.x + p.rx, y: p.y };
+    const fuera = vertical ? Math.sign(p.x - r.x) || 1 : Math.sign(p.y - r.y) || 1;
+    const feria = r.dibujo !== 'empalizada';
+    const madera = feria ? '#E8506B' : '#8A5A3B';
+    const clara  = feria ? '#F2748C' : '#A9714B';
+
+    // EL UMBRAL: el suelo del recinto se asoma por el hueco
+    ctx.save();
+    ctx.fillStyle = feria ? 'rgba(232,80,107,0.18)' : '#E9E1CF';
+    if (vertical) ctx.fillRect(p.x - 26 * -fuera, a.y + 10, 52 * fuera, b.y - a.y - 20);
+    else ctx.fillRect(a.x + 10, p.y - 26 * -fuera, b.x - a.x - 20, 52 * fuera);
+    ctx.restore();
+
+    // LAS HOJAS, abiertas hacia fuera
+    [a, b].forEach((e, i) => {
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate((vertical ? 0 : Math.PI / 2) + (i ? -0.5 : 0.5) * fuera * (vertical ? 1 : -1));
+      ctx.fillStyle = clara;
+      ctx.fillRect(0, i ? -8 : -6, 62 * fuera, 14);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let k = 1; k < 4; k++) ctx.fillRect(k * 15 * fuera, i ? -8 : -6, 3, 14);
+      ctx.restore();
+    });
+
+    // LOS DOS PILARES
+    [a, b].forEach(e => {
+      this.sombra(ctx, e.x, e.y + 4, 16, 0);
+      ctx.fillStyle = madera;
+      ctx.fillRect(e.x - 11, e.y - 62, 22, 68);
+      ctx.fillStyle = clara;
+      ctx.fillRect(e.x - 11, e.y - 62, 8, 68);
+      ctx.fillStyle = feria ? '#FFE066' : '#6B4226';     // el remate de arriba
+      ctx.beginPath(); ctx.ellipse(e.x, e.y - 62, 13, 8, 0, 0, 7); ctx.fill();
+      if (!feria) {                                       // el farolillo
+        ctx.fillStyle = '#FFD98A';
+        ctx.beginPath(); ctx.roundRect(e.x - 5, e.y - 80, 10, 13, 3); ctx.fill();
+        ctx.fillStyle = '#6B4226'; ctx.fillRect(e.x - 1.5, e.y - 84, 3, 5);
+      }
+    });
+
+    /* EL CARTEL, horizontal y apartado: junto al pilar de arriba y hacia
+       fuera, para que el hueco de paso quede despejado del todo. */
+    const cx = vertical ? p.x + 46 * fuera : a.x - 10;
+    const cy = vertical ? a.y - 34 : p.y + 46 * fuera;
+    const texto = r.rotulo || 'FERIA';
+    ctx.font = 'bold 17px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ancho = ctx.measureText(texto).width + 30;
+    ctx.fillStyle = '#6B4226';                            // los dos postecitos
+    ctx.fillRect(cx - ancho / 2 + 6, cy - 12, 5, 22);
+    ctx.fillRect(cx + ancho / 2 - 11, cy - 12, 5, 22);
+    ctx.fillStyle = feria ? '#FFF3C4' : '#FFE9A8';
+    ctx.beginPath(); ctx.roundRect(cx - ancho / 2, cy - 34, ancho, 30, 7); ctx.fill();
+    ctx.strokeStyle = madera; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = feria ? '#C9304B' : '#6B4226';
+    ctx.fillText(texto, cx, cy - 18);
+    ctx.textBaseline = 'alphabetic';
   },
 
   /* Las colinas, montañas y demás por los que no se pasa */
