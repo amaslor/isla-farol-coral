@@ -75,6 +75,10 @@
        font-weight:bold; text-shadow:0 2px 0 #fff; pointer-events:none}
   #hud .caja-hud{background:rgba(255,255,255,.85); border-radius:12px; padding:4px 12px}
   #hud .der{margin-left:auto; pointer-events:auto}
+  #hud .barrita{display:inline-block; width:56px; height:9px; vertical-align:middle;
+    background:#e3dcc9; border-radius:5px; overflow:hidden; margin-left:4px}
+  #hud .barrita i{display:block; height:100%; width:0;
+    background:linear-gradient(90deg,#f5a623,#f8d24a); transition:width .5s ease}
   /* Arriba del todo: si va en el centro, tapa al personaje */
   .tecla-globo{display:inline-block; background:var(--verde); color:#fff; border-radius:8px;
                padding:0 9px; margin:0 3px}
@@ -277,6 +281,7 @@
 
     #hud{top:8px; left:8px; right:8px; gap:6px; font-size:15px; flex-wrap:nowrap}
     #hud .caja-hud{padding:3px 9px; border-radius:10px}
+    #hud .barrita{width:34px}
     #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
     #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
     #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo{font-size:17px; padding:3px 5px; margin-right:0}
@@ -494,6 +499,8 @@
   <div id="hud">
     <span class="caja-hud">🐚 <span id="conchas">0</span></span>
     <span class="caja-hud">💎 <span id="cristales">0/5</span></span>
+    <span class="caja-hud" id="cajaSorpresa">🎁 <span id="sorpresaTexto">0/10</span>
+      <span class="barrita"><i id="sorpresaRelleno"></i></span></span>
     <span class="caja-hud caja-nombre"><span id="nombreJugadora"></span></span>
     <span class="der"><button id="bAyuda" title="Cómo se juega (tecla T)">❓</button>
     <button id="bMochila" title="Mochila">🎒</button>
@@ -566,16 +573,18 @@ const AJUSTES = {
   conchasPorLimpiar: 7,
   conchasPorLimpiarRepe: 2,
 
-  /* --- TODO ABIERTO, SIEMPRE (12-09-2026) ------------------------------
-     Ya no se sortean los sitios: todos tienen reto todos los días, para que
-     nunca lleguen a una atracción y esté apagada. Lo que cambia para que no
-     se lo aprendan de memoria son los números, la variante y el orden.
-     Repetir un reto que ya se ha ganado hoy se puede (para volver a montar),
-     pero NO paga nada: así no se vive de repetir lo mismo.
+  /* --- TODO ABIERTO, PERO UNA VEZ AL DÍA (18-09-2026) -------------------
+     Todos los sitios tienen reto todos los días, para que nunca lleguen a una
+     atracción y esté apagada. Pero UN RETO GANADO SE CIERRA HASTA MAÑANA: se
+     estaba repitiendo el mismo una y otra vez, y como la respuesta era la
+     misma se pulsaba sin leer. En las atracciones se sigue pudiendo montar
+     todas las veces que quiera; lo que no se repite es el reto.
+     Y cuando vuelve mañana no es igual: cambia la variante (van saliendo
+     todas antes de repetirse ninguna) y cambian los números.
      En la recámara: poner un número en retosPorDia (p. ej. 8) vuelve a
      sortear qué sitios tienen reto cada día. */
   retosPorDia: 0,            // 0 = todos los sitios abiertos siempre
-  conchasPorRepetirHoy: 0,   // repetir hoy un reto ya ganado hoy: no paga
+  conchasPorRepetirHoy: 0,   // ya no se usa: un reto ganado no se repite hoy
 
   /* TOPE DIARIO DE LO REPETIBLE SIN FIN (12-09-2026)
      El salón de Coco y los problemas sueltos no se acaban nunca: sin tope se
@@ -629,7 +638,11 @@ const AJUSTES = {
   // --- Cuándo se cansa un personaje ------------------------------------
   /* Fallos en un reto antes de que el personaje se duerma (hasta mañana o hasta
      una buena ronda con Coco). En los problemas solo cuentan los de elegir la
-     operación y poner el número: equivocarse en los pasos de ayuda no duerme. */
+     operación y poner el número: equivocarse en los pasos de ayuda no duerme.
+     Desde el 18-09-2026 los fallos se guardan en la partida: cerrar la ventana
+     del reto y volver a entrar ya NO los pone a cero (era la forma de probar de
+     dos en dos sin dormirse nunca). Se borran al superar el reto o al día
+     siguiente. */
   fallosParaDormirse: 3,
 
   // --- El altavoz (leer el texto en voz alta) ---------------------------
@@ -645,6 +658,31 @@ const AJUSTES = {
      ellas quieran. Ponlo en true si ves que se atascan y volverán los globitos
      de Lumi la primera vez que pase cada cosa. */
   pistasAutomaticas: false,
+
+  /* --- LA BARRA DE SORPRESAS (18-09-2026) ------------------------------
+     Cada cuántos retos NUEVOS DEL DÍA se abre una cosa nueva de la isla, y
+     en qué orden. Repetir un reto ya ganado hoy no cuenta (ver motor/sorpresas.js).
+     Cada línea de la lista:
+       id     → si coincide con el id de una ampliación cargada, la enciende sola
+       nombre → cómo se anuncia
+       pista  → la frase misteriosa que lee la jugadora
+       aviso  → qué se le dice si esa sorpresa todavía no está hecha
+     Para enchufar una que esté en ampliaciones/, hay que añadir además su
+     <script> en index.html; hasta entonces la barra la celebra como aviso. */
+  retosPorSorpresa: 10,
+
+  sorpresas: [
+    { id: 'sorpresa1', icono: '🎁', nombre: 'Sorpresa 1',
+      aviso: 'Dile a papá que has llegado a 10 retos: te tiene guardada una sorpresa.' },
+    { id: 'sorpresa2', icono: '🎁', nombre: 'Sorpresa 2',
+      aviso: '¡20 retos! Avisa a papá: toca sorpresa.' },
+    { id: 'sorpresa3', icono: '🎁', nombre: 'Sorpresa 3',
+      aviso: '¡30 retos! Avisa a papá: toca sorpresa.' },
+    { id: 'sorpresa4', icono: '🎁', nombre: 'Sorpresa 4',
+      aviso: '¡40 retos! Avisa a papá: toca sorpresa.' },
+    { id: 'sorpresa5', icono: '🎁', nombre: 'Sorpresa 5',
+      aviso: '¡50 retos! Avisa a papá: toca sorpresa.' },
+  ],
 
   // --- Mundo ------------------------------------------------------------
   anchoMundo: 2300,
@@ -1683,11 +1721,12 @@ const RETOS = {
     premio: { tipo: 'zapatos', id: 'botasagua' },
     moraleja: {
       titulo: 'Eso era una TABLA',
-      texto: 'Las piedras que aguantaban iban de 5 en 5: 5, 10, 15, 20, 25, 30.<br><br>' +
-             'Eso es <b>la tabla del 5</b>. Cada número es el anterior más 5, y también es 5 ' +
-             'multiplicado por algo: 5×1, 5×2, 5×3…<br><br>' +
-             'A esos números se les llama <b>múltiplos</b>. Los múltiplos de 5 siempre acaban ' +
-             'en 0 o en 5, por eso se reconocen tan fácil.' },
+      texto: 'Las piedras que aguantaban iban saltando siempre de la misma cantidad: ' +
+             'de 5 en 5 serían 5, 10, 15, 20…<br><br>' +
+             'Eso es <b>una tabla</b>. Cada número es el anterior más esa cantidad, y también ' +
+             'es esa cantidad multiplicada por algo: 5×1, 5×2, 5×3…<br><br>' +
+             'A esos números se les llama <b>múltiplos</b>. Los del 5 siempre acaban en 0 o en 5, ' +
+             'y los del 2 son los pares: por eso se reconocen tan fácil.' },
     saludo: 'Un cartel viejo clavado en la arena.',
     exito: '¡El puente aguanta! Las piedras se quedan encendidas.',
     dormido: 'La marea sube y tapa las piedras. Habrá que esperar a que baje.',
@@ -1695,16 +1734,19 @@ const RETOS = {
 
     mayor: {
       variantes: [
+        /* La serie sale al azar cada vez: no vale acordarse de la de ayer */
         {
-          enunciado: 'El cartel dice: "Solo aguantan las piedras de 5 en 5. Las demás se hunden."',
+          vars: () => { const n = [3, 4, 6, 7][AZ(0, 3)]; return { n, d: n * 2, t: n * 3, c: n * 4 }; },
+          enunciado: 'El cartel dice: "Solo aguantan las piedras de {n} en {n}. Las demás se hunden."',
           operacion: null,               // aquí no hay fase 1, el cartel ya lo dice
-          mecanica: 'piedras', serie: 5,
-          pistas: ['5, 10, 15, 20…', 'Todas acaban en 0 o en 5.'],
+          mecanica: 'piedras', serie: '{n}',
+          pistas: ['{n}, {d}, {t}, {c}…', 'Ve sumando {n} cada vez.'],
         },
         {
-          enunciado: 'El cartel dice: "Solo aguantan las piedras de 3 en 3."',
-          operacion: null, mecanica: 'piedras', serie: 3,
-          pistas: ['3, 6, 9, 12…', 'Ve sumando 3 cada vez.'],
+          vars: () => { const n = [5, 8, 9, 10][AZ(0, 3)]; return { n, d: n * 2, t: n * 3, c: n * 4 }; },
+          enunciado: 'El cartel dice: "Hoy solo aguantan las piedras de {n} en {n}."',
+          operacion: null, mecanica: 'piedras', serie: '{n}',
+          pistas: ['{n}, {d}, {t}, {c}…', 'Es la tabla del {n}.'],
         },
       ],
       facil: {
@@ -1717,14 +1759,16 @@ const RETOS = {
     pequena: {
       variantes: [
         {
-          enunciado: 'El cartel dice: "Solo aguantan las piedras de 2 en 2."',
-          operacion: null, mecanica: 'piedras', serie: 2,
-          pistas: ['2, 4, 6, 8…', 'De dos en dos.'],
+          vars: () => { const n = [2, 3][AZ(0, 1)]; return { n, d: n * 2, t: n * 3, c: n * 4 }; },
+          enunciado: 'El cartel dice: "Solo aguantan las piedras de {n} en {n}."',
+          operacion: null, mecanica: 'piedras', serie: '{n}',
+          pistas: ['{n}, {d}, {t}, {c}…', 'Ve sumando {n} cada vez.'],
         },
         {
-          enunciado: 'El cartel dice: "Solo aguantan las piedras de 10 en 10."',
-          operacion: null, mecanica: 'piedras', serie: 10,
-          pistas: ['10, 20, 30…', 'Todas acaban en 0.'],
+          vars: () => { const n = [5, 10][AZ(0, 1)]; return { n, d: n * 2, t: n * 3 }; },
+          enunciado: 'El cartel dice: "Hoy solo aguantan las piedras de {n} en {n}."',
+          operacion: null, mecanica: 'piedras', serie: '{n}',
+          pistas: ['{n}, {d}, {t}…', 'Todas acaban en 0 o en 5.'],
         },
       ],
       facil: {
@@ -1793,7 +1837,8 @@ const RETOS = {
     moraleja: {
       titulo: 'Otra vez has DIVIDIDO',
       texto: 'Las galletas en boles iguales: eso es <b>dividir</b>.<br><br>' +
-             '<b>12 : 3 = 4</b> galletas en cada bol.<br><br>' +
+             'Pones una en cada bol, y otra vuelta, y otra, hasta que se acaban. Lo que ' +
+             'queda en cada bol es el resultado.<br><br>' +
              'Fíjate en que es lo mismo que hacía Bruno con la fruta. Cambia la historia, ' +
              'pero la cuenta es la misma.' },
     quien: 'Un zorrito blanco',
@@ -1804,34 +1849,55 @@ const RETOS = {
 
     mayor: {
       variantes: [
-        { enunciado: 'Tienes 12 galletas y hay 3 boles. Quiere la misma cantidad en cada uno. ¿Cuánto le toca a cada uno?',
+        { vars: () => { const c = AZ(2, 4), q = AZ(3, 5);
+                        return { c, q, t: c * q, sol: q, mal: c * q * c, s: AZ(2, 5) }; },
+          enunciado: 'Tienes {t} galletas y hay {c} boles. Quiere la misma cantidad en cada uno. ¿Cuántas le tocan a cada bol?',
           operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
           explica: {
-            juntar: 'Si lo pongo todo en un bol, los otros dos se quedan vacíos.',
-            multiplicar: '12 en cada bol serían 36 galletas, ¡y solo tengo 12!',
+            juntar: 'Si pongo las {t} en un bol, los demás se quedan vacíos.',
+            multiplicar: '{t} en cada bol serían {mal} galletas, ¡y solo tengo {t}!',
           },
-          mecanica: 'repartir', frutas: 12, cestas: 3,
-          pistas: ['12 galletas entre 3 boles.', 'Una en cada bol, y otra vuelta.'] },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{s}',
+          pistas: ['{t} galletas entre {c} boles.', 'Una en cada bol, y otra vuelta.'] },
+        { vars: () => { const c = AZ(2, 4), q = AZ(2, 4);
+                        return { c, q, t: c * q, sol: c, cv: c + AZ(1, 2), s: AZ(2, 4) }; },
+          enunciado: 'Tengo {t} galletas y en cada bol caben {q}. ¿Cuántos boles lleno?',
+          operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: {
+            juntar: 'Juntarlas todas no me dice cuántos boles salen.',
+            multiplicar: '{t} boles de {q} galletas serían muchísimas galletas.',
+          },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', cestasVisibles: '{cv}', sobran: '{s}',
+          pistas: ['Pon {q} en un bol, luego {q} en otro…', 'De {q} en {q} hasta {t}: ¿cuántas veces?'] },
       ],
-      facil: { enunciado: 'Quedan 6 galletas y 2 boles iguales. ¿Cuánto le toca a cada uno?',
+      facil: { vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q }; },
+        enunciado: 'Quedan {t} galletas y 2 boles iguales. ¿Cuántas le tocan a cada uno?',
         operacion: 'repartir', opciones: ['juntar', 'repartir'],
         explica: { juntar: 'Todas en uno y el otro vacío no es repartir.' },
-        mecanica: 'repartir', frutas: 6, cestas: 2,
-        pistas: ['La mitad en cada bol.', '3 y 3.'] },
+        mecanica: 'repartir', frutas: '{t}', cestas: 2,
+        pistas: ['La mitad en cada bol.', '{sol} y {sol}.'] },
     },
 
     pequena: {
       variantes: [
-        { enunciado: 'Tienes 6 galletas y 2 boles. La misma cantidad en cada uno. ¿Cuánto le toca a cada uno?',
+        { vars: () => { const q = AZ(2, 5); return { q, t: q * 2, sol: q }; },
+          enunciado: 'Tienes {t} galletas y 2 boles. La misma cantidad en cada uno. ¿Cuántas le tocan a cada uno?',
           operacion: 'repartir', opciones: ['juntar', 'repartir'],
           explica: { juntar: 'Si las junto todas, un bol se queda vacío.' },
-          mecanica: 'repartir', frutas: 6, cestas: 2,
-          pistas: ['Una para este, una para este…', 'Van 3 en cada uno.'] },
+          mecanica: 'repartir', frutas: '{t}', cestas: 2,
+          pistas: ['Una para este, una para este…', 'Van {sol} en cada uno.'] },
+        { vars: () => { const q = AZ(2, 3); return { q, t: q * 3, sol: q }; },
+          enunciado: 'Hay {t} galletas y 3 boles. La misma cantidad en cada uno. ¿Cuántas le tocan a cada uno?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'],
+          explica: { juntar: 'Si las junto todas, dos boles se quedan vacíos.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: 3,
+          pistas: ['{t} galletas entre 3 boles.', 'Una en cada bol, y otra vuelta.'] },
       ],
-      facil: { enunciado: '4 galletas y 2 boles. ¿Cuánto le toca a cada uno?',
+      facil: { vars: () => { const q = AZ(2, 3); return { q, t: q * 2, sol: q }; },
+        enunciado: '{t} galletas y 2 boles. ¿Cuántas le tocan a cada uno?',
         operacion: 'repartir', opciones: ['juntar', 'repartir'],
-        explica: {}, mecanica: 'repartir', frutas: 4, cestas: 2,
-        pistas: ['Dos y dos.', 'Mitad y mitad.'] },
+        explica: {}, mecanica: 'repartir', frutas: '{t}', cestas: 2,
+        pistas: ['{sol} y {sol}.', 'Mitad y mitad.'] },
     },
   },
 
@@ -1851,28 +1917,42 @@ const RETOS = {
 
     mayor: {
       variantes: [
-        { enunciado: 'Tengo 7 manchas doradas en cada ala, y dos alas. ¿Cuántas manchas tengo?',
+        { vars: () => { const a = AZ(4, 9); return { a, d: a * 2, tr: a * 3 }; },
+          enunciado: 'Tengo {a} manchas doradas en cada ala, y dos alas. ¿Cuántas manchas tengo?',
           operacion: null, mecanica: 'cerradura',
-          preguntas: [{ texto: '7 + 7', sol: 14 }, { texto: '¿Y si tuviera 3 alas? 7 × 3', sol: 21 }],
-          pistas: ['Dos alas iguales, de 7 cada una.', '7 y otros 7.'] },
+          preguntas: [{ texto: '{a} + {a}', sol: '{d}' }, { texto: '¿Y si tuviera 3 alas? {a} × 3', sol: '{tr}' }],
+          pistas: ['Dos alas iguales, de {a} cada una.', '{a} y otros {a}.'] },
+        { vars: () => { const a = AZ(3, 8), b = AZ(2, 6); return { a, b, s: a + b, d: (a + b) * 2 }; },
+          enunciado: 'Tengo {a} manchas en un ala y {b} en la otra. ¿Cuántas manchas tengo?',
+          operacion: null, mecanica: 'cerradura',
+          preguntas: [{ texto: '{a} + {b}', sol: '{s}' }, { texto: '¿Y si me saliera otro par de alas igual? {s} × 2', sol: '{d}' }],
+          pistas: ['{a} en un ala y {b} en la otra.', 'Cuenta desde {a}.'] },
       ],
-      facil: { enunciado: 'Tengo 5 manchas en cada ala, y dos alas.',
+      facil: { vars: () => { const a = AZ(3, 6); return { a, d: a * 2 }; },
+        enunciado: 'Tengo {a} manchas en cada ala, y dos alas.',
         operacion: null, mecanica: 'cerradura',
-        preguntas: [{ texto: '5 + 5', sol: 10 }],
-        pistas: ['Cinco y cinco.', 'Los dedos de las dos manos.'] },
+        preguntas: [{ texto: '{a} + {a}', sol: '{d}' }],
+        pistas: ['{a} y {a}.', 'Cuéntalo con los dedos.'] },
     },
 
     pequena: {
       variantes: [
-        { enunciado: 'Tengo 4 manchas en un ala y 3 en la otra. ¿Cuántas tengo?',
+        { vars: () => { const a = AZ(2, 5), b = AZ(2, 4); return { a, b, s: a + b }; },
+          enunciado: 'Tengo {a} manchas en un ala y {b} en la otra. ¿Cuántas tengo?',
           operacion: null, mecanica: 'cerradura',
-          preguntas: [{ texto: '4 + 3', sol: 7 }],
-          pistas: ['Cuatro y tres.', 'Cuenta con los dedos: 4… 5, 6, 7.'] },
+          preguntas: [{ texto: '{a} + {b}', sol: '{s}' }],
+          pistas: ['{a} y {b}.', 'Cuenta con los dedos desde {a}.'] },
+        { vars: () => { const a = AZ(2, 5); return { a, d: a * 2 }; },
+          enunciado: 'Tengo {a} manchas en cada ala, y dos alas. ¿Cuántas tengo?',
+          operacion: null, mecanica: 'cerradura',
+          preguntas: [{ texto: '{a} + {a}', sol: '{d}' }],
+          pistas: ['{a} y otros {a}.', 'Las dos alas son iguales.'] },
       ],
-      facil: { enunciado: 'Tengo 2 manchas en un ala y 2 en la otra.',
+      facil: { vars: () => { const a = AZ(1, 3), b = AZ(1, 3); return { a, b, s: a + b }; },
+        enunciado: 'Tengo {a} manchas en un ala y {b} en la otra.',
         operacion: null, mecanica: 'cerradura',
-        preguntas: [{ texto: '2 + 2', sol: 4 }],
-        pistas: ['Dos y dos.', 'Son cuatro.'] },
+        preguntas: [{ texto: '{a} + {b}', sol: '{s}' }],
+        pistas: ['{a} y {b}.', 'Son {s}.'] },
     },
   },
 
@@ -2286,30 +2366,49 @@ const RETOS = {
              'Y contar así es mucho más rápido que de uno en uno.' },
     mayor: {
       variantes: [
-        { enunciado: 'El sendero tiene 6 escalones y cada uno lleva 4 piedras. ¿Cuántas piedras?',
+        { vars: () => { const e = AZ(4, 8), p = AZ(3, 6);
+                        return { e, p, sol: e * p, mal: e + p, d: p * 2, t: p * 3 }; },
+          enunciado: 'El sendero tiene {e} escalones y cada uno lleva {p} piedras. ¿Cuántas piedras?',
           operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
-          explica: { juntar: '6 más 4 son 10… pero CADA escalón lleva 4.',
+          explica: { juntar: '{e} más {p} son {mal}… pero CADA escalón lleva {p}.',
                      repartir: 'No hay que repartir piedras, hay que contarlas.' },
-          mecanica: 'cerradura', preguntas: [{ texto: '6 × 4', sol: 24 }],
-          pistas: ['Seis escalones de 4 piedras.', '4, 8, 12, 16…'] },
+          mecanica: 'cerradura', preguntas: [{ texto: '{e} × {p}', sol: '{sol}' }],
+          pistas: ['{e} escalones de {p} piedras.', '{p}, {d}, {t}… la tabla del {p}.'] },
+        { vars: () => { const e = AZ(3, 6), p = AZ(3, 5), t = e * p, q = AZ(2, 6);
+                        return { e, p, t, q, a: t + q, sol: t }; },
+          enunciado: 'He subido {a} piedras, pero {q} están rotas y no sirven. ¿Cuántas piedras buenas me quedan?',
+          operacion: 'quitar', opciones: ['juntar', 'quitar', 'multiplicar'],
+          explica: { juntar: 'Las rotas no se suman: se han roto.',
+                     multiplicar: 'Aquí no se repite nada; solo hay que apartar las rotas.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '{a} − {q}', sol: '{sol}' }],
+          pistas: ['De {a} quita {q}.', 'Cuenta hacia atrás desde {a}.'] },
       ],
-      facil: { enunciado: 'Quedan 3 escalones de 4 piedras cada uno. ¿Cuál es el total?',
+      facil: { vars: () => { const e = AZ(2, 4), p = AZ(2, 4); return { e, p, sol: e * p }; },
+        enunciado: 'Quedan {e} escalones de {p} piedras cada uno. ¿Cuál es el total?',
         operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
-        mecanica: 'cerradura', preguntas: [{ texto: '3 × 4', sol: 12 }],
-        pistas: ['Tres veces cuatro.', '4, 8, 12.'] },
+        mecanica: 'cerradura', preguntas: [{ texto: '{e} × {p}', sol: '{sol}' }],
+        pistas: ['{e} veces {p}.', 'La tabla del {p}.'] },
     },
     pequena: {
       variantes: [
-        { enunciado: 'Tengo 5 piedras y Guillem trae 4 más. ¿Cuántas hay?',
+        { vars: () => { const a = AZ(3, 7), b = AZ(2, 5); return { a, b, sol: a + b }; },
+          enunciado: 'Tengo {a} piedras y Guillem trae {b} más. ¿Cuántas hay?',
           operacion: 'juntar', opciones: ['juntar', 'quitar'],
           explica: { quitar: 'No se quita ninguna, ¡vienen más!' },
-          mecanica: 'cerradura', preguntas: [{ texto: '5 + 4', sol: 9 }],
-          pistas: ['Cinco y cuatro.', 'Cuenta desde 5: 6, 7, 8, 9.'] },
+          mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+          pistas: ['{a} y {b}.', 'Cuenta desde {a} hacia delante.'] },
+        { vars: () => { const a = AZ(6, 10), b = AZ(2, 5); return { a, b, sol: a - b }; },
+          enunciado: 'Había {a} piedras en el sendero y se han caído {b}. ¿Cuántas quedan?',
+          operacion: 'quitar', opciones: ['juntar', 'quitar'],
+          explica: { juntar: 'Se han caído: no vienen más, faltan.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '{a} − {b}', sol: '{sol}' }],
+          pistas: ['De {a} quita {b}.', 'Cuenta hacia atrás desde {a}.'] },
       ],
-      facil: { enunciado: 'Hay 3 piedras y traigo 2. ¿Cuál es el total?',
+      facil: { vars: () => { const a = AZ(2, 4), b = AZ(1, 3); return { a, b, sol: a + b }; },
+        enunciado: 'Hay {a} piedras y traigo {b}. ¿Cuál es el total?',
         operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
-        mecanica: 'cerradura', preguntas: [{ texto: '3 + 2', sol: 5 }],
-        pistas: ['Tres y dos.', 'Cinco.'] },
+        mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+        pistas: ['{a} y {b}.', 'Son {sol}.'] },
     },
   },
 
@@ -2324,30 +2423,48 @@ const RETOS = {
              'trozos hay:<br><br><b>20 : 4 = 5</b>' },
     mayor: {
       variantes: [
-        { enunciado: 'Tengo 20 tablones y en cada tramo van 4. ¿Cuántos tramos salen?',
+        { vars: () => { const q = AZ(3, 5), n = AZ(3, 6);
+                        return { q, n, t: q * n, sol: n, mal: q * n * q, d: q * 2 }; },
+          enunciado: 'Tengo {t} tablones y en cada tramo van {q}. ¿Cuántos tramos salen?',
           operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
           explica: { juntar: 'Juntarlos no me dice cuántos tramos son.',
-                     multiplicar: '20 en cada tramo serían 80 tablones.' },
-          mecanica: 'cerradura', preguntas: [{ texto: '20 : 4', sol: 5 }],
-          pistas: ['20 tablones de 4 en 4.', '4, 8, 12, 16, 20: ¿cuántas veces?'] },
+                     multiplicar: '{t} en cada tramo serían {mal} tablones.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '{t} : {q}', sol: '{sol}' }],
+          pistas: ['{t} tablones de {q} en {q}.', '{q}, {d}… hasta {t}: ¿cuántas veces?'] },
+        { vars: () => { const q = AZ(3, 5), n = AZ(3, 5); return { q, n, sol: q * n, mal: q + n }; },
+          enunciado: 'El puente tiene {n} tramos y en cada uno van {q} tablones. ¿Cuántos tablones necesito?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { juntar: '{n} y {q} son {mal}, pero cada uno de los {n} tramos lleva {q}.',
+                     repartir: 'No hay nada que repartir: hay que contar cuántos hacen falta.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '{n} × {q}', sol: '{sol}' }],
+          pistas: ['{n} tramos de {q} tablones.', 'La tabla del {q}.'] },
       ],
-      facil: { enunciado: '12 tablones y en cada tramo van 4. ¿Cuánto le toca a cada uno?',
+      facil: { vars: () => { const q = AZ(2, 4), n = AZ(2, 4); return { q, n, t: q * n, sol: n }; },
+        enunciado: '{t} tablones y en cada tramo van {q}. ¿Cuántos tramos salen?',
         operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
-        mecanica: 'cerradura', preguntas: [{ texto: '12 : 4', sol: 3 }],
-        pistas: ['4, 8, 12.', 'Tres tramos.'] },
+        mecanica: 'cerradura', preguntas: [{ texto: '{t} : {q}', sol: '{sol}' }],
+        pistas: ['De {q} en {q} hasta {t}.', 'Salen {sol} tramos.'] },
     },
     pequena: {
       variantes: [
-        { enunciado: 'Hay 8 tablones y los pongo de 2 en 2. ¿Cuántas parejas salen?',
+        { vars: () => { const n = AZ(3, 6); return { n, t: n * 2, sol: n }; },
+          enunciado: 'Hay {t} tablones y los pongo de 2 en 2. ¿Cuántas parejas salen?',
           operacion: 'repartir', opciones: ['juntar', 'repartir'],
           explica: { juntar: 'Hay que ver cuántas parejas salen, no juntarlos.' },
-          mecanica: 'cerradura', preguntas: [{ texto: '8 : 2', sol: 4 }],
-          pistas: ['De dos en dos: 2, 4, 6, 8.', 'Cuatro parejas.'] },
+          mecanica: 'cerradura', preguntas: [{ texto: '{t} : 2', sol: '{sol}' }],
+          pistas: ['De dos en dos hasta {t}.', 'Salen {sol} parejas.'] },
+        { vars: () => { const n = AZ(2, 4); return { n, t: n * 3, sol: n }; },
+          enunciado: 'Hay {t} tablones y en cada tramo van 3. ¿Cuántos tramos salen?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'],
+          explica: { juntar: 'Juntarlos no me dice cuántos tramos salen.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '{t} : 3', sol: '{sol}' }],
+          pistas: ['De 3 en 3 hasta {t}.', 'Salen {sol} tramos.'] },
       ],
-      facil: { enunciado: '6 tablones de 2 en 2. ¿Cuánto le toca a cada uno?',
+      facil: { vars: () => { const n = AZ(2, 4); return { n, t: n * 2, sol: n }; },
+        enunciado: '{t} tablones de 2 en 2. ¿Cuántas parejas salen?',
         operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
-        mecanica: 'cerradura', preguntas: [{ texto: '6 : 2', sol: 3 }],
-        pistas: ['2, 4, 6.', 'Tres parejas.'] },
+        mecanica: 'cerradura', preguntas: [{ texto: '{t} : 2', sol: '{sol}' }],
+        pistas: ['2, 4, 6… hasta {t}.', '{sol} parejas.'] },
     },
   },
 
@@ -2362,30 +2479,49 @@ const RETOS = {
              'Siempre que oigas «<b>a partes iguales</b>», es dividir.' },
     mayor: {
       variantes: [
-        { enunciado: '15 almejas en 3 montones iguales. ¿Cuánto le toca a cada uno?',
+        { vars: () => { const c = AZ(3, 5), q = AZ(3, 5);
+                        return { c, q, t: c * q, sol: q, mal: c * q * c, s: AZ(2, 5) }; },
+          enunciado: '{t} almejas en {c} montones iguales. ¿Cuántas le tocan a cada montón?',
           operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
           explica: { juntar: 'Todas juntas no son montones iguales.',
-                     multiplicar: '15 en cada montón serían 45 almejas.' },
-          mecanica: 'repartir', frutas: 15, cestas: 3,
-          pistas: ['15 entre 3.', 'Cinco en cada montón.'] },
+                     multiplicar: '{t} en cada montón serían {mal} almejas.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', sobran: '{s}',
+          pistas: ['{t} entre {c}.', '{sol} en cada montón.'] },
+        { vars: () => { const c = AZ(3, 4), q = AZ(2, 4);
+                        return { c, q, t: c * q, sol: c, cv: c + AZ(1, 2), s: AZ(2, 4) }; },
+          enunciado: 'Tengo {t} almejas y en cada montón pongo {q}. ¿Cuántos montones salen?',
+          operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { juntar: 'Juntarlas no me dice cuántos montones salen.',
+                     multiplicar: '{t} montones de {q} serían un montón de almejas.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: '{c}', cestasVisibles: '{cv}', sobran: '{s}',
+          pistas: ['Pon {q} en un montón, luego {q} en otro…', 'De {q} en {q} hasta {t}.'] },
       ],
-      facil: { enunciado: '6 almejas en 2 montones. ¿Cuánto le toca a cada uno?',
+      facil: { vars: () => { const q = AZ(2, 4); return { q, t: q * 2, sol: q }; },
+        enunciado: '{t} almejas en 2 montones. ¿Cuántas le tocan a cada uno?',
         operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
-        mecanica: 'repartir', frutas: 6, cestas: 2,
-        pistas: ['Mitad y mitad.', '3 y 3.'] },
+        mecanica: 'repartir', frutas: '{t}', cestas: 2,
+        pistas: ['Mitad y mitad.', '{sol} y {sol}.'] },
     },
     pequena: {
       variantes: [
-        { enunciado: '8 almejas en 2 montones iguales. ¿Cuánto le toca a cada uno?',
+        { vars: () => { const q = AZ(2, 5); return { q, t: q * 2, sol: q }; },
+          enunciado: '{t} almejas en 2 montones iguales. ¿Cuántas le tocan a cada uno?',
           operacion: 'repartir', opciones: ['juntar', 'repartir'],
           explica: { juntar: 'Tienen que quedar los dos igual.' },
-          mecanica: 'repartir', frutas: 8, cestas: 2,
-          pistas: ['Una y una…', 'Cuatro y cuatro.'] },
+          mecanica: 'repartir', frutas: '{t}', cestas: 2,
+          pistas: ['Una y una…', '{sol} y {sol}.'] },
+        { vars: () => { const q = AZ(2, 3); return { q, t: q * 3, sol: q }; },
+          enunciado: '{t} almejas en 3 montones iguales. ¿Cuántas le tocan a cada uno?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'],
+          explica: { juntar: 'Si las junto todas, dos montones se quedan vacíos.' },
+          mecanica: 'repartir', frutas: '{t}', cestas: 3,
+          pistas: ['Una en cada montón, y otra vuelta.', '{sol} en cada uno.'] },
       ],
-      facil: { enunciado: '4 almejas en 2 montones. ¿Cuánto le toca a cada uno?',
+      facil: { vars: () => { const q = AZ(2, 3); return { q, t: q * 2, sol: q }; },
+        enunciado: '{t} almejas en 2 montones. ¿Cuántas le tocan a cada uno?',
         operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
-        mecanica: 'repartir', frutas: 4, cestas: 2,
-        pistas: ['Dos y dos.', 'Mitad y mitad.'] },
+        mecanica: 'repartir', frutas: '{t}', cestas: 2,
+        pistas: ['{sol} y {sol}.', 'Mitad y mitad.'] },
     },
   },
 
@@ -2406,32 +2542,40 @@ const RETOS = {
              'Por eso, cuando una cuenta se te resista, prueba a llegar por otro camino.' },
     mayor: {
       variantes: [
-        { enunciado: 'Hoy quiero los peces que valgan <b>10</b>.',
-          operacion: null, mecanica: 'pescar', objetivo: 10, cuantos: 9, tipos: ['suma', 'resta'],
-          pistas: ['Busca los que dan 10.', '6+4, 5+5, 12−2…'] },
-        { enunciado: 'Ahora los que valgan <b>12</b>.',
-          operacion: null, mecanica: 'pescar', objetivo: 12, cuantos: 9, tipos: ['suma', 'multiplicacion'],
-          pistas: ['Busca los que dan 12.', '3×4, 6+6, 2×6…'] },
-        { enunciado: 'Y ahora los que valgan <b>18</b>.',
-          operacion: null, mecanica: 'pescar', objetivo: 18, cuantos: 10, tipos: ['suma', 'multiplicacion', 'resta'],
-          pistas: ['Busca los que dan 18.', '3×6, 9+9, 20−2…'] },
+        /* El número que pide Tomeu cambia cada vez: no vale acordarse */
+        { vars: () => { const o = AZ(9, 14); return { o, m: o - 2, n: o + 2 }; },
+          enunciado: 'Hoy quiero los peces que valgan <b>{o}</b>.',
+          operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 9, tipos: ['suma', 'resta'],
+          pistas: ['Busca los que dan {o}.', 'Cuidado con los de {m} y {n}, que se parecen.'] },
+        { vars: () => { const o = [12, 14, 15, 16, 18][AZ(0, 4)]; return { o }; },
+          enunciado: 'Ahora los que valgan <b>{o}</b>.',
+          operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 9, tipos: ['suma', 'multiplicacion'],
+          pistas: ['Busca los que dan {o}.', 'Hay sumas y multiplicaciones que dan {o}.'] },
+        { vars: () => { const o = [18, 20, 21, 24][AZ(0, 3)]; return { o }; },
+          enunciado: 'Y ahora los que valgan <b>{o}</b>.',
+          operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 10, tipos: ['suma', 'multiplicacion', 'resta'],
+          pistas: ['Busca los que dan {o}.', 'Al mismo número se llega por varios caminos.'] },
       ],
-      facil: { enunciado: 'Los que valgan <b>8</b>, que hoy vamos con calma.',
-        operacion: null, mecanica: 'pescar', objetivo: 8, cuantos: 7, tipos: ['suma'],
-        pistas: ['Busca los que dan 8.', '4+4, 5+3, 6+2…'] },
+      facil: { vars: () => { const o = AZ(6, 9); return { o }; },
+        enunciado: 'Los que valgan <b>{o}</b>, que hoy vamos con calma.',
+        operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 7, tipos: ['suma'],
+        pistas: ['Busca los que dan {o}.', 'Ve probando: dos números que sumen {o}.'] },
     },
     pequena: {
       variantes: [
-        { enunciado: 'Quiero los peces que valgan <b>6</b>.',
-          operacion: null, mecanica: 'pescar', objetivo: 6, cuantos: 7, tipos: ['suma'],
-          pistas: ['Busca los que dan 6.', '3+3, 4+2, 5+1…'] },
-        { enunciado: 'Ahora los que valgan <b>9</b>.',
-          operacion: null, mecanica: 'pescar', objetivo: 9, cuantos: 7, tipos: ['suma'],
-          pistas: ['Busca los que dan 9.', '5+4, 6+3, 8+1…'] },
+        { vars: () => { const o = AZ(5, 8); return { o }; },
+          enunciado: 'Quiero los peces que valgan <b>{o}</b>.',
+          operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 7, tipos: ['suma'],
+          pistas: ['Busca los que dan {o}.', 'Dos números que sumen {o}.'] },
+        { vars: () => { const o = AZ(8, 11); return { o, m: o - 1 }; },
+          enunciado: 'Ahora los que valgan <b>{o}</b>.',
+          operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 7, tipos: ['suma', 'resta'],
+          pistas: ['Busca los que dan {o}.', 'Ojo, que los de {m} se parecen mucho.'] },
       ],
-      facil: { enunciado: 'Los que valgan <b>5</b>.',
-        operacion: null, mecanica: 'pescar', objetivo: 5, cuantos: 6, tipos: ['suma'],
-        pistas: ['Busca los que dan 5.', '3+2, 4+1…'] },
+      facil: { vars: () => { const o = AZ(4, 6); return { o }; },
+        enunciado: 'Los que valgan <b>{o}</b>.',
+        operacion: null, mecanica: 'pescar', objetivo: '{o}', cuantos: 6, tipos: ['suma'],
+        pistas: ['Busca los que dan {o}.', 'Dos números que sumen {o}.'] },
     },
   },
 
@@ -4755,8 +4899,11 @@ const Estado = {
       pedidos: [],              // peticiones antiguas a Teo (ya no se hacen; se leen con las cartas)
       cartas: [],               // las cartas que ha echado al buzón de correos
       hechosHoy: { dia: '', ids: [] },    // retos ya superados hoy: no se repiten
+      progreso: { retos: 0, ganadas: [] },  // la barra de sorpresas: retos contados y sorpresas ganadas
       retosDelDia: { dia: '', ids: [] },  // qué sitios tienen reto hoy
       ultimaVariante: {},       // qué versión salió la última vez en cada reto
+      variantesVistas: {},      // qué versiones ya han salido: no se repite ninguna hasta agotarlas
+      fallosHoy: { dia: '', ids: {} },    // fallos de hoy en cada reto: cerrar la ventana ya no los borra
       registro: [],             // cada problema y reto: si lo entendió a la primera (informe de la portada)
       ultimoTexto: {},          // qué historia salió la última vez en cada problema
       paquetes: { nivel: 1, seguidas: 0 },  // los encargos de Teo: por qué dificultad va
@@ -4826,6 +4973,8 @@ const Estado = {
     p.hechosHoy = { dia: '', ids: [] };
     p.retosDelDia = { dia: '', ids: [] };
     p.ultimaVariante = {};
+    p.variantesVistas = {};
+    p.fallosHoy = { dia: '', ids: {} };
     // si llevaba puesto algo que ya no es suyo, se vuelve a lo de serie
     const base = lookPorDefecto();
     [['peinados', 'peinado'], ['coloresPelo', 'colorPelo'], ['conjuntos', 'conjunto'],
@@ -4984,6 +5133,30 @@ const Estado = {
     const p = this.actual;
     if (!p.hechosHoy || p.hechosHoy.dia !== this.hoy()) p.hechosHoy = { dia: this.hoy(), ids: [] };
     if (!p.hechosHoy.ids.includes(id)) p.hechosHoy.ids.push(id);
+    this.guardar();
+  },
+
+  /* LOS FALLOS SE QUEDAN APUNTADOS (18-09-2026)
+     Antes, cerrar la ventana del reto ponía los fallos a cero: se podía probar
+     de dos en dos hasta acertar sin dormirse nunca. Ahora los fallos de hoy
+     en ese sitio se guardan, y solo se borran al superarlo o al día siguiente. */
+  fallosDe(id) {
+    const p = this.actual;
+    if (!p.fallosHoy || p.fallosHoy.dia !== this.hoy()) return 0;
+    return p.fallosHoy.ids[id] || 0;
+  },
+
+  apuntarFallo(id) {
+    const p = this.actual;
+    if (!p.fallosHoy || p.fallosHoy.dia !== this.hoy()) p.fallosHoy = { dia: this.hoy(), ids: {} };
+    p.fallosHoy.ids[id] = (p.fallosHoy.ids[id] || 0) + 1;
+    this.guardar();
+    return p.fallosHoy.ids[id];
+  },
+
+  borrarFallos(id) {
+    const p = this.actual;
+    if (p.fallosHoy && p.fallosHoy.ids) delete p.fallosHoy.ids[id];
     this.guardar();
   },
 
@@ -6820,6 +6993,7 @@ const UI = {
     document.getElementById('mandos').classList.toggle('oculto',
       p.control !== 'raton' && !UI.esTactil());
     if (typeof Vehiculos !== 'undefined') Vehiculos.refrescarBoton();
+    if (typeof Sorpresas !== 'undefined') Sorpresas.pintar();
   },
 
   esTactil() {
@@ -6903,20 +7077,32 @@ const Desafio = {
   alTerminar: null,
 
   /* Devuelve el reto que toca: el fácil si el personaje se durmió, y si no,
-     una variante al azar (nunca la misma que la última vez), para que no se
-     pueda hacer de memoria sin leer. */
+     una variante de las que AÚN NO han salido. Solo cuando se han visto todas
+     se vuelve a empezar, y nunca se repite la última. Así el mismo sitio no
+     puede hacerse de memoria: cambia la pregunta y cambian los números. */
   elegir(id) {
     const p = Estado.actual;
     const bloque = RETOS[id][p.nivel];
     if (!p.facilitados) p.facilitados = {};
     if (!p.ultimaVariante) p.ultimaVariante = {};
+    if (!p.variantesVistas) p.variantesVistas = {};
     let r;
     if (p.facilitados[id]) r = montarConNumeros(bloque.facil);
     else {
       const n = bloque.variantes.length;
-      let i = Math.floor(Math.random() * n);
-      if (n > 1 && i === p.ultimaVariante[id]) i = (i + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      const clave = id + ':' + p.nivel;
+      let vistas = p.variantesVistas[clave] || [];
+      let quedan = [];
+      for (let k = 0; k < n; k++) if (!vistas.includes(k)) quedan.push(k);
+      if (!quedan.length) {                       // vuelta a empezar, menos la última
+        vistas = [];
+        for (let k = 0; k < n; k++) if (n === 1 || k !== p.ultimaVariante[id]) quedan.push(k);
+      }
+      const i = quedan[Math.floor(Math.random() * quedan.length)];
+      vistas.push(i);
+      p.variantesVistas[clave] = vistas;
       p.ultimaVariante[id] = i;
+      Estado.guardar();
       if (bloque.variantes[i].delBanco) return { delBanco: true };
       r = montarConNumeros(bloque.variantes[i]);
     }
@@ -6930,6 +7116,7 @@ const Desafio = {
   problemaDeReto(id) {
     Problema.jugar(Estado.actual.nivel, {
       suelto: false,
+      sitio: id,                  // para que los fallos de hoy aquí no se borren al cerrar
       quien: this.quien(id),
       alAcertar: (limpio) => {
         const pr = Problema.p;
@@ -6954,9 +7141,18 @@ const Desafio = {
     this.fallos = 0;
     const info = RETOS[id];
 
+    // UN RETO, UNA VEZ AL DÍA (18-09-2026). Antes se podía repetir el mismo
+    // reto sin parar: como la respuesta era la misma, se pulsaba sin leer.
+    // Ahora, ganado hoy, se cierra hasta mañana (en las atracciones se puede
+    // seguir montando: eso lo lleva Juego.atraccion).
+    if (Estado.hechoHoy(id)) {
+      UI.dialogo(this.quien(id), TEXTOS.yaHechoHoy,
+        [{ texto: 'Hasta mañana', accion: () => { UI.cerrar(); if (alTerminar) alTerminar(false); } }]);
+      return;
+    }
+
     // Los sitios ya no se sortean: siempre hay reto. Pero si se falla tres
-    // veces, el personaje se duerme (no se acierta a base de probar), y
-    // repetir un reto ya ganado hoy no paga (12-09-2026).
+    // veces, el personaje se duerme (no se acierta a base de probar).
     if (Estado.estaDormido(id)) {
       UI.dialogo(this.quien(id), info.dormido +
         '<br><br><b>Ve al salón de juegos con Coco</b> y juega una ronda para despertarle.',
@@ -6965,6 +7161,7 @@ const Desafio = {
     }
 
     this.fallosLeer = 0;
+    this.fallos = Estado.fallosDe(id);        // los de antes siguen contando
     this.intentoReto = null;
     this.reto = this.elegir(id);
     const p = Estado.actual;
@@ -7499,8 +7696,10 @@ const Desafio = {
   },
 
   // --- Fallar: pista, pista fuerte, y a dormir ---------------------------
+  /* Un fallo cuenta aunque cierre la ventana y vuelva a entrar: si no, se
+     prueba de dos en dos hasta acertar y nunca se duerme nadie (18-09-2026). */
   sumarFallo() {
-    this.fallos++;
+    this.fallos = Estado.apuntarFallo(this.parada);
     if (this.fallos >= AJUSTES.fallosParaDormirse) this.dormirse();
   },
 
@@ -7535,8 +7734,10 @@ const Desafio = {
     const id = this.parada;
     const p = Estado.actual;
     if (p.facilitados) delete p.facilitados[id];
-    const yaHoy = Estado.hechoHoy(id);          // hoy ya lo ganó: paga poco
+    Estado.borrarFallos(id);                    // superado: los fallos se perdonan
+    const yaHoy = Estado.hechoHoy(id);          // aquí ya no puede ser que sí
     Estado.marcarHechoHoy(id);
+    if (!yaHoy && typeof Sorpresas !== 'undefined') Sorpresas.sumar();   // la barra de sorpresas
 
     // Premio a leer: si eligió bien la operación sin probar
     let extra = '';
@@ -8013,7 +8214,9 @@ const Problema = {
     this.p = p;
     this.ctx = ctx;
     this.fallos = 0;
-    this.decisivos = 0;
+    /* Dentro de un reto, los fallos de operación y de número de hoy en ese
+       sitio siguen contando aunque haya cerrado la ventana (18-09-2026). */
+    this.decisivos = ctx.sitio ? Estado.fallosDe(ctx.sitio) : 0;
     this.pasoOp = 0;
     this.usados = [];
     this.ultimoTipo = p.tipo;
@@ -8084,7 +8287,8 @@ const Problema = {
      no castiga (15-09-2026). */
   fallar(decisivo) {
     this.fallos++;
-    if (decisivo) this.decisivos++;
+    if (decisivo) this.decisivos = this.ctx.sitio ? Estado.apuntarFallo(this.ctx.sitio)
+                                                 : this.decisivos + 1;
     Sonido.fallo();
     if (this.decisivos >= AJUSTES.fallosParaDormirse) {
       setTimeout(() => this.resolverJuntas(), 1400);
@@ -11036,6 +11240,137 @@ const Pistas = {
 
 </script>
 <script>
+/* === motor/sorpresas.js === */
+/* LA BARRA DE SORPRESAS (18-09-2026)
+   ──────────────────────────────────
+   Para qué es: que se note que hacer retos LLEVA A ALGO. Una barra siempre
+   visible arriba que sube con cada reto y, cada AJUSTES.retosPorSorpresa
+   retos, abre una cosa nueva de la isla.
+
+   Qué cuenta y qué no: solo el PRIMER pase de cada reto en el día (los que
+   pagan). Repetir el mismo reto diez veces no mueve la barra ni un pelo: para
+   llenarla hay que ir a sitios distintos, o volver otro día. Esa es toda la
+   pedagogía de esto.
+
+   Cada jugadora tiene su barra (en su partida). Lo que se abre, en cambio,
+   queda abierto en el aparato para las dos: si Gala abre un sitio nuevo, Inés
+   también lo tiene. La lista de sorpresas y cada cuántos retos toca están en
+   contenido/ajustes.js.
+
+   Una sorpresa que aún no existe (algo que tiene que hacer papá) no abre nada:
+   se celebra igual y queda apuntado en la portada, para que él lo vea. */
+
+const Sorpresas = {
+  CLAVE: 'islaSorpresasAbiertas',
+  pendiente: null,          // sorpresa ganada que aún no se ha celebrado
+
+  lista() { return AJUSTES.sorpresas || []; },
+  cada() { return AJUSTES.retosPorSorpresa || 10; },
+
+  /* Lo abierto en este aparato (vale para las dos jugadoras) */
+  abiertas() {
+    try { return JSON.parse(localStorage.getItem(this.CLAVE)) || []; } catch (e) { return []; }
+  },
+  abierta(id) { return this.abiertas().includes(id); },
+  abrir(id) {
+    const a = this.abiertas();
+    if (a.includes(id)) return;
+    a.push(id);
+    try { localStorage.setItem(this.CLAVE, JSON.stringify(a)); } catch (e) {}
+  },
+
+  /* El progreso de ESTA jugadora */
+  progreso() {
+    const p = Estado.actual;
+    if (!p) return { retos: 0, ganadas: [] };
+    if (!p.progreso) p.progreso = { retos: 0, ganadas: [] };
+    return p.progreso;
+  },
+  hechos() { return this.progreso().retos; },
+  cuantasGanadas() { return this.progreso().ganadas.length; },
+
+  /* La siguiente sorpresa que le toca (o null si ya se las ha ganado todas) */
+  siguiente() { return this.lista()[this.cuantasGanadas()] || null; },
+
+  /* Cuántos retos le faltan para la siguiente */
+  faltan() {
+    return Math.max(0, (this.cuantasGanadas() + 1) * this.cada() - this.hechos());
+  },
+
+  /* UN RETO NUEVO DEL DÍA. Se llama desde Desafio.exito(). */
+  sumar() {
+    if (!Estado.actual) return;
+    const pr = this.progreso();
+    pr.retos++;
+    Estado.guardar();
+    this.pintar();
+    if (this.faltan() === 0 && this.siguiente()) this.pendiente = this.siguiente();
+  },
+
+  /* LA BARRA, arriba a la izquierda */
+  pintar() {
+    const caja = document.getElementById('cajaSorpresa');
+    if (!caja) return;
+    const s = this.siguiente();
+    if (!s) return caja.classList.add('oculto');       // ya no quedan sorpresas
+    caja.classList.remove('oculto');
+    const hechos = this.cada() - this.faltan();
+    document.getElementById('sorpresaTexto').textContent = hechos + '/' + this.cada();
+    document.getElementById('sorpresaRelleno').style.width =
+      Math.round(100 * hechos / this.cada()) + '%';
+    caja.title = 'Faltan ' + this.faltan() + ' retos para una sorpresa';
+  },
+
+  /* LA CELEBRACIÓN. Espera a que no haya ningún cartel abierto, para no
+     pisar el diálogo del reto que se acaba de ganar. */
+  vigilar() {
+    setInterval(() => {
+      if (!this.pendiente || !Estado.actual || UI.estaAbierto()) return;
+      const s = this.pendiente;
+      this.pendiente = null;
+      this.celebrar(s);
+    }, 700);
+  },
+
+  celebrar(s) {
+    const pr = this.progreso();
+    const total = (pr.ganadas.length + 1) * this.cada();      // 10, 20, 30…
+    if (!pr.ganadas.includes(s.id)) pr.ganadas.push(s.id);
+    Estado.guardar();
+    this.abrir(s.id);
+    this.pintar();
+    if (typeof Sonido !== 'undefined') Sonido.fiesta();
+
+    /* ¿La sorpresa existe ya en el juego? Si sí, hace falta recargar para que
+       aparezca; si no, es un aviso para papá. */
+    const cargada = typeof Ampliaciones !== 'undefined' && Ampliaciones.lista.includes(s.id);
+
+    if (!cargada) {
+      return UI.dialogo('🎁 ¡' + total + ' retos!',
+        '<b>¡Has llenado la barra!</b><br><br>' + (s.aviso ||
+        'Has ganado una sorpresa. Papá la está preparando: pídesela.') +
+        '<br><br>Y la barra vuelve a empezar 😊',
+        [{ texto: '¡Bien!', accion: () => UI.cerrar() }]);
+    }
+
+    UI.dialogo('🎁 ¡' + total + ' retos!',
+      '<b>¡Has llenado la barra!</b><br><br>' + (s.icono || '✨') + ' <b>' + s.nombre + '</b><br>' +
+      (s.pista || '') + '<br><br>Toca el botón y aparecerá en la isla.',
+      [{ texto: '¡Quiero verlo!', accion: () => location.reload() }]);
+  },
+
+  /* Lo que ve papá en la portada */
+  resumenPortada() {
+    const trozos = (Estado.perfiles || []).map(p => {
+      const pr = p.progreso || { retos: 0, ganadas: [] };
+      return pr.retos ? p.nombre + ': ' + pr.retos + ' retos' : null;
+    }).filter(Boolean);
+    return trozos.length ? '🎁 ' + trozos.join(' · ') : '';
+  },
+};
+
+</script>
+<script>
 /* === motor/juego.js === */
 /* EL MUNDO: la isla, el movimiento y todo lo que se puede encontrar en ella.
 
@@ -11803,15 +12138,12 @@ const Juego = {
   atraccion(l) {
     const p = MUNDO.paseos[l.id];
     if (!p) return;
-    // Si hoy ya se lo ganó puede montar libre, o repetir el reto (otros
-    // números, otra variante). Repetir ya no paga: el paseo es el premio.
+    // Si hoy ya se lo ganó, monta las veces que quiera: el paseo es el premio.
+    // El reto de este sitio, en cambio, ya está hecho hasta mañana (18-09-2026):
+    // repetirlo era la forma de darle al mismo botón sin leer.
     if (Estado.hechoHoy(p.reto)) {
       return UI.dialogo(p.personaje, TEXTOS.paseoLibre, [
         { texto: '¡Vamos!', accion: () => { UI.cerrar(); this.montar(l.id); } },
-        { texto: 'Otro reto', accion: () => {
-            UI.cerrar();
-            Desafio.abrir(p.reto, (bien) => { UI.refrescarHud(); if (bien) this.montar(l.id); });
-          } },
         { texto: 'Ahora no', accion: () => UI.cerrar() },
       ]);
     }
@@ -14991,6 +15323,7 @@ const Inicio = {
   iniciar() {
     UI.iniciar();
     Estado.cargar();
+    Sorpresas.vigilar();          // la barra de sorpresas, atenta a cuando se llena
     this.pintarPerfiles();
     UI.pantalla('inicio');
   },
@@ -15062,7 +15395,8 @@ const Inicio = {
     const libreta = (n
       ? ' · <button class="enlace" id="verLibreta">✉️ ' + n +
         (n === 1 ? ' carta en el buzón' : ' cartas en el buzón') + '</button>'
-      : '') + (Informe.hay() ? ' · <button class="enlace" id="verInforme">📊 cómo va la lectura</button>' : '');
+      : '') + (Informe.hay() ? ' · <button class="enlace" id="verInforme">📊 cómo va la lectura</button>' : '')
+      + (Sorpresas.resumenPortada() ? ' · ' + Sorpresas.resumenPortada() : '');
     if (!f) {
       aviso.innerHTML = 'Todavía no se ha guardado nada en este aparato.' + libreta;
     } else {
