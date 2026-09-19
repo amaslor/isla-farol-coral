@@ -498,9 +498,8 @@
 
   <div id="hud">
     <span class="caja-hud">🐚 <span id="conchas">0</span></span>
-    <span class="caja-hud">💎 <span id="cristales">0/5</span></span>
-    <span class="caja-hud" id="cajaSorpresa">🎁 <span id="sorpresaTexto">0/10</span>
-      <span class="barrita"><i id="sorpresaRelleno"></i></span></span>
+    <span class="caja-hud" id="cajaCristales">💎 <span id="cristalTexto">0/10</span>
+      <span class="barrita"><i id="cristalRelleno"></i></span></span>
     <span class="caja-hud caja-nombre"><span id="nombreJugadora"></span></span>
     <span class="der"><button id="bAyuda" title="Cómo se juega (tecla T)">❓</button>
     <button id="bMochila" title="Mochila">🎒</button>
@@ -659,31 +658,81 @@ const AJUSTES = {
      de Lumi la primera vez que pase cada cosa. */
   pistasAutomaticas: false,
 
-  /* --- LA BARRA DE SORPRESAS (18-09-2026) ------------------------------
-     Cada cuántos retos NUEVOS DEL DÍA se abre una cosa nueva de la isla, y
-     en qué orden. Repetir un reto ya ganado hoy no cuenta (ver motor/sorpresas.js).
-     Cada línea de la lista:
-       id     → si coincide con el id de una ampliación cargada, la enciende sola
-       nombre → cómo se anuncia
-       pista  → la frase misteriosa que lee la jugadora
-       aviso  → qué se le dice si esa sorpresa todavía no está hecha
-     Para enchufar una que esté en ampliaciones/, hay que añadir además su
-     <script> en index.html; hasta entonces la barra la celebra como aviso. */
+  /* --- LOS CRISTALES DEL FAROL Y EL ORDEN DE LAS EXPANSIONES ----------
+     (19-09-2026, regla 31 de ROADMAP.md)
+
+     Antes esto eran dos cosas: los «diamantes» (💎 X/5, que se pasaban de
+     rosca y llegaban a decir 14/5) y la barra de sorpresas (🎁). Ahora es una
+     sola: cada reto NUEVO DEL DÍA da un cristal, y cada `retosPorSorpresa`
+     cristales se funden en un CRISTAL MAYOR. Repetir un reto ya ganado hoy no
+     cuenta (ver motor/sorpresas.js).
+
+     El Cristal Mayor no se coloca solo: aparece EN LA MANO de la jugadora y
+     tiene que llevarlo andando hasta el Farol, en el centro de la isla. Al
+     encajarlo, la hoguera crece, el Farol brilla más y se abre la expansión.
+
+     ESTA LISTA ES EL ORDEN DE LAS EXPANSIONES. El juego es uno solo y las
+     expansiones están guardadas aparte, en bloque; esta lista dice en qué
+     orden van saliendo y cuáles están puestas. Se puede tocar cuando se
+     quiera, también con partidas ya empezadas:
+
+       · REORGANIZAR → mover la línea de sitio. Lo siguiente que le toque a
+         cada jugadora será la primera de la lista que ella aún no tenga, así
+         que nadie repite ni se salta nada.
+       · QUITAR del juego sin borrarla → `activa: false`. Se salta como si no
+         estuviera, y las que ya la tuvieran no pierden nada. Volver a ponerla
+         es borrar ese `activa: false`.
+       · METER una nueva → añadir su línea donde toque (y su <script> en
+         index.html si está en ampliaciones/). Quien ya haya pasado de ahí la
+         recibirá en su siguiente Cristal Mayor.
+       · El cristal y el regalo van pegados a SU expansión, no al puesto que
+         ocupe: reordenar no cambia los nombres ni los colores.
+
+     Cada línea:
+       id      → si coincide con el id de una ampliación cargada, la enciende sola
+       nombre  → cómo se anuncia
+       cristal → nombre y color del Cristal Mayor que se gana
+       regalo  → { tipo, id, nota } de ROPA: se da y se pone al colocar el cristal
+       pista   → la frase misteriosa que lee la jugadora
+       aviso   → qué se le dice si esa expansión todavía no está hecha
+       activa  → en false, se salta (ver arriba)
+
+     LA LISTA NO SE ACABA: cuando se agota, siguen saliendo Cristales Mayores
+     genéricos (ver Sorpresas.siguiente()), para que el juego no tenga final. */
   retosPorSorpresa: 10,
 
   sorpresas: [
     { id: 'pins', icono: '🌲', nombre: "L'Illa dels Pins",
+      cristal: { nombre: 'Cristal Transparente', color: '#BFE9FF' },
+      regalo: { tipo: 'conjuntos', id: 'coral', nota: 'te lo pones y <b>brilla en la oscuridad</b>' },
       pista: 'Ha aparecido un <b>puente nuevo</b> al norte de l\'Illa Petita. Al otro lado hay un pinar, una cascada y gente que no conoces.',
       aviso: 'Se abre una isla nueva al norte.' },
     { id: 'mina', icono: '⛏️', nombre: 'La Mina Perduda',
+      cristal: { nombre: 'Cristal Dorado', color: '#FFD86B' },
+      regalo: { tipo: 'manos', id: 'linterna', nota: 'alumbra por donde miras, y en la mina hace falta' },
       pista: 'Se ha abierto una <b>grieta al pie de la montaña</b>, al oeste del río. Dentro hay túneles, una vagoneta y un ascensor que baja muy hondo.',
       aviso: 'Se abre una mina bajo la montaña.' },
     { id: 'ropa3', icono: '👗', nombre: 'Ropa nueva en la tienda de Mila',
+      cristal: { nombre: 'Cristal Rojo', color: '#FF7A7A' },
       aviso: '¡30 retos! Dile a papá que toca estantería nueva en la tienda de Mila.' },
     { id: 'moto', icono: '🛵', nombre: 'La moto del taller de Tià',
+      cristal: { nombre: 'Cristal de Fuego', color: '#FF9130' },
+      regalo: { tipo: 'complementos', id: 'casco', nota: 'con su lamparita encendida' },
       aviso: '¡40 retos! Dile a papá que Tià ya puede traer la moto.' },
     { id: 'hadaHabla', icono: '🧚', nombre: 'Lumi aprende a hablar',
+      cristal: { nombre: 'Cristal de Noche', color: '#B08CFF' },
       aviso: '¡50 retos! Dile a papá que quieres que Lumi hable de verdad.' },
+  ],
+
+  /* Cuando se acaba la lista de arriba, los Cristales Mayores siguen saliendo
+     con estos nombres y colores, uno tras otro y dando la vuelta si hace falta.
+     Así la hoguera del Farol nunca deja de crecer. */
+  cristalesExtra: [
+    { nombre: 'Cristal de Mar',    color: '#5FD1C6' },
+    { nombre: 'Cristal de Hierba', color: '#8FD46A' },
+    { nombre: 'Cristal de Rosa',   color: '#FF9ED2' },
+    { nombre: 'Cristal de Plata',  color: '#D9E3EC' },
+    { nombre: 'Cristal de Sol',    color: '#FFE066' },
   ],
 
   // --- Mundo ------------------------------------------------------------
@@ -824,6 +873,8 @@ const ROPA = {
     { id: 'pompones',  nombre: 'Pompones',           color: '#F26FA8', precio: 40, grupo: 'llevar' },
     { id: 'farolillo', nombre: 'Un farolillo',       color: '#FFD98A', precio: 55, grupo: 'llevar' },
     { id: 'globos',    nombre: 'Un ramo de globos',  color: '#FF8FA3', precio: 65, grupo: 'llevar' },
+    // premio del Cristal Dorado (20 retos): no se compra
+    { id: 'linterna',  nombre: 'Linterna de minera', color: '#FFD98A', precio: null, premio: 'cristal-mina', grupo: 'llevar' },
   ],
 
   /* LAS JOYAS. Otro sitio propio: se pueden llevar los pendientes Y el
@@ -872,6 +923,8 @@ const ROPA = {
     { id: 'unicornio', nombre: 'Cuerno de unicornio',  precio: 120, grupo: 'cabeza' },
     { id: 'reina',     nombre: 'Corona de reina',      precio: 150, grupo: 'cabeza' },
     { id: 'corona',    nombre: 'Corona de flores',     precio: null, premio: 'cartes', grupo: 'cabeza' },
+    // premio del Cristal de Fuego (40 retos): no se compra
+    { id: 'casco',     nombre: 'Casco de aventurera',  precio: null, premio: 'cristal-moto', grupo: 'cabeza' },
 
     // --- a la espalda
     { id: 'mochila',   nombre: 'Mochila-caracola',     precio: 20, grupo: 'espalda' },
@@ -1052,6 +1105,14 @@ const MUNDO = {
       nombre: 'La tienda de Mila', mapa: 'Botiga de Mila', personaje: 'Mila' },
     { id: 'correos', x: 800, y: 2300, accion: 'carta', dibujo: 'correos',
       nombre: 'El buzón de Correos', mapa: 'Correus' },
+    /* EL FAROL DE CORAL, en el centro justo de la isla (19-09-2026, regla 31).
+       Antes estaba al otro lado del río y era la meta del juego. Ahora es el
+       sitio donde se encajan los Cristales Mayores: alrededor tiene una
+       hoguera con huecos en anillos, y la luz crece con cada cristal. Se le ha
+       dejado un claro vacío de 380 alrededor para que pueda ir creciendo. */
+    { id: 'farol', x: 3500, y: 2300, accion: 'meta', dibujo: 'farol',
+      nombre: 'El Farol de Coral', mapa: 'El Far de Coral' },
+
     { id: 'animalario', x: 1180, y: 3080, accion: 'animalario', dibujo: 'animalario',
       nombre: 'El animalario', mapa: 'Animalari' },
     { id: 'salon', x: 1520, y: 1780, accion: 'juego', dibujo: 'salon',
@@ -1068,8 +1129,8 @@ const MUNDO = {
       nombre: 'El camino de piedras', mapa: 'Camí de Pedres' },
 
     // ------------------------------------------- al otro lado del río
-    { id: 'farol', x: 6420, y: 2300, accion: 'meta', dibujo: 'farol',
-      nombre: 'El Farol de Coral', mapa: 'El Far de Coral' },
+    { id: 'basefarol', x: 6420, y: 2300, accion: 'ver', historia: 'basefarol', dibujo: 'basefarol',
+      nombre: 'La base vieja del Farol', mapa: 'La Base Vella' },
     { id: 'nido', x: 6300, y: 3060, accion: 'ver', historia: 'nido', dibujo: 'nido',
       nombre: 'El Nido Vacío', mapa: 'Niu Buit' },
     { id: 'cueva', x: 6280, y: 1560, accion: 'ver', historia: 'cueva', dibujo: 'cueva',
@@ -1156,7 +1217,7 @@ const MUNDO = {
       nombre: 'La Cala Escondida', mapa: 'Cala Amagada' },
     { id: 'espantapajaros', x: 2180, y: 2180, accion: 'ver', historia: 'espantapajaros',
       dibujo: 'espantapajaros', nombre: 'Un espantapájaros', mapa: 'L\'Espantaocells' },
-    { id: 'buzon', x: 3560, y: 2720, accion: 'ver', historia: 'buzon', dibujo: 'buzon',
+    { id: 'buzon', x: 3820, y: 2860, accion: 'ver', historia: 'buzon', dibujo: 'buzon',
       nombre: 'Un buzón solitario', mapa: 'La Bústia' },
     { id: 'rosa', x: 3400, y: 4060, accion: 'ver', historia: 'rosa', dibujo: 'sombrilla',
       nombre: 'La playa de arena rosa', mapa: 'Platja Rosa' },
@@ -1166,7 +1227,7 @@ const MUNDO = {
       nombre: 'El Bosque de las Sombras', mapa: 'Bosc de les Ombres' },
     { id: 'molino', x: 1340, y: 1420, accion: 'ver', historia: 'molino', dibujo: 'molino',
       nombre: 'Un molino parado', mapa: 'El Molí' },
-    { id: 'fuente', x: 3340, y: 2580, accion: 'ver', historia: 'fuente', dibujo: 'fuente',
+    { id: 'fuente', x: 3060, y: 2760, accion: 'ver', historia: 'fuente', dibujo: 'fuente',
       nombre: 'La fuente de los deseos', mapa: 'Font dels Desitjos' },
     { id: 'hamaca', x: 4880, y: 4060, accion: 'ver', historia: 'hamaca', dibujo: 'hamaca',
       nombre: 'Una hamaca entre palmeras', mapa: 'L\'Hamaca' },
@@ -1393,13 +1454,13 @@ const MUNDO = {
              [1600, 1000], [2900, 1100], [3400, 800], [5200, 2800], [6000, 1400],
              [420, 2400], [1150, 2850], [2650, 2450], [3350, 3200], [5700, 2700]],
   matas: [[500, 2200], [820, 1700], [1100, 2400], [1400, 2700], [1700, 2300], [1900, 1900],
-          [2200, 2600], [2500, 2000], [2700, 3100], [3000, 1800], [3300, 2600], [3600, 2200],
+          [2200, 2600], [2500, 2000], [2700, 3100], [3000, 1800], [3300, 2600], [3718, 2081],
           [3900, 2700], [4100, 1300], [4400, 2000], [4900, 2900], [5300, 2400], [5600, 1900],
           [5900, 2600], [6100, 2000], [6400, 2800], [6600, 2300], [700, 2800], [1250, 3300],
           [2050, 3400], [2900, 3800], [3500, 1200], [4700, 4000], [5100, 3800], [6200, 3900],
           [1550, 4000], [2400, 900], [4300, 900], [5900, 1200], [6700, 2600]],
   flores: [[600, 2500], [950, 2200], [1250, 2600], [1600, 2500], [2000, 2400], [2350, 2800],
-           [2600, 2300], [3100, 2900], [3400, 2400], [3700, 3200], [4200, 2400], [4550, 1800],
+           [2600, 2300], [3100, 2900], [3281, 2518], [3700, 3200], [4200, 2400], [4550, 1800],
            [5100, 2200], [5500, 2700], [6000, 2900], [6300, 2400], [860, 3000], [1800, 3600],
            [2800, 4000], [3900, 4100], [5000, 4200], [1350, 1800], [2500, 1200], [3700, 1600]],
   rocas: [[750, 3500], [1600, 1300], [2300, 3900], [3000, 700], [3800, 3400],
@@ -2790,15 +2851,15 @@ const RETOS = {
 const TEXTOS = {
   historia: [
     'Hace mucho, esta isla estaba iluminada por el Farol de Coral.',
-    'Una noche de tormenta se apagó, y sus cinco cristales salieron rodando.',
-    'Los habitantes los han encontrado, pero andan liados. Échales una mano y te los darán.',
+    'Una noche de tormenta se apagó, y sus cristales salieron rodando por toda la isla.',
+    'Cada vez que ayudas a alguien aparece uno. Llévalos al Farol y verás cómo crece la luz.',
   ],
   salonSaludo: '¡Squawk! Aquí siempre se juega. ¿Un <b>problema</b> de los de pensar, ' +
                '<b>preguntas rápidas</b> para calentar, o la <b>fiesta de los globos</b>?',
   salonDespierta: '¡Bien hecho! Seguro que ahora te lo sabes. Vuelve a verles.',
   cabana: 'Tu cabaña. Aquí están el espejo y la tienda.',
-  farolApagado: 'El Farol de Coral, apagado. Le faltan sus cinco cristales.',
-  cristalGanado: '¡Un cristal del Farol!',
+  farolApagado: 'El Farol de Coral, en el centro de la isla. A su alrededor, huecos esperando cristales.',
+  cristalGanado: '+1 cristal del Farol',
   yaHechoHoy: 'Hoy ya me has ayudado, ¡gracias! Vuelve mañana y tendré otra cosa para ti.',
   cerradoHoy: 'Hoy no necesito ayuda. Busca los sitios que brillan: allí sí te esperan.',
   paseoLibre: 'Hoy ya te lo has ganado. ¿Otra vuelta?',
@@ -4194,6 +4255,14 @@ const HISTORIAS = {
     arreglado: 'El molino gira y dentro suena una musiquilla.<br><br>' +
                'El tic-tac sigue ahí, debajo de la música.' },
 
+  /* Donde estuvo el Farol hasta el 19-09-2026, antes de llevarlo al centro
+     de la isla. Es un sitio de leer: cuenta por qué se movió. */
+  basefarol: { titulo: 'La base vieja del Farol',
+    texto: 'Un círculo de piedra en el suelo, gastado y con marcas de quemado en el borde. ' +
+           'Aquí estuvo el Farol de Coral mucho tiempo, mirando al mar él solo.<br><br>' +
+           'Alguien talló una frase en la piedra: <i>«La luz que nadie ve no alumbra a nadie.»</i><br><br>' +
+           'Por eso lo llevaron al <b>centro de la isla</b>, donde pasa todo el mundo.' },
+
   fuente: { titulo: 'La fuente de los deseos',
     texto: 'En el fondo hay monedas de todos los colores, pero ni gota de agua: ' +
            'del caño solo queda la rosca.<br><br>' +
@@ -4893,7 +4962,7 @@ const Estado = {
       pistas: {},               // qué se le ha explicado ya (se aprende jugando)
       problemas: {},            // qué formas de problema ha resuelto ya, y cuántas veces
       trabajos: { dia: '', hechos: [] },  // animales limpiados hoy
-      farolEncendido: false,    // el final del juego
+      farolEncendido: false,    // ya no es el final: el Farol brilla más con cada cristal
       piezas: [],               // piezas sueltas que lleva encima
       encajado: {},             // lo que ya ha puesto en marcha
       pasos: {},                // caminos que ya ha abierto (montaña, puente)
@@ -4901,7 +4970,8 @@ const Estado = {
       pedidos: [],              // peticiones antiguas a Teo (ya no se hacen; se leen con las cartas)
       cartas: [],               // las cartas que ha echado al buzón de correos
       hechosHoy: { dia: '', ids: [] },    // retos ya superados hoy: no se repiten
-      progreso: { retos: 0, ganadas: [] },  // la barra de sorpresas: retos contados y sorpresas ganadas
+      progreso: { retos: 0, ganadas: [], puestos: [] },  // los cristales: retos contados, cristales mayores ganados y ya encajados en el Farol
+      cristalesEnMano: [],      // cristales mayores que lleva encima y aún no ha llevado al Farol
       retosDelDia: { dia: '', ids: [] },  // qué sitios tienen reto hoy
       ultimaVariante: {},       // qué versión salió la última vez en cada reto
       variantesVistas: {},      // qué versiones ya han salido: no se repite ninguna hasta agotarlas
@@ -4919,6 +4989,15 @@ const Estado = {
   alDia(p) {
     const base = this.plantilla(p.nombre, p.nivel, p.control);
     Object.keys(base).forEach(k => { if (p[k] === undefined) p[k] = base[k]; });
+    /* Partida anterior a la barra de cristales: se le cuenta lo que ya llevaba
+       hecho (retos distintos superados alguna vez), topado en una barra, para
+       que el primer cristal le caiga pronto pero no le lluevan tres de golpe.
+       Va aquí y no en la plantilla porque la plantilla no sabe qué ha hecho. */
+    if (!p.progreso.retos && !p.progreso.ganadas.length) {
+      const yaHechos = Object.keys(p.veces || {}).length;
+      if (yaHechos) p.progreso.retos = Math.min(yaHechos, AJUSTES.retosPorSorpresa || 10);
+    }
+
     const look = lookPorDefecto();
     if (!p.look) p.look = look;
     else Object.keys(look).forEach(k => { if (p.look[k] === undefined) p.look[k] = look[k]; });
@@ -4977,6 +5056,8 @@ const Estado = {
     p.ultimaVariante = {};
     p.variantesVistas = {};
     p.fallosHoy = { dia: '', ids: {} };
+    p.progreso = { retos: 0, ganadas: [], puestos: [] };
+    p.cristalesEnMano = [];
     // si llevaba puesto algo que ya no es suyo, se vuelve a lo de serie
     const base = lookPorDefecto();
     [['peinados', 'peinado'], ['coloresPelo', 'colorPelo'], ['conjuntos', 'conjunto'],
@@ -5722,6 +5803,23 @@ const Avatar = {
         ctx.beginPath(); ctx.arc(h[0], h[1], 3, 0, 7); ctx.fill();
       });
     }
+    if (man && man.id === 'linterna') {
+      const lx = mx + 9;
+      ctx.fillStyle = 'rgba(255,240,180,0.35)';           // el haz de luz
+      ctx.beginPath();
+      ctx.moveTo(lx + 5, my - 12); ctx.lineTo(lx + 42, my - 24);
+      ctx.lineTo(lx + 42, my + 2); ctx.fill();
+      ctx.fillStyle = '#5B6670';                          // el cuerpo
+      ctx.beginPath(); ctx.roundRect(lx - 9, my - 15, 16, 12, 3); ctx.fill();
+      ctx.fillStyle = '#39424A';
+      ctx.beginPath(); ctx.roundRect(lx - 11, my - 16, 5, 14, 2); ctx.fill();
+      ctx.fillStyle = '#FFE9A8';                          // el cristal
+      ctx.beginPath(); ctx.ellipse(lx + 7, my - 9, 3.5, 6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFF9E0';
+      ctx.beginPath(); ctx.arc(lx + 7, my - 9, 2.2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#E8C33D';                          // el botón
+      ctx.beginPath(); ctx.arc(lx - 2, my - 17, 1.8, 0, 7); ctx.fill();
+    }
     if (man && man.id === 'farolillo') {
       const fx = mx + 11;
       ctx.strokeStyle = '#6B4226'; ctx.lineWidth = 2.2;   // el palo
@@ -5923,6 +6021,25 @@ const Avatar = {
       });
       ctx.strokeStyle = '#D94F8C'; ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.moveTo(-14, -48); ctx.lineTo(14, -48); ctx.stroke();
+    }
+    if (look.complemento === 'casco') {
+      ctx.fillStyle = '#FF9130';                          // la cúpula
+      ctx.beginPath(); ctx.arc(0, -54, 17, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#E8762020';
+      ctx.fillRect(-17, -55, 34, 4);
+      ctx.fillStyle = '#E87620';                          // la visera
+      ctx.beginPath(); ctx.ellipse(0, -53, 20, 4.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFC24D';                          // la cresta
+      ctx.fillRect(-2.5, -71, 5, 17);
+      ctx.fillStyle = '#39424A';                          // la lamparita
+      ctx.beginPath(); ctx.roundRect(-5, -68, 10, 7, 2); ctx.fill();
+      ctx.fillStyle = '#FFE9A8';
+      ctx.beginPath(); ctx.arc(0, -64.5, 3, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,240,180,0.35)';           // y su luz
+      ctx.beginPath();
+      ctx.moveTo(0, -66); ctx.lineTo(30, -76); ctx.lineTo(30, -54); ctx.fill();
+      ctx.strokeStyle = '#E87620'; ctx.lineWidth = 1.6;   // la correa
+      ctx.beginPath(); ctx.moveTo(-15, -50); ctx.lineTo(-13, -44); ctx.stroke();
     }
     if (look.complemento === 'pamela') {
       ctx.fillStyle = '#E8C87A';
@@ -6990,7 +7107,7 @@ const UI = {
     const p = Estado.actual;
     if (!p) return;
     document.getElementById('conchas').textContent = p.conchas;
-    document.getElementById('cristales').textContent = p.cristales.length + '/5';
+    if (typeof Sorpresas !== 'undefined') Sorpresas.pintar();
     document.getElementById('nombreJugadora').textContent = p.nombre;
     document.getElementById('mandos').classList.toggle('oculto',
       p.control !== 'raton' && !UI.esTactil());
@@ -7739,13 +7856,14 @@ const Desafio = {
     Estado.borrarFallos(id);                    // superado: los fallos se perdonan
     const yaHoy = Estado.hechoHoy(id);          // aquí ya no puede ser que sí
     Estado.marcarHechoHoy(id);
-    if (!yaHoy && typeof Sorpresas !== 'undefined') Sorpresas.sumar();   // la barra de sorpresas
+    if (!yaHoy && typeof Sorpresas !== 'undefined') Sorpresas.sumar();   // un cristal para el Farol
 
-    // Premio a leer: si eligió bien la operación sin probar
-    let extra = '';
+    /* Un reto nuevo del día = un cristal, sea del tipo que sea (regla 31).
+       Antes esto solo se decía la primera vez que se ganaba cada reto. */
+    let extra = !yaHoy ? '<br>💎 <b>' + TEXTOS.cristalGanado + '</b>' : '';
     if (!yaHoy && this.reto.operacion && this.fallosLeer === 0 && AJUSTES.conchasALaPrimera) {
       Estado.darConchas(AJUSTES.conchasALaPrimera);
-      extra = '<br>⭐ <b>+' + AJUSTES.conchasALaPrimera + '</b> por leerlo bien a la primera';
+      extra += '<br>⭐ <b>+' + AJUSTES.conchasALaPrimera + '</b> por leerlo bien a la primera';
     }
     // Venía del banco: cuenta para el álbum
     if (this.reto.tipo && Estado.apuntarProblema(this.reto.tipo) === 1 && novedad('album'))
@@ -7757,10 +7875,11 @@ const Desafio = {
       this.alTerminar = (bien) => Cofre.abrir(() => { UI.cerrar(); if (seguir) seguir(bien); });
     }
 
-    // Los animales de la granja no dan cristales: dan jornal
+    // Los animales de la granja no dan prenda: dan jornal
     if (RETOS[id].trabajo) return this.pagarTrabajo(id, extra);
 
     // Los retos de las atracciones tampoco: lo que dan es el paseo
+    // (el cristal ya va en 'extra': cuenta cualquier reto nuevo del día)
     if (RETOS[id].paseo) {
       const pago = yaHoy ? AJUSTES.conchasPorRepetirHoy : AJUSTES.conchasPorPaseo;
       Estado.darConchas(pago);
@@ -7781,7 +7900,6 @@ const Desafio = {
 
     let texto = RETOS[id].exito + '<br><br>' + this.cobro(premio.conchas) + extra;
     if (premio.primeraVez) {
-      texto += '<br>💎 <b>' + TEXTOS.cristalGanado + '</b>';
       // la primera vez también se lleva una prenda
       [RETOS[id].premio, RETOS[id].premio2].forEach(pr => {
         if (!pr) return;
@@ -10708,8 +10826,9 @@ const Tutorial = {
 
     { icono: '🐚', titulo: 'Conchas y cristales',
       texto: 'Las <b>conchas</b> 🐚 son el dinero: se ganan con los retos y se gastan en la tienda.<br><br>' +
-             'Los <b>cristales</b> 💎 son los cinco que le faltan al Farol de Coral. Con los cinco, ' +
-             'la isla cambia.' },
+             'Los <b>cristales</b> 💎 salen de los retos: uno por cada reto nuevo del día. ' +
+             'Cada <b>10</b> se juntan en un <b>Cristal Mayor</b> que aparece en tu mano: ' +
+             'llévalo al <b>Farol</b>, en el centro de la isla, y se abre algo nuevo.' },
 
     { icono: '🪞👗🛁', titulo: 'Dentro de tu cabaña',
       texto: 'Tu casa tiene tres sitios:<br><br>' +
@@ -10922,8 +11041,10 @@ const Musica = {
     const sombras = MUNDO.zonas.find(z => z.tipo === 'tinieblas');
     if (dentroDe(sombras)) return this.poner('bosque');
 
+    /* El Farol está desde el 19-09-2026 en el centro de la isla, por donde se
+       pasa a todas horas: su música suena solo al acercarse de verdad. */
     const farol = MUNDO.lugares.find(l => l.id === 'farol');
-    if (farol && Math.hypot(farol.x - j.x, farol.y - j.y) < 420) return this.poner('farol');
+    if (farol && Math.hypot(farol.x - j.x, farol.y - j.y) < 200) return this.poner('farol');
 
     const casa = MUNDO.lugares.find(l => l.id === 'cabana');
     const tienda = MUNDO.lugares.find(l => l.id === 'tienda');
@@ -11164,7 +11285,7 @@ const Pistas = {
     animalario:  { i: '🐾', t: 'El <b>animalario</b>. Aquí vivirán tus mascotas cuando encuentres alguna.' },
     juego:   { i: '🎲', t: 'El <b>salón de Coco</b>: preguntas rápidas para calentar, y despierta a los que se han dormido.' },
     conchas: { i: '🐚', t: 'Esas <b>conchas</b> son tu dinero. Guárdalas: en la tienda de Mila hay cosas.' },
-    cristal: { i: '💎', t: '¡Tu primer <b>cristal del Farol</b>! Te faltan cuatro. Cuando estén los cinco… ya verás.' },
+    cristal: { i: '💎', t: '¡Tu primer <b>cristal del Farol</b>! Cada <b>10</b> se juntan en uno grande que hay que llevar al Farol.' },
     puedeComprar: { i: '🛍️', t: 'Ya tienes conchas de sobra: date una vuelta por <b>la tienda de Mila</b>.' },
     mapa:    { i: '🗺️', t: 'Vas encontrando sitios. Toca <b>🗺️</b> arriba (o la tecla <b>M</b>) para ver el <b>mapa</b>.' },
     mascota: { i: '🐾', t: '¡Tu primera mascota! En el <b>animalario</b> puedes elegir quién te acompaña.' },
@@ -11243,20 +11364,30 @@ const Pistas = {
 </script>
 <script>
 /* === motor/sorpresas.js === */
-/* LA BARRA DE SORPRESAS (18-09-2026)
-   ──────────────────────────────────
-   Para qué es: que se note que hacer retos LLEVA A ALGO. Una barra siempre
-   visible arriba que sube con cada reto y, cada AJUSTES.retosPorSorpresa
-   retos, abre una cosa nueva de la isla.
+/* LOS CRISTALES DEL FAROL (18-09-2026, rehecho el 19-09-2026)
+   ──────────────────────────────────────────────────────────
+   Para qué es: que se note que hacer retos LLEVA A ALGO, y que no se acabe
+   nunca. Una barra siempre visible arriba que sube con cada reto y, cada
+   AJUSTES.retosPorSorpresa retos, entrega un CRISTAL MAYOR.
+
+   Antes esto eran dos contadores midiendo casi lo mismo: los «diamantes»
+   (💎 X/5, que se pasaban de rosca y decían 14/5) y esta barra. Ahora es uno
+   solo. Y el Farol ya no se enciende de golpe a los 5 retos: brilla un poco
+   más con cada cristal (regla 31 de ROADMAP.md).
 
    Qué cuenta y qué no: solo el PRIMER pase de cada reto en el día (los que
    pagan). Repetir el mismo reto diez veces no mueve la barra ni un pelo: para
    llenarla hay que ir a sitios distintos, o volver otro día. Esa es toda la
-   pedagogía de esto.
+   pedagogía de esto. Y como mañana los retos de hoy vuelven a contar, la
+   cuenta no se agota aunque ya hayan visitado la isla entera.
+
+   EL CRISTAL LO LLEVAN ELLAS. Al llenar la barra, el Cristal Mayor aparece en
+   la mano de la jugadora: hay que ir andando hasta el Farol y colocarlo allí
+   (Juego.colocarCristal). Hasta que no lo coloca, la expansión no se abre.
 
    Cada jugadora tiene su barra (en su partida). Lo que se abre, en cambio,
    queda abierto en el aparato para las dos: si Gala abre un sitio nuevo, Inés
-   también lo tiene. La lista de sorpresas y cada cuántos retos toca están en
+   también lo tiene. La lista de cristales y cada cuántos retos toca están en
    contenido/ajustes.js.
 
    Una sorpresa que aún no existe (algo que tiene que hacer papá) no abre nada:
@@ -11264,9 +11395,13 @@ const Pistas = {
 
 const Sorpresas = {
   CLAVE: 'islaSorpresasAbiertas',
-  pendiente: null,          // sorpresa ganada que aún no se ha celebrado
+  pendiente: null,          // cristal recién ganado que aún no se ha celebrado
 
-  lista() { return AJUSTES.sorpresas || []; },
+  /* Las expansiones puestas, en el orden de contenido/ajustes.js. Las que
+     llevan `activa: false` se saltan como si no estuvieran (Antonio puede
+     meterlas y quitarlas cuando quiera, también con partidas empezadas). */
+  lista() { return (AJUSTES.sorpresas || []).filter(s => s.activa !== false); },
+  todas() { return AJUSTES.sorpresas || []; },
   cada() { return AJUSTES.retosPorSorpresa || 10; },
 
   /* Lo abierto en este aparato (vale para las dos jugadoras) */
@@ -11284,26 +11419,102 @@ const Sorpresas = {
   /* El progreso de ESTA jugadora */
   progreso() {
     const p = Estado.actual;
-    if (!p) return { retos: 0, ganadas: [] };
+    if (!p) return { retos: 0, ganadas: [], puestos: [] };
     /* Partida vieja que nunca ha tenido barra: se le cuenta lo que ya lleva
        hecho (retos distintos superados alguna vez), como pidió Antonio el
-       19-09-2026. Se topa en una barra: así la primera sorpresa le cae
-       enseguida, pero no se le abren tres de golpe. */
+       19-09-2026. Se topa en una barra: así el primer cristal le cae
+       enseguida, pero no se le dan tres de golpe. */
     if (!p.progreso) {
       const yaHechos = Object.keys(p.veces || {}).length;
-      p.progreso = { retos: Math.min(yaHechos, this.cada()), ganadas: [] };
+      p.progreso = { retos: Math.min(yaHechos, this.cada()), ganadas: [], puestos: [] };
     }
+    /* Partida de antes del 19-09-2026: lo que ya se había ganado con la barra
+       vieja se daba por colocado. Nadie tiene que ir a buscar cristales
+       atrasados. */
+    if (!p.progreso.puestos) p.progreso.puestos = p.progreso.ganadas.slice();
     return p.progreso;
   },
   hechos() { return this.progreso().retos; },
   cuantasGanadas() { return this.progreso().ganadas.length; },
+  cuantosPuestos() { return this.progreso().puestos.length; },
 
-  /* La siguiente sorpresa que le toca (o null si ya se las ha ganado todas) */
-  siguiente() { return this.lista()[this.cuantasGanadas()] || null; },
+  /* UN CRISTAL MAYOR SIN EXPANSIÓN DETRÁS
+     Cuando se acaba la lista de expansiones, los cristales siguen saliendo con
+     los nombres y colores de AJUSTES.cristalesExtra, dando la vuelta si hace
+     falta: la hoguera del Farol nunca deja de crecer. */
+  generico(n) {
+    const extra = AJUSTES.cristalesExtra || [{ nombre: 'Cristal Nuevo', color: '#BFE9FF' }];
+    return {
+      id: 'cristal' + (n + 1),
+      icono: '💎',
+      nombre: 'Un cristal para el Farol',
+      cristal: extra[n % extra.length],
+      aviso: '¡' + ((n + 1) * this.cada()) + ' retos! Dile a papá que toca premio nuevo.',
+    };
+  },
 
-  /* Cuántos retos le faltan para la siguiente */
+  /* El premio con ese id: para saber de qué cristal habla el que lleva en la
+     mano o el que ya está encajado. Mira la lista ENTERA, también las
+     expansiones apagadas: una partida puede tener puesto un cristal de algo
+     que hoy esté quitado, y su hueco tiene que seguir siendo de su color. */
+  premioDe(id) {
+    const s = this.todas().find(x => x.id === id);
+    if (s) return s;
+    const m = /^cristal(\d+)$/.exec(id);
+    return m ? this.generico(Number(m[1]) - 1) : null;
+  },
+
+  /* De qué color es el cristal de este premio */
+  color(s) { return (s && s.cristal && s.cristal.color) || '#BFE9FF'; },
+  comoSeLlama(s) { return (s && s.cristal && s.cristal.nombre) || 'Cristal del Farol'; },
+
+  /* EL SIGUIENTE QUE LE TOCA
+     La primera expansión de la lista que ESTA jugadora todavía no tenga. Así,
+     si se reordena la lista, se mete una nueva o se quita otra, nadie repite
+     ni se salta nada: cada una sigue por donde iba. Si ya las tiene todas,
+     toca un cristal sin expansión detrás. */
+  siguiente() {
+    const ganadas = this.progreso().ganadas;
+    return this.lista().find(s => !ganadas.includes(s.id)) ||
+           this.generico(this.cuantasGanadas());
+  },
+
+  /* Cuántos retos le faltan para el siguiente */
   faltan() {
     return Math.max(0, (this.cuantasGanadas() + 1) * this.cada() - this.hechos());
+  },
+
+  // --- EL CRISTAL QUE LLEVA EN LA MANO ----------------------------------
+  enMano() {
+    const p = Estado.actual;
+    if (!p) return null;
+    if (!p.cristalesEnMano) p.cristalesEnMano = [];
+    return p.cristalesEnMano[0] || null;
+  },
+  premioEnMano() { const id = this.enMano(); return id ? this.premioDe(id) : null; },
+
+  darEnMano(id) {
+    const p = Estado.actual;
+    if (!p.cristalesEnMano) p.cristalesEnMano = [];
+    if (!p.cristalesEnMano.includes(id)) p.cristalesEnMano.push(id);
+    Estado.guardar();
+  },
+
+  /* Ya está encajado en el Farol: sale de la mano y cuenta como puesto */
+  darPorPuesto(id) {
+    const p = Estado.actual;
+    p.cristalesEnMano = (p.cristalesEnMano || []).filter(x => x !== id);
+    const pr = this.progreso();
+    if (!pr.puestos.includes(id)) pr.puestos.push(id);
+    Estado.guardar();
+    this.abrir(id);
+    this.pintar();
+  },
+
+  /* Los colores de los cristales ya encajados en el Farol, en orden.
+     Lo usa el dibujo de la hoguera (Juego.pintar_farol). */
+  coloresPuestos() {
+    return this.progreso().puestos.map(id => this.color(this.premioDe(id)));
   },
 
   /* UN RETO NUEVO DEL DÍA. Se llama desde Desafio.exito(). */
@@ -11313,21 +11524,28 @@ const Sorpresas = {
     pr.retos++;
     Estado.guardar();
     this.pintar();
-    if (this.faltan() === 0 && this.siguiente()) this.pendiente = this.siguiente();
+    if (this.faltan() === 0) this.pendiente = this.siguiente();
   },
 
   /* LA BARRA, arriba a la izquierda */
   pintar() {
-    const caja = document.getElementById('cajaSorpresa');
+    const caja = document.getElementById('cajaCristales');
     if (!caja) return;
-    const s = this.siguiente();
-    if (!s) return caja.classList.add('oculto');       // ya no quedan sorpresas
-    caja.classList.remove('oculto');
+    const texto = document.getElementById('cristalTexto');
+    const relleno = document.getElementById('cristalRelleno');
+    const s = this.premioEnMano();
+    if (s) {                                  // lleva uno encima: eso manda
+      texto.textContent = '¡al Farol!';
+      relleno.style.width = '100%';
+      relleno.style.background = this.color(s);
+      caja.title = 'Llevas ' + this.comoSeLlama(s) + ': llévalo al Farol, en el centro de la isla';
+      return;
+    }
     const hechos = this.cada() - this.faltan();
-    document.getElementById('sorpresaTexto').textContent = hechos + '/' + this.cada();
-    document.getElementById('sorpresaRelleno').style.width =
-      Math.round(100 * hechos / this.cada()) + '%';
-    caja.title = 'Faltan ' + this.faltan() + ' retos para una sorpresa';
+    texto.textContent = hechos + '/' + this.cada();
+    relleno.style.width = Math.round(100 * hechos / this.cada()) + '%';
+    relleno.style.background = this.color(this.siguiente());
+    caja.title = 'Faltan ' + this.faltan() + ' retos para un cristal del Farol';
   },
 
   /* LA CELEBRACIÓN. Espera a que no haya ningún cartel abierto, para no
@@ -11336,7 +11554,7 @@ const Sorpresas = {
     setInterval(() => {
       if (!Estado.actual) return;
       // La barra puede estar ya llena al entrar (partida vieja, retos que ya contaban)
-      if (!this.pendiente && this.siguiente() && this.faltan() === 0) this.pendiente = this.siguiente();
+      if (!this.pendiente && this.faltan() === 0) this.pendiente = this.siguiente();
       if (!this.pendiente || UI.estaAbierto()) return;
       const s = this.pendiente;
       this.pendiente = null;
@@ -11344,31 +11562,26 @@ const Sorpresas = {
     }, 700);
   },
 
+  /* LLENÓ LA BARRA: el cristal aparece EN SU MANO.
+     Aquí no se abre nada todavía. Lo bueno pasa cuando lo lleve al Farol. */
   celebrar(s) {
     const pr = this.progreso();
     const total = (pr.ganadas.length + 1) * this.cada();      // 10, 20, 30…
     if (!pr.ganadas.includes(s.id)) pr.ganadas.push(s.id);
-    Estado.guardar();
-    this.abrir(s.id);
+    this.darEnMano(s.id);
     this.pintar();
-    if (typeof Sonido !== 'undefined') Sonido.fiesta();
+    if (typeof Sonido !== 'undefined') { Sonido.fiesta(); setTimeout(() => Sonido.cristal(), 500); }
 
-    /* ¿La sorpresa existe ya en el juego? Si sí, hace falta recargar para que
-       aparezca; si no, es un aviso para papá. */
-    const cargada = typeof Ampliaciones !== 'undefined' && Ampliaciones.lista.includes(s.id);
-
-    if (!cargada) {
-      return UI.dialogo('🎁 ¡' + total + ' retos!',
-        '<b>¡Has llenado la barra!</b><br><br>' + (s.aviso ||
-        'Has ganado una sorpresa. Papá la está preparando: pídesela.') +
-        '<br><br>Y la barra vuelve a empezar 😊',
-        [{ texto: '¡Bien!', accion: () => UI.cerrar() }]);
-    }
-
-    UI.dialogo('🎁 ¡' + total + ' retos!',
-      '<b>¡Has llenado la barra!</b><br><br>' + (s.icono || '✨') + ' <b>' + s.nombre + '</b><br>' +
-      (s.pista || '') + '<br><br>Toca el botón y aparecerá en la isla.',
-      [{ texto: '¡Quiero verlo!', accion: () => location.reload() }]);
+    UI.dialogo('💎 ¡' + total + ' retos!',
+      '<b>¡Has llenado la barra!</b><br><br>En tus manos aparece el <b>' +
+      this.comoSeLlama(s) + '</b>. Pesa, y está calentito.<br><br>' +
+      '🔦 <b>Llévalo al Farol de Coral</b>, en el centro de la isla, y ponlo en su hueco. ' +
+      'Ya verás lo que pasa.',
+      [{ texto: '¡Voy!', accion: () => {
+          UI.cerrar();
+          if (typeof Hada !== 'undefined')
+            Hada.decir('¡Corre al <b>Farol</b>, en el centro de la isla! Míralo en el mapa. 💎', 9);
+        } }]);
   },
 
   /* Lo que ve papá en la portada */
@@ -11377,7 +11590,7 @@ const Sorpresas = {
       const pr = p.progreso || { retos: 0, ganadas: [] };
       return pr.retos ? p.nombre + ': ' + pr.retos + ' retos' : null;
     }).filter(Boolean);
-    return trozos.length ? '🎁 ' + trozos.join(' · ') : '';
+    return trozos.length ? '💎 ' + trozos.join(' · ') : '';
   },
 };
 
@@ -11656,6 +11869,9 @@ const Juego = {
   actualizar() {
     const j = this.jugador;
 
+    // Durante la ceremonia del Farol no se anda: se mira (regla 31)
+    if (this.ceremonia) return;
+
     if (this.vehiculo) return this.conducir();
 
     if (this.modoPiedras) { Hada.sinAccion(); return this.actualizarSalto(); }
@@ -11933,8 +12149,8 @@ const Juego = {
                   ['cabana', 'playa'], ['playa', 'cartes'],
                   ['fruta', 'piedras'], ['cartes', 'piedras'], ['animalario', 'playa'],
                   ['salon', 'mirador'], ['playa', 'claro'],
-                  ['cartes', 'cala'], ['farol', 'nido'], ['pozo', 'cartes'],
-                  ['farol', 'cueva'],
+                  ['cartes', 'cala'], ['basefarol', 'nido'], ['pozo', 'cartes'],
+                  ['basefarol', 'cueva'],
                   ['salon', 'cruceBosque'], ['cruceBosque', 'fruta'],
                   ['cruceBosque', 'norteBosque'], ['norteBosque', 'ruinas'],
                   ['cruceBosque', 'surBosque'], ['surBosque', 'pozo']];
@@ -12024,45 +12240,86 @@ const Juego = {
     Desafio.abrir(l.id, () => UI.refrescarHud());     // reto y letras
   },
 
-  /* El Farol: con los cinco cristales se enciende, y eso cambia la isla */
+  /* EL FAROL DE CORAL (rehecho el 19-09-2026, regla 31)
+     Ya no es la meta del juego: es donde se encajan los Cristales Mayores. Si
+     la jugadora lleva uno en la mano, lo primero que pasa aquí es colocarlo;
+     si no, el Farol le cuenta cómo va. */
   farol() {
-    const p = Estado.actual;
-    const n = p.cristales.length;
+    const puestos = Sorpresas.cuantosPuestos();
+    const enMano = Sorpresas.premioEnMano();
 
-    if (n < 5) {
-      return UI.dialogo('El Farol de Coral',
-        'Está apagado y frío. En la base hay <b>cinco huecos</b> con forma de cristal.<br><br>' +
-        'Llevas <b>' + n + ' de 5</b>.');
-    }
+    if (enMano) return this.colocarCristal(enMano);
 
-    if (p.farolEncendido) {
-      return UI.dialogo('El Farol de Coral',
-        'Encendido y calentito. Desde aquí se ve la isla entera.<br><br>' +
-        'Las flores no se cierran nunca, como decía Na Tortuga.');
-    }
+    const faltan = Sorpresas.faltan();
+    const cuantos = puestos === 0 ? 'Todavía no tiene ninguno.'
+      : puestos === 1 ? 'Tiene <b>un cristal</b> puesto.'
+      : 'Tiene <b>' + puestos + ' cristales</b> puestos.';
 
-    p.farolEncendido = true;
-    const traje = ROPA.conjuntos.find(c => c.id === 'coral');
-    Estado.dar(traje.id);
-    p.look.conjunto = traje.id;
-    Estado.guardar();
+    UI.dialogo('El Farol de Coral',
+      'Una torre de piedra en el centro de la isla, rodeada de una <b>hoguera</b> con huecos ' +
+      'vacíos en el suelo, uno detrás de otro, hacia afuera.<br><br>' + cuantos +
+      '<br><br>💎 Te faltan <b>' + faltan + '</b> ' + (faltan === 1 ? 'reto' : 'retos') +
+      ' para el siguiente.');
+  },
+
+  /* COLOCAR EL CRISTAL: el modo premio.
+     Se para todo, la hoguera crece, el Farol sube a su color nuevo y la luz
+     barre la isla. La expansión se abre al final, no antes. */
+  colocarCristal(s) {
+    Sorpresas.darPorPuesto(s.id);
     UI.refrescarHud();
+    const regalo = this.regaloDe(s);
+    if (regalo) {
+      Estado.dar(regalo.id);
+      Estado.actual.look[Juego.RANURA[s.regalo.tipo]] = regalo.id;   // puesto ya
+    }
+    Estado.actual.farolEncendido = true;
+    Estado.guardar();
+
+    this.ceremonia = { t0: this.t, color: Sorpresas.color(s), s: s };
     Sonido.fiesta();
-    setTimeout(() => Sonido.cristal(), 600);
-    setTimeout(() => Sonido.fiesta(), 1200);
-    Musica.poner('farol');
+    setTimeout(() => Sonido.cristal(), 500);
+    setTimeout(() => Sonido.fiesta(), 1400);
+    if (typeof Musica !== 'undefined') Musica.poner('farol');
+
+    setTimeout(() => this.finCeremonia(s), 4200);
+  },
+
+  /* Qué prenda regala este cristal, si es que regala alguna. En los ajustes
+     va como { tipo, id } de ROPA (un conjunto, algo de las manos, de la
+     cabeza…), para que cada expansión pueda traer lo suyo. */
+  RANURA: { conjuntos: 'conjunto', zapatos: 'zapatos', complementos: 'complemento',
+            manos: 'manos', joyas: 'joyas', peinados: 'peinado' },
+
+  regaloDe(s) {
+    const r = s && s.regalo;
+    if (!r || !ROPA[r.tipo] || !this.RANURA[r.tipo]) return null;
+    return ROPA[r.tipo].find(o => o.id === r.id) || null;
+  },
+
+  /* Se acabó la luz: ahora sí, el premio y lo que se abre */
+  finCeremonia(s) {
+    this.ceremonia = null;
+    const regalo = this.regaloDe(s);
+    const cargada = typeof Ampliaciones !== 'undefined' && Ampliaciones.lista.includes(s.id);
+    const cuerpo = '<b>El ' + Sorpresas.comoSeLlama(s) + ' encaja en su hueco.</b><br><br>' +
+      'La hoguera crece y el Farol se enciende con un color nuevo que llega hasta el mar.' +
+      (regalo ? '<br><br>🎁 Y en el suelo aparece: <b>' + regalo.nombre + '</b>' +
+                (s.regalo.nota ? ', ' + s.regalo.nota : '') + '. Ya lo llevas puesto.' : '');
+
+    if (!cargada) {
+      return UI.dialogo('✨ ¡SE HA ENCENDIDO! ✨',
+        cuerpo + '<br><br>🎁 ' + (s.aviso || 'Has ganado una sorpresa: pídesela a papá.'),
+        [{ texto: '¡Bien!', accion: () => {
+            UI.cerrar();
+            Hada.decir('¡Mira cómo brilla! Y todavía quedan huecos vacíos… 💎', 8);
+          } }]);
+    }
 
     UI.dialogo('✨ ¡SE HA ENCENDIDO! ✨',
-      'Los cinco cristales encajan solos, uno detrás de otro.<br><br>' +
-      'El Farol se enciende con una luz dorada que llega hasta el otro lado de la isla. ' +
-      'Las flores de abajo se abren de golpe, todas a la vez.<br><br>' +
-      '👗 Y en el suelo, doblado, aparece el <b>' + traje.nombre + '</b>: te lo pones y ' +
-      '<b>brilla en la oscuridad</b>.', [
-      { texto: '¡Lo he conseguido!', accion: () => {
-          UI.cerrar();
-          Hada.decir('¡Lo has conseguido! La isla entera te lo agradece. ✨', 8);
-        } },
-    ]);
+      cuerpo + '<br><br>' + (s.icono || '✨') + ' <b>' + s.nombre + '</b><br>' + (s.pista || '') +
+      '<br><br>Toca el botón y aparecerá en la isla.',
+      [{ texto: '¡Quiero verlo!', accion: () => location.reload() }]);
   },
 
   /* Un paso cerrado: si se supera el reto, se abre una parte nueva de la isla */
@@ -12577,6 +12834,7 @@ const Juego = {
       const alto = this.vehiculo ? (this.vehiculo.tipo === 'caballo' ? 30 :
                    this.vehiculo.tipo === 'tiovivo' ? 0 : 12) : (suyo ? suyo.alto : 0);
       Avatar.dibujar(ctx, j.x, j.y - j.z - alto, 1.15, Estado.actual.look, j.mirando, j.paso);
+      this.cristalEnLaMano(ctx, j.x, j.y - j.z - alto, j.mirando);
       if (suyo) Vehiculos.pintar(ctx, j.x, j.y - j.z, suyo.id, j.mirando, 'delante');
     };
     if (!this.vehiculo) cosas.push({ y: j.y, f: pintarJugadora });
@@ -12601,6 +12859,7 @@ const Juego = {
     });
 
     ctx.restore();
+    this.pintarCeremonia(ctx);
   },
 
   /* El cartelito que sale pegado a lo que tienes al lado: el icono, la tecla
@@ -12625,6 +12884,9 @@ const Juego = {
       x = this.lugar.x; y = this.lugar.y - alto - 34;
       accion = this.hayCaso(this.lugar) ? 'caso' : this.lugar.accion;
       nombre = this.lugar.nombre;
+      // llegando al Farol con un cristal en la mano, el cartel lo dice
+      if (this.lugar.id === 'farol' && typeof Sorpresas !== 'undefined' && Sorpresas.enMano())
+        nombre = '¡Pon aquí tu cristal!';
     } else return;
 
     // que no se salga por arriba de la pantalla
@@ -13268,27 +13530,183 @@ const Juego = {
     ctx.fillText('ACERTAR', x, y - 46);
   },
 
+  /* EL FAROL DE CORAL Y SU HOGUERA (19-09-2026, regla 31)
+     La torre en medio, la hoguera ardiendo a sus pies y, alrededor, los huecos
+     de los Cristales Mayores en anillos. Cuando un anillo se llena empieza
+     otro más afuera, así que esto puede crecer sin final. La luz de arriba
+     sube un poco con cada reto y cambia de color con cada cristal puesto. */
+  HUECOS_ANILLO: 6,        // el primer anillo; cada uno de fuera lleva 4 más
+
+  /* En qué anillo y en qué sitio cae el hueco número n */
+  huecoFarol(n) {
+    let anillo = 0, dentro = n;
+    while (dentro >= this.HUECOS_ANILLO + anillo * 4) {
+      dentro -= this.HUECOS_ANILLO + anillo * 4;
+      anillo++;
+    }
+    const cuantos = this.HUECOS_ANILLO + anillo * 4;
+    // media posición girado: así ningún hueco cae justo detrás de la torre
+    const a = Math.PI / 2 + ((dentro + 0.5) / cuantos) * Math.PI * 2;
+    const r = 136 + anillo * 78;
+    return { dx: Math.cos(a) * r, dy: 26 + Math.sin(a) * r * 0.5, anillo: anillo };
+  },
+
   pintar_farol(ctx, x, y) {
-    const n = Estado.actual.cristales.length;
-    this.sombra(ctx, x, y + 4, 42, 0);
+    const colores = typeof Sorpresas !== 'undefined' ? Sorpresas.coloresPuestos() : [];
+    const n = colores.length;
+    const luz = colores[n - 1] || '#9AA0A6';
+    const retos = typeof Sorpresas !== 'undefined' ? Sorpresas.hechos() : 0;
+    const brillo = Math.min(1, retos / 60);          // sube poquito a poco con cada reto
+
+    /* Los huecos del suelo: los llenos con su color, los vacíos en sombra.
+       Se pintan siempre unos cuantos vacíos por delante, para que se vea que
+       esto sigue. */
+    for (let k = 0; k < n + 4; k++) {
+      const h = this.huecoFarol(k);
+      const px = x + h.dx, py = y + h.dy + 10;
+      // el hueco de piedra, que se vea aunque esté vacío
+      ctx.fillStyle = '#C9BFA8';
+      ctx.beginPath(); ctx.ellipse(px, py, 17, 10, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = k < n ? '#8F8570' : '#6E6757';
+      ctx.beginPath(); ctx.ellipse(px, py, 12, 7, 0, 0, 7); ctx.fill();
+      if (k >= n) continue;
+      ctx.fillStyle = colores[k];
+      ctx.beginPath();
+      ctx.moveTo(px, py - 15); ctx.lineTo(px + 11, py);
+      ctx.lineTo(px, py + 11); ctx.lineTo(px - 11, py); ctx.fill();
+      ctx.strokeStyle = 'rgba(60,50,45,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath(); ctx.moveTo(px, py - 15); ctx.lineTo(px + 5, py); ctx.lineTo(px, py + 4); ctx.fill();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.4;
+      ctx.fillStyle = colores[k];
+      ctx.beginPath(); ctx.ellipse(px, py, 26 + Math.sin(this.t * 2 + k) * 3, 15, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+
+    this.sombra(ctx, x, y + 4, 52, 0);
+
+    /* La torre */
     ctx.fillStyle = '#EDE4D3';
     ctx.beginPath(); ctx.moveTo(x - 30, y); ctx.lineTo(x - 18, y - 128);
     ctx.lineTo(x + 18, y - 128); ctx.lineTo(x + 30, y); ctx.fill();
     ctx.fillStyle = '#E8927E';
     for (let k = 0; k < 3; k++) ctx.fillRect(x - 28 + k * 1.5, y - 32 - k * 36, 56 - k * 3, 8);
     ctx.fillStyle = '#C9BFA8'; ctx.fillRect(x - 22, y - 142, 44, 14);
-    ctx.fillStyle = n >= 5 ? '#FFE066' : '#9AA0A6';
+
+    /* La luz de arriba: del gris al color del último cristal */
+    ctx.fillStyle = n ? luz : '#9AA0A6';
     ctx.beginPath(); ctx.arc(x, y - 152, 16, 0, 7); ctx.fill();
-    if (n >= 5) {
-      ctx.fillStyle = 'rgba(255,224,102,0.22)';
-      ctx.beginPath(); ctx.arc(x, y - 152, 48 + Math.sin(this.t * 2) * 7, 0, 7); ctx.fill();
-    }
-    for (let k = 0; k < 5; k++) {
-      ctx.fillStyle = k < n ? '#7FD3E8' : 'rgba(0,0,0,0.14)';
+    if (n || brillo > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';     // que sume luz, no que manche
+      ctx.globalAlpha = 0.18 + brillo * 0.18 + (n ? 0.12 : 0);
+      ctx.fillStyle = n ? luz : '#FFE066';
       ctx.beginPath();
-      ctx.moveTo(x - 40 + k * 20, y - 100); ctx.lineTo(x - 34 + k * 20, y - 90);
-      ctx.lineTo(x - 40 + k * 20, y - 80); ctx.lineTo(x - 46 + k * 20, y - 90); ctx.fill();
+      ctx.arc(x, y - 152, 34 + Math.min(n, 8) * 4 + brillo * 22 + Math.sin(this.t * 2) * 6, 0, 7); ctx.fill();
+      ctx.restore();
     }
+
+    /* LA HOGUERA, a los pies y por delante de la torre: crece con los
+       cristales puestos y arde del color del último */
+    const alto = 30 + Math.min(n, 12) * 5;
+    for (let k = 0; k < 7; k++) {
+      const a = 0.4 + k * 0.38;
+      ctx.fillStyle = k % 2 ? '#8A5A3B' : '#A9714B';
+      ctx.save(); ctx.translate(x, y + 10); ctx.rotate(a - 1.2);
+      ctx.fillRect(-5, -30, 10, 36); ctx.restore();
+    }
+    ctx.save();
+    for (let k = 0; k < 6; k++) {
+      const s2 = Math.sin(this.t * 5 + k * 1.3);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = k % 2 ? '#FFC24D' : (n ? luz : '#FF7A3C');
+      ctx.beginPath();
+      ctx.ellipse(x - 30 + k * 12, y - 4 - alto * 0.45 + s2 * 5,
+                  10, alto * 0.6 + s2 * 6, 0, 0, 7); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.5; ctx.fillStyle = '#FFE9A8';
+    ctx.beginPath(); ctx.ellipse(x, y - 4 - alto * 0.25, 20, alto * 0.35, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = 0.16; ctx.fillStyle = n ? luz : '#FF9130';
+    ctx.beginPath(); ctx.ellipse(x, y + 6, 90 + n * 4, 46 + n * 2, 0, 0, 7); ctx.fill();
+    ctx.restore();
+  },
+
+  /* Donde estuvo el Farol hasta el 19-09-2026: un círculo de piedra gastado */
+  pintar_basefarol(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 34, 0);
+    ctx.fillStyle = '#C9BFA8';
+    ctx.beginPath(); ctx.ellipse(x, y, 34, 17, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#B3A991';
+    ctx.beginPath(); ctx.ellipse(x, y - 3, 26, 13, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#8F8570';
+    for (let k = 0; k < 6; k++) {
+      const a = k * 1.05;
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(a) * 30, y - 3 + Math.sin(a) * 15, 5, 3, 0, 0, 7); ctx.fill();
+    }
+  },
+
+  /* EL CRISTAL EN LA MANO (19-09-2026)
+     Lo pidió Antonio: el Cristal Mayor no se coloca solo, se lleva. Mientras
+     lo lleva encima se le ve en la mano, brillando, ande donde ande. */
+  cristalEnLaMano(ctx, x, yPies, mirando) {
+    if (typeof Sorpresas === 'undefined') return;
+    const s = Sorpresas.premioEnMano();
+    if (!s) return;
+    const color = Sorpresas.color(s);
+    const px = x + 22 * (mirando < 0 ? -1 : 1);
+    const py = yPies - 44 + Math.sin(this.t * 3) * 2;
+    ctx.save();
+    ctx.globalAlpha = 0.30 + Math.sin(this.t * 3) * 0.08;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(px, py, 20, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(px, py - 14); ctx.lineTo(px + 9, py);
+    ctx.lineTo(px, py + 10); ctx.lineTo(px - 9, py); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.moveTo(px, py - 14); ctx.lineTo(px + 4, py); ctx.lineTo(px, py + 3); ctx.fill();
+    ctx.restore();
+  },
+
+  /* EL MODO PREMIO (19-09-2026)
+     Cuatro segundos de fiesta al encajar el cristal: fogonazo, rayos de luz
+     que giran desde el Farol y destellos que suben. Mientras dura no se anda.
+     Antonio lo pidió llamativo: que se note que ha pasado algo grande. */
+  pintarCeremonia(ctx) {
+    const c = this.ceremonia;
+    if (!c) return;
+    const k = Math.min(1, (this.t - c.t0) / 4.2);        // 0 → 1
+    const an = ctx.canvas.width, al = ctx.canvas.height;
+    const cx = an / 2, cy = al / 2 - 60;
+
+    ctx.save();
+    // rayos que giran
+    ctx.globalAlpha = 0.30 * Math.sin(Math.PI * k);
+    ctx.fillStyle = c.color;
+    for (let r = 0; r < 12; r++) {
+      const a = this.t * 0.6 + r * (Math.PI / 6);
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a - 0.06) * an, cy + Math.sin(a - 0.06) * an);
+      ctx.lineTo(cx + Math.cos(a + 0.06) * an, cy + Math.sin(a + 0.06) * an);
+      ctx.fill();
+    }
+    // el fogonazo del principio
+    ctx.globalAlpha = Math.max(0, 0.85 - k * 3.2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, an, al);
+    // destellos que suben
+    ctx.globalAlpha = Math.sin(Math.PI * k);
+    ctx.fillStyle = c.color;
+    for (let d = 0; d < 26; d++) {
+      const f = (this.t * 0.35 + d * 0.13) % 1;
+      const dx = cx + Math.sin(d * 2.4) * (60 + d * 11);
+      ctx.beginPath();
+      ctx.arc(dx, cy + 150 - f * 320, 3 + (d % 3), 0, 7); ctx.fill();
+    }
+    ctx.restore();
   },
 
   pintar_mirador(ctx, x, y) {
@@ -16988,7 +17406,7 @@ const Inicio = {
       <div class="ficha">
         <canvas class="mini" data-i="${i}" width="120" height="150"></canvas>
         <b>${p.nombre}</b>
-        <small>🐚 ${p.conchas} · 💎 ${p.cristales.length}/5</small>
+        <small>🐚 ${p.conchas} · 💎 ${(p.progreso && p.progreso.retos) || 0}</small>
         <button class="btn jugar" data-i="${i}">Jugar</button>
         <div class="fila-enlaces">
           <button class="enlace reiniciar" data-i="${i}">empezar de nuevo</button>
