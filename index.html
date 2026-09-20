@@ -730,6 +730,7 @@ const AJUSTES = {
 
     { id: 'hadaHabla', icono: '🧚', nombre: 'Lumi aprende a hablar',
       cristal: { nombre: 'Cristal de Noche', color: '#B08CFF' },
+      pista: 'Lumi se ha aclarado la garganta y ha dicho «¡hola!» <b>en voz alta</b>. A partir de ahora la vas a <b>oír</b>, no solo leerla.',
       aviso: '¡30 retos! Dile a papá que quieres que Lumi hable de verdad.' },
 
     { id: 'lluvia', icono: '🌧️', nombre: 'El otoño llega a la isla', clima: true,
@@ -20567,6 +20568,138 @@ ROPA.mascotas.push(
     }
     ctx.restore();
   };
+})();
+
+</script>
+<script>
+/* === voz/lista.js === */
+/* QUÉ FRASES DE LUMI ESTÁN GRABADAS
+   Lo escribe voz.py; no se toca a mano. */
+const VOZ_LUMI = [
+  '016fda40',
+  '09e226ca',
+  '11c78fe2',
+  '175d9635',
+  '17c829e7',
+  '193d83e7',
+  '1b5ace90',
+  '1cc3ae96',
+  '30f27827',
+  '3d7affef',
+  '3dad15c9',
+  '3f47eaed',
+  '45fbe1c7',
+  '49353066',
+  '4d6277a1',
+  '4dfd3077',
+  '5fccd559',
+  '66f4a96d',
+  '69b6716c',
+  '75c6793f',
+  '87f90156',
+  '89c131a0',
+  'a4f374cf',
+  'bb080866',
+  'cb7bef9e',
+  'cdc4c7c2',
+  'ce843ba8',
+  'd42856da',
+  'e1958f12',
+  'ea7e28b7',
+  'ecf7fe1e',
+  'f84572b6',
+  'fe3b6eb7',
+];
+
+</script>
+<script>
+/* === ampliaciones/hada-habla.js === */
+/* LUMI APRENDE A HABLAR
+   Estado: se gana con el Cristal de Noche (el tercer Cristal Mayor, a los 30
+   retos). Antes de eso Lumi sale igual, pero muda.
+
+   Qué hace: cuando Lumi dice algo en su globito, además se oye. La voz está
+   grabada de antemano en la carpeta `voz/` (ver voz.py): el juego solo
+   reproduce un mp3, no lee nada por su cuenta y no se conecta a ningún sitio.
+
+   Por qué grabada y no leída por el navegador: la voz que lee sola el iPad
+   suena a robot y cambia de un aparato a otro. Así suena igual en todos y es
+   la voz que eligió Antonio (Mónica, más aguda y con un poco de eco).
+
+   Solo hablan las frases que están en `voz/frases.txt`. Las que llevan
+   números o nombres que cambian (el nombre de un sitio, una pista) se quedan
+   escritas, como siempre: no se pueden grabar de antemano. */
+
+/* Registrarla es lo que hace que el juego la dé por hecha cuando se coloca su
+   cristal (si no, celebraría y diría «pídeselo a papá»). No añade nada al
+   mapa: esta expansión no ocupa sitio en la isla. */
+if (typeof ampliacion === 'function') ampliacion({ id: 'hadaHabla' });
+
+(function () {
+  if (typeof Hada === 'undefined' || typeof VOZ_LUMI === 'undefined') return;
+
+  const Voz = {
+    guardados: {},
+    sonando: null,
+
+    /* El mismo número que saca voz.py del texto, para encontrar el archivo:
+       solo cuentan las letras y los números, así que da igual el <b>, los
+       emojis o los signos. */
+    nombre(texto) {
+      const limpio = texto.replace(/<\/?(?:b|i|br|span)(?:\s[^<>]{0,80})?>/g, ' ')
+        .normalize('NFC').toLowerCase().replace(/[^0-9a-záéíóúüñ]/g, '');
+      let h = 5381;
+      for (let i = 0; i < limpio.length; i++) h = ((h * 33) ^ limpio.charCodeAt(i)) >>> 0;
+      return ('0000000' + h.toString(16)).slice(-8);
+    },
+
+    pista(id) {
+      if (this.guardados[id]) return this.guardados[id];
+      const a = new Audio('voz/' + id + '.mp3');
+      a.preload = 'auto';
+      /* Colgado del mismo sitio que el resto del sonido: así el iPad lo deja
+         sonar aunque tenga el interruptor lateral en silencio, y el botón de
+         silencio del juego también lo calla. */
+      try {
+        if (Sonido.ctx && Sonido.maestro && Sonido.ctx.createMediaElementSource) {
+          Sonido.ctx.createMediaElementSource(a).connect(Sonido.maestro);
+        }
+      } catch (e) { /* si el navegador no deja, se oye por lo normal */ }
+      this.guardados[id] = a;
+      return a;
+    },
+
+    decir(texto) {
+      if (typeof Sonido !== 'undefined' && !Sonido.encendido) return;
+      const id = this.nombre(texto);
+      if (VOZ_LUMI.indexOf(id) < 0) return;         // esa frase no está grabada
+      this.callar();                                 // no se pisan dos frases
+      const a = this.pista(id);
+      a.currentTime = 0;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => {});
+      this.sonando = a;
+    },
+
+    callar() {
+      if (!this.sonando) return;
+      this.sonando.pause();
+      this.sonando.currentTime = 0;
+      this.sonando = null;
+    },
+  };
+
+  const decir = Hada.decir;
+  Hada.decir = function (texto, segundos) {
+    decir.apply(this, arguments);
+    if (typeof sorpresaAbierta === 'function' && !sorpresaAbierta('hadaHabla')) return;
+    Voz.decir(texto);
+  };
+
+  /* Al cambiar de pestaña o minimizar, el sonido del juego se suspende entero
+     (Sonido.pausar) y la voz va colgada de ahí, así que se calla sola. */
+
+  window.HadaVoz = Voz;
 })();
 
 </script>
