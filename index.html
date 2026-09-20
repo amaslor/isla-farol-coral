@@ -317,7 +317,7 @@
 
   /* Lumi, el hada que acompaña */
   #hada{position:fixed; top:64px; right:14px; display:flex; align-items:center;
-        gap:10px; cursor:pointer; z-index:11;
+        gap:10px; z-index:11;
         transition:top 1.2s cubic-bezier(.4,0,.2,1), right 1.2s cubic-bezier(.4,0,.2,1),
                    transform 1.2s cubic-bezier(.4,0,.2,1)}
   /* Al presentarse sale en medio de la pantalla y grande */
@@ -11245,7 +11245,9 @@ const Hada = {
     this.ctx = this.lienzo.getContext('2d');
     this.globo = document.getElementById('hadaGlobo');
     document.getElementById('hada').classList.remove('oculto');
-    document.getElementById('hada').onclick = () => Tutorial.abrir();
+    /* Tocar al hada ya NO abre el tutorial (20-09-2026, lo pidió Antonio:
+       «a estas alturas ya se lo saben todo»). El tutorial sigue entero en
+       el botón ❓ de la barra y en la tecla T, para quien lo quiera. */
   },
 
   /* Lumi dice algo durante unos segundos. Cuando acaba, vuelve a lo que
