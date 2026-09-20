@@ -1550,6 +1550,30 @@ const MUNDO = {
       reto: 'huevo', premio: { tipo: 'mascotas', id: 'dragon' } },
   ],
 
+  /* LOS TRASTOS DEL POBLADO (20-09-2026, lo pidió Antonio: «que parezca un
+     pueblo medieval»). Son decorado: no estorban al andar, solo se miran.
+     Están repartidos por los huecos entre las casas, lejos de las puertas y
+     de los caminos. */
+  trastos: [
+    { tipo: 'heno',       x: 1700, y: 2700 },
+    { tipo: 'heno',       x: 1640, y: 2790 },
+    { tipo: 'barriles',   x: 760,  y: 2480 },
+    { tipo: 'barriles',   x: 1430, y: 1980 },
+    { tipo: 'carro',      x: 1050, y: 2280 },
+    { tipo: 'lenia',      x: 980,  y: 2860 },
+    { tipo: 'lenia',      x: 1560, y: 2200 },
+    { tipo: 'tendedero',  x: 700,  y: 2760 },
+    { tipo: 'huerto',     x: 1320, y: 2860 },
+    { tipo: 'huerto',     x: 1180, y: 1900 },
+    { tipo: 'abrevadero', x: 1620, y: 2560 },
+    { tipo: 'antorcha',   x: 1770, y: 2250 },
+    { tipo: 'antorcha',   x: 1770, y: 2610 },
+    { tipo: 'antorcha',   x: 620,  y: 2200 },
+    { tipo: 'cajas',      x: 880,  y: 1980 },
+    { tipo: 'cajas',      x: 1740, y: 2900 },
+    { tipo: 'banco',      x: 1000, y: 2420 },
+  ],
+
   // Las boyas del espigón, para saber dónde pican: [x, y]
   boyas: [[2790, 4380], [3010, 4360], [2760, 4520], [3040, 4500], [2900, 4600]],
 
@@ -12991,6 +13015,8 @@ const Juego = {
     MUNDO.flores.forEach(f => cosas.push({ y: f[1], f: () => this.flor(ctx, f[0], f[1]) }));
     MUNDO.rocas.forEach(r => cosas.push({ y: r[1], f: () => this.roca(ctx, r[0], r[1]) }));
     MUNDO.matas.forEach(m => cosas.push({ y: m[1], f: () => this.mata(ctx, m[0], m[1]) }));
+    (MUNDO.trastos || []).forEach(t =>          // las cosas del poblado (20-09-2026)
+      cosas.push({ y: t.y, x: t.x, tapa: 60, f: () => this.trasto(ctx, t) }));
     MUNDO.palmeras.forEach(p =>
       cosas.push({ y: p[1], x: p[0], tapa: 110, f: () => this.palmera(ctx, p[0], p[1]) }));
     /* Si va subiendo por un sendero o está en la meseta, lo que hay alrededor
@@ -13293,24 +13319,15 @@ const Juego = {
 
      Las baldosas van en un patrón que se fabrica una sola vez (son más de mil
      y pintarlas una a una en cada fotograma se notaría en el iPad). */
-  /* EL SUELO DEL POBLADO (rehecho el 19-09-2026)
-     No es un tapiz repetido: eso se notaba postizo. Es un empedrado montado
-     como el de un pueblo de verdad:
-
-       · CALLES: las losas siguen cada camino, colocadas de través, como los
-         adoquines de una calzada. Cada calle va en su dirección.
-       · PLAZAS: delante de cada casa hay una plazoleta de losas cuadradas,
-         cada una girada a su aire, y un cerco de piedra alrededor.
-       · Y por el resto, tierra clara con alguna losa suelta, para que no
-         parezca alfombra.
-
-     Suave a propósito: a Gala no le gustó la primera versión, que cantaba
-     demasiado contra la hierba. Se dibuja UNA SOLA VEZ en un lienzo aparte y
-     luego se estampa; si se pintara losa a losa en cada fotograma, en el iPad
-     se notaría. */
+  /* EL SUELO DEL POBLADO (tercera versión, 20-09-2026)
+     Un pueblo medieval, no un tapiz: calles de adoquines irregulares con su
+     bordillo, plazas delante de las casas, y entre medias parches de tierra
+     batida, paja y piedra que no siguen ninguna cuadrícula. Colores de piedra
+     y de paja, apagados, que la primera versión cantaba demasiado.
+     Se dibuja UNA SOLA VEZ en un lienzo aparte y luego se estampa. */
   sueloDelPoblado(r) {
     if (this._sueloPoblado) return this._sueloPoblado;
-    const ESC = 0.8;                                 // se guarda algo más chico
+    const ESC = 0.85;
     const c = document.createElement('canvas');
     c.width = Math.round(r.rx * 2 * ESC);
     c.height = Math.round(r.ry * 2 * ESC);
@@ -13318,67 +13335,116 @@ const Juego = {
     g.scale(ESC, ESC);
     g.translate(-(r.x - r.rx), -(r.y - r.ry));
 
-    const azar = (n) => {                            // siempre el mismo «azar»
-      const x = Math.sin(n * 12.9898) * 43758.5453;
-      return x - Math.floor(x);
+    let semilla = 7;
+    const az = () => {                                // siempre el mismo azar
+      semilla = (semilla * 16807) % 2147483647;
+      return semilla / 2147483647;
     };
-    const losa = (x, y, w, h, a, tono) => {
-      g.save(); g.translate(x, y); g.rotate(a);
-      g.fillStyle = tono;
-      g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 3); g.fill();
-      g.strokeStyle = 'rgba(120,110,86,0.16)'; g.lineWidth = 1.6; g.stroke();
-      g.restore();
-    };
-    const TONOS = ['rgba(255,252,236,0.30)', 'rgba(244,240,218,0.26)',
-                   'rgba(232,228,204,0.24)', 'rgba(250,246,226,0.20)'];
+    const dentro = (x, y, k) =>
+      Math.pow((x - r.x) / r.rx, 2) + Math.pow((y - r.y) / r.ry, 2) <= (k || 1);
 
-    // la tierra clara del pueblo, de fondo
-    g.fillStyle = 'rgba(238,236,206,0.34)';
+    const PIEDRA = ['rgba(212,207,192,0.55)', 'rgba(198,192,176,0.50)',
+                    'rgba(224,219,203,0.50)', 'rgba(188,183,168,0.45)'];
+    const PAJA   = ['rgba(226,206,150,0.40)', 'rgba(214,193,136,0.36)'];
+    const TIERRA = ['rgba(205,186,150,0.45)', 'rgba(190,170,133,0.40)'];
+
+    // 1. LA TIERRA DEL PUEBLO, de fondo
+    g.fillStyle = 'rgba(214,201,168,0.36)';
     g.fillRect(r.x - r.rx, r.y - r.ry, r.rx * 2, r.ry * 2);
 
-    // alguna losa suelta por los rincones, sin orden
-    for (let k = 0; k < 90; k++) {
-      const a = azar(k) * 6.28, d = 0.35 + azar(k + 500) * 0.6;
-      losa(r.x + Math.cos(a) * r.rx * d, r.y + Math.sin(a) * r.ry * d,
-           26 + azar(k + 9) * 10, 18 + azar(k + 3) * 6, azar(k + 77) * 3, TONOS[k % 4]);
+    // 2. LOS PARCHES: manchas de tierra, paja y piedra suelta, sin orden
+    for (let k = 0; k < 120; k++) {
+      const a = az() * 6.28, d = Math.sqrt(az()) * 0.95;
+      const x = r.x + Math.cos(a) * r.rx * d, y = r.y + Math.sin(a) * r.ry * d;
+      const cual = az();
+      const tono = cual < 0.42 ? TIERRA[k % 2] : cual < 0.78 ? PAJA[k % 2] : PIEDRA[k % 4];
+      const w = 60 + az() * 130, h = w * (0.4 + az() * 0.3);
+      g.save(); g.translate(x, y); g.rotate(az() * 3.14);
+      g.fillStyle = tono;
+      g.beginPath();
+      for (let v = 0; v < 9; v++) {                   // mancha irregular
+        const ang = v / 9 * 6.28, rr = 0.7 + az() * 0.6;
+        const px = Math.cos(ang) * w / 2 * rr, py = Math.sin(ang) * h / 2 * rr;
+        v ? g.lineTo(px, py) : g.moveTo(px, py);
+      }
+      g.closePath(); g.fill();
+      g.restore();
+      // briznas de paja sobre los parches pajizos
+      if (cual >= 0.42 && cual < 0.78) {
+        g.strokeStyle = 'rgba(190,165,95,0.30)'; g.lineWidth = 1.5;
+        for (let b = 0; b < 7; b++) {
+          const bx = x + (az() - 0.5) * w * 0.7, by = y + (az() - 0.5) * h * 0.7, ba = az() * 3.14;
+          g.beginPath();
+          g.moveTo(bx, by); g.lineTo(bx + Math.cos(ba) * 11, by + Math.sin(ba) * 11); g.stroke();
+        }
+      }
     }
 
-    // LAS PLAZAS de delante de cada casa
+    // 3. PIEDRAS SUELTAS, medio hundidas
+    for (let k = 0; k < 70; k++) {
+      const a = az() * 6.28, d = Math.sqrt(az()) * 0.92;
+      const x = r.x + Math.cos(a) * r.rx * d, y = r.y + Math.sin(a) * r.ry * d;
+      g.fillStyle = PIEDRA[k % 4];
+      g.beginPath(); g.ellipse(x, y, 7 + az() * 9, 5 + az() * 5, az() * 3, 0, 7); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.18)';
+      g.beginPath(); g.ellipse(x - 2, y - 2, 4 + az() * 3, 2.5 + az() * 2, 0, 0, 7); g.fill();
+    }
+
+    // 4. LAS PLAZAS de delante de cada casa: losas grandes, cada plaza a su aire
     MUNDO.lugares.forEach(l => {
-      if (!l.accion) return;
-      if (Math.pow((l.x - r.x) / r.rx, 2) + Math.pow((l.y - r.y) / r.ry, 2) > 0.92) return;
-      const giro = azar(l.x + l.y) * 1.2;            // cada plaza, a su aire
-      const RADIO = 96;
-      g.save(); g.translate(l.x, l.y + 24); g.rotate(giro);
-      for (let fx = -2; fx <= 2; fx++) for (let fy = -2; fy <= 2; fy++) {
-        const px = fx * 38, py = fy * 26;
-        if (Math.hypot(px, py * 1.5) > RADIO) continue;
-        losa(px, py, 34, 22, 0, TONOS[(fx + fy + 4) % 4]);
+      if (!l.accion || !dentro(l.x, l.y, 0.92)) return;
+      const giro = az() * 1.2, RADIO = 104;
+      g.save(); g.translate(l.x, l.y + 26); g.rotate(giro);
+      for (let fx = -3; fx <= 3; fx++) for (let fy = -3; fy <= 3; fy++) {
+        const px = fx * 36 + (fy % 2 ? 18 : 0), py = fy * 24;
+        if (Math.hypot(px, py * 1.6) > RADIO) continue;
+        g.save(); g.translate(px, py); g.rotate((az() - 0.5) * 0.06);
+        g.fillStyle = PIEDRA[(fx + fy + 8) % 4];
+        g.beginPath(); g.roundRect(-16, -10, 32 + az() * 3, 20 + az() * 2, 3); g.fill();
+        g.strokeStyle = 'rgba(120,112,92,0.22)'; g.lineWidth = 1.6; g.stroke();
+        g.restore();
       }
       g.restore();
-      g.strokeStyle = 'rgba(150,140,112,0.22)'; g.lineWidth = 5;   // el cerco
-      g.beginPath(); g.ellipse(l.x, l.y + 24, RADIO, RADIO * 0.62, giro, 0, 7); g.stroke();
+      g.strokeStyle = 'rgba(150,140,112,0.26)'; g.lineWidth = 6;
+      g.beginPath(); g.ellipse(l.x, l.y + 26, RADIO, RADIO * 0.62, giro, 0, 7); g.stroke();
     });
 
-    // LAS CALLES: losas de través siguiendo cada camino
+    // 5. LAS CALLES: adoquines irregulares siguiendo cada camino, con bordillo
     this.tramos().forEach(t => {
       const [x1, y1, x2, y2] = t;
       const largo = Math.hypot(x2 - x1, y2 - y1);
       if (!largo) return;
       const ang = Math.atan2(y2 - y1, x2 - x1);
-      const PASO = 26;
-      for (let d = 0; d <= largo; d += PASO) {
+      const nx = Math.cos(ang + Math.PI / 2), ny = Math.sin(ang + Math.PI / 2);
+      // el bordillo: piedras gordas a los lados
+      for (let d = 0; d <= largo; d += 30) {
         const x = x1 + (x2 - x1) * d / largo, y = y1 + (y2 - y1) * d / largo;
-        if (Math.pow((x - r.x) / r.rx, 2) + Math.pow((y - r.y) / r.ry, 2) > 1) continue;
-        // dos hileras, a la traba, atravesadas al camino
-        const n = Math.round(d / PASO);
+        if (!dentro(x, y)) continue;
         [-1, 1].forEach(lado => {
-          const dx = Math.cos(ang + Math.PI / 2) * 17 * lado;
-          const dy = Math.sin(ang + Math.PI / 2) * 17 * lado;
-          const corre = n % 2 ? PASO / 2 : 0;
-          losa(x + dx + Math.cos(ang) * corre, y + dy + Math.sin(ang) * corre,
-               22, 30, ang, TONOS[(n + (lado > 0 ? 1 : 0)) % 4]);
+          g.save(); g.translate(x + nx * 30 * lado, y + ny * 30 * lado); g.rotate(ang);
+          g.fillStyle = 'rgba(176,170,152,0.55)';
+          g.beginPath(); g.roundRect(-9, -7, 18 + az() * 4, 14, 4); g.fill();
+          g.restore();
         });
+      }
+      // los adoquines, en hileras atravesadas y de tamaños distintos
+      for (let d = 0; d <= largo; d += 22) {
+        const x = x1 + (x2 - x1) * d / largo, y = y1 + (y2 - y1) * d / largo;
+        if (!dentro(x, y)) continue;
+        for (let lado = -1; lado <= 1; lado++) {
+          const corre = (Math.round(d / 22) % 2) * 9;
+          const px = x + nx * (lado * 17 + corre * 0), py = y + ny * (lado * 17);
+          g.save();
+          g.translate(px + Math.cos(ang) * corre, py + Math.sin(ang) * corre);
+          g.rotate(ang + (az() - 0.5) * 0.12);
+          g.fillStyle = PIEDRA[Math.floor(az() * 4)];
+          const w = 16 + az() * 5, h = 22 + az() * 6;
+          g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 4); g.fill();
+          g.strokeStyle = 'rgba(112,104,84,0.26)'; g.lineWidth = 1.6; g.stroke();
+          g.fillStyle = 'rgba(255,255,255,0.13)';
+          g.beginPath(); g.roundRect(-w / 2 + 2, -h / 2 + 2, w - 8, 4, 2); g.fill();
+          g.restore();
+        }
       }
     });
 
@@ -13399,6 +13465,167 @@ const Juego = {
       }
       ctx.restore();
     });
+  },
+
+  /* LOS TRASTOS DEL POBLADO (20-09-2026)
+     Cosas de pueblo medieval repartidas por los huecos: heno, barriles, un
+     carro, leña, un tendedero, huertos, el abrevadero, antorchas, cajas y un
+     banco de piedra. Son decorado: no estorban al andar. */
+  trasto(ctx, t) {
+    const f = this['trasto_' + t.tipo];
+    if (!f) return;
+    ctx.save(); f.call(this, ctx, t.x, t.y); ctx.restore();
+  },
+
+  trasto_heno(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 30, 0);
+    ctx.fillStyle = '#E0C070';
+    ctx.beginPath(); ctx.ellipse(x, y - 14, 30, 22, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#EDD98A';
+    ctx.beginPath(); ctx.ellipse(x - 5, y - 20, 20, 14, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,130,60,0.45)'; ctx.lineWidth = 1.6;
+    for (let k = 0; k < 9; k++) {
+      const a = k * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * 10, y - 16 + Math.sin(a) * 7);
+      ctx.lineTo(x + Math.cos(a) * 29, y - 16 + Math.sin(a) * 20); ctx.stroke();
+    }
+    ctx.strokeStyle = '#B9873C'; ctx.lineWidth = 3;      // la cuerda
+    ctx.beginPath(); ctx.ellipse(x, y - 14, 30, 22, 0, 0.4, 2.7); ctx.stroke();
+  },
+
+  trasto_barriles(ctx, x, y) {
+    [[0, 0, 1], [26, 6, 0.9], [13, -16, 0.8]].forEach(([dx, dy, e]) => {
+      const bx = x + dx, by = y + dy;
+      this.sombra(ctx, bx, by + 2, 15 * e, 0);
+      ctx.fillStyle = '#A9714B';
+      ctx.beginPath(); ctx.roundRect(bx - 14 * e, by - 34 * e, 28 * e, 36 * e, 7 * e); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.beginPath(); ctx.roundRect(bx - 11 * e, by - 32 * e, 8 * e, 32 * e, 4 * e); ctx.fill();
+      ctx.fillStyle = '#6B4226';
+      [-24, -12].forEach(h => ctx.fillRect(bx - 15 * e, by + h * e, 30 * e, 4 * e));
+      ctx.fillStyle = '#C08A5E';
+      ctx.beginPath(); ctx.ellipse(bx, by - 34 * e, 14 * e, 6 * e, 0, 0, 7); ctx.fill();
+    });
+  },
+
+  trasto_carro(ctx, x, y) {
+    this.sombra(ctx, x, y + 4, 44, 0);
+    ctx.fillStyle = '#8A5A3B';                            // las varas
+    ctx.fillRect(x + 26, y - 20, 42, 6);
+    ctx.fillStyle = '#A9714B';                            // la caja
+    ctx.beginPath(); ctx.roundRect(x - 40, y - 42, 72, 34, 5); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    for (let k = 0; k < 4; k++) ctx.fillRect(x - 36 + k * 18, y - 42, 3, 34);
+    ctx.fillStyle = '#E0C070';                            // heno dentro
+    ctx.beginPath(); ctx.ellipse(x - 4, y - 44, 30, 9, 0, 0, 7); ctx.fill();
+    [[-24, 0], [16, 0]].forEach(([dx]) => {               // las ruedas
+      ctx.fillStyle = '#6B4226';
+      ctx.beginPath(); ctx.arc(x + dx, y - 6, 15, 0, 7); ctx.fill();
+      ctx.fillStyle = '#C9BFA8';
+      ctx.beginPath(); ctx.arc(x + dx, y - 6, 5, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#C9BFA8'; ctx.lineWidth = 2;
+      for (let k = 0; k < 6; k++) {
+        const a = k * 1.05;
+        ctx.beginPath(); ctx.moveTo(x + dx, y - 6);
+        ctx.lineTo(x + dx + Math.cos(a) * 14, y - 6 + Math.sin(a) * 14); ctx.stroke();
+      }
+    });
+  },
+
+  trasto_lenia(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 28, 0);
+    for (let fila = 0; fila < 3; fila++)
+      for (let k = 0; k < 4 - fila; k++) {
+        const lx = x - 24 + k * 16 + fila * 8, ly = y - 8 - fila * 13;
+        ctx.fillStyle = k % 2 ? '#A9714B' : '#8A5A3B';
+        ctx.beginPath(); ctx.roundRect(lx, ly - 6, 15, 13, 4); ctx.fill();
+        ctx.fillStyle = '#E0C9A6';
+        ctx.beginPath(); ctx.ellipse(lx + 2, ly, 3, 5, 0, 0, 7); ctx.fill();
+      }
+  },
+
+  trasto_tendedero(ctx, x, y) {
+    [-46, 46].forEach(dx => {
+      this.sombra(ctx, x + dx, y + 2, 11, 0);
+      ctx.fillStyle = '#8A5A3B'; ctx.fillRect(x + dx - 5, y - 60, 10, 62);
+      ctx.fillStyle = '#A9714B'; ctx.fillRect(x + dx - 5, y - 60, 4, 62);
+      ctx.fillStyle = '#6B4226';                      // el travesaño en cruz
+      ctx.fillRect(x + dx - 13, y - 58, 26, 5);
+    });
+    ctx.strokeStyle = '#C9BFA8'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 46, y - 54);
+    ctx.quadraticCurveTo(x, y - 44, x + 46, y - 54); ctx.stroke();
+    ['#E8927E', '#8FD3F4', '#FFE066'].forEach((col, k) => {
+      const tx = x - 28 + k * 28, ty = y - 50 + Math.abs(k - 1) * -3;
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.roundRect(tx - 9, ty + 4, 18, 22, 3); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.08)';
+      ctx.fillRect(tx - 9, ty + 4, 18, 4);
+    });
+  },
+
+  trasto_huerto(ctx, x, y) {
+    ctx.fillStyle = 'rgba(150,120,80,0.35)';
+    ctx.beginPath(); ctx.ellipse(x, y - 4, 44, 26, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#A9714B'; ctx.lineWidth = 3;        // el cercado
+    for (let k = 0; k < 9; k++) {
+      const a = k / 9 * 6.28;
+      const px = x + Math.cos(a) * 46, py = y - 4 + Math.sin(a) * 27;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - 14); ctx.stroke();
+    }
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(x, y - 12, 46, 27, 0, 0, 7); ctx.stroke();
+    for (let k = 0; k < 7; k++) {                          // las matas
+      const a = k * 0.9, px = x + Math.cos(a) * 26, py = y - 4 + Math.sin(a) * 14;
+      ctx.fillStyle = '#4E9C5C';
+      ctx.beginPath(); ctx.ellipse(px, py, 8, 6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = k % 3 === 0 ? '#E8506B' : '#6FB86F';
+      ctx.beginPath(); ctx.arc(px + 3, py - 3, 2.8, 0, 7); ctx.fill();
+    }
+  },
+
+  trasto_abrevadero(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 30, 0);
+    ctx.fillStyle = '#B3A991';
+    ctx.beginPath(); ctx.roundRect(x - 32, y - 22, 64, 26, 5); ctx.fill();
+    ctx.fillStyle = '#8FD3F4';
+    ctx.beginPath(); ctx.roundRect(x - 27, y - 18, 54, 12, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.beginPath(); ctx.ellipse(x - 10, y - 14, 9, 2.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#C9BFA8';
+    ctx.fillRect(x - 34, y - 4, 68, 6);
+  },
+
+  trasto_antorcha(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 10, 0);
+    ctx.fillStyle = '#8A5A3B'; ctx.fillRect(x - 4, y - 62, 8, 64);
+    ctx.fillStyle = '#6B4226';
+    ctx.beginPath(); ctx.ellipse(x, y - 62, 9, 5, 0, 0, 7); ctx.fill();
+    this.llama(ctx, x, y - 60, 26, '#FF9130', x);
+  },
+
+  trasto_cajas(ctx, x, y) {
+    [[0, 0, 1], [22, 4, 0.85], [10, -22, 0.7]].forEach(([dx, dy, e]) => {
+      const bx = x + dx, by = y + dy;
+      this.sombra(ctx, bx, by + 2, 14 * e, 0);
+      ctx.fillStyle = '#C08A5E';
+      ctx.beginPath(); ctx.roundRect(bx - 15 * e, by - 28 * e, 30 * e, 30 * e, 3); ctx.fill();
+      ctx.strokeStyle = '#8A5A3B'; ctx.lineWidth = 3 * e;
+      ctx.strokeRect(bx - 15 * e, by - 28 * e, 30 * e, 30 * e);
+      ctx.beginPath(); ctx.moveTo(bx - 15 * e, by - 28 * e); ctx.lineTo(bx + 15 * e, by + 2 * e); ctx.stroke();
+    });
+  },
+
+  trasto_banco(ctx, x, y) {
+    this.sombra(ctx, x, y + 2, 30, 0);
+    ctx.fillStyle = '#B3A991';
+    ctx.fillRect(x - 30, y - 16, 60, 12);
+    ctx.fillStyle = '#9A917C';
+    ctx.fillRect(x - 24, y - 4, 10, 8);
+    ctx.fillRect(x + 14, y - 4, 10, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(x - 30, y - 16, 60, 4);
   },
 
   /* LAS VALLAS DE LOS RECINTOS
