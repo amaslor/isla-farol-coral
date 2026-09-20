@@ -99,7 +99,7 @@
   #mandos .accion{background:var(--verde); color:#fff; font-size:26px}
   .cruceta{display:flex; flex-direction:column; align-items:center; gap:6px}
   .cruceta div{display:flex; gap:6px}
-  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa{font-size:20px; border:0; border-radius:10px;
+  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada{font-size:20px; border:0; border-radius:10px;
            padding:4px 8px; background:rgba(255,255,255,.85); cursor:pointer; margin-right:6px}
 
   /* Los avisos van abajo: arriba taparían las piedras del río */
@@ -284,7 +284,7 @@
     #hud .barrita{width:34px}
     #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
     #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
-    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa{font-size:17px; padding:3px 5px; margin-right:0}
+    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada{font-size:17px; padding:3px 5px; margin-right:0}
     #volverInicio{font-size:17px; text-decoration:none; padding:0 3px}
 
     /* El hada, más pequeña y por debajo de la barra de arriba */
@@ -508,6 +508,7 @@
     <button id="bCasa" title="Volver a casa (tecla I)">🏠</button>
     <button id="bVehiculo" class="oculto" title="Montarte (tecla B)">🚲</button>
     <button id="bPantalla" title="Pantalla completa (tecla P)">⛶</button>
+    <button id="bVozHada" class="oculto" title="La voz de Lumi">🧚</button>
     <button id="bSonido" title="Sonido">🔊</button>
     <button class="enlace" id="volverInicio"><span class="en-ancho">cambiar de jugadora</span><span class="en-estrecho">👤</span></button></span>
   </div>
@@ -5082,6 +5083,7 @@ const Estado = {
       facilitados: {},          // paradas que vuelven con números más fáciles
       comprado: [],             // ids de prendas compradas
       silencio: false,          // si prefiere jugar sin sonido
+      vozHada: true,            // si quiere OÍR a Lumi (su botón 🧚 de la barra)
       descubiertos: {},         // sitios de la isla que ya ha visitado
       secretos: {},             // cosas escondidas que ya ha encontrado
       mascotas: [],             // animales del animalario (se empieza sin ninguno)
@@ -20669,8 +20671,15 @@ if (typeof ampliacion === 'function') ampliacion({ id: 'hadaHabla' });
       return a;
     },
 
+    /* ¿Quiere oírla? Es de cada jugadora y se guarda en su partida
+       (`vozHada`). Mientras no lo toque, sí: para eso se ha ganado. */
+    quiere() {
+      return !(typeof Estado !== 'undefined' && Estado.actual && Estado.actual.vozHada === false);
+    },
+
     decir(texto) {
       if (typeof Sonido !== 'undefined' && !Sonido.encendido) return;
+      if (!this.quiere()) return;
       const id = this.nombre(texto);
       if (VOZ_LUMI.indexOf(id) < 0) return;         // esa frase no está grabada
       this.callar();                                 // no se pisan dos frases
@@ -20698,6 +20707,43 @@ if (typeof ampliacion === 'function') ampliacion({ id: 'hadaHabla' });
 
   /* Al cambiar de pestaña o minimizar, el sonido del juego se suspende entero
      (Sonido.pausar) y la voz va colgada de ahí, así que se calla sola. */
+
+  /* EL BOTÓN 🧚 DE LA BARRA
+     Calla solo a Lumi: la música, el mar y los demás sonidos siguen. No
+     aparece hasta que se gana la expansión, para no enseñar un botón que no
+     hace nada. Se refresca al entrar al mundo y cada vez que se toca. */
+  const boton = () => document.getElementById('bVozHada');
+
+  Voz.pintarBoton = function () {
+    const b = boton();
+    if (!b) return;
+    const ganada = typeof sorpresaAbierta !== 'function' || sorpresaAbierta('hadaHabla');
+    b.classList.toggle('oculto', !ganada);
+    if (!ganada) return;
+    b.textContent = this.quiere() ? '🧚' : '🤐';
+    b.title = this.quiere() ? 'Que Lumi no hable (solo su voz)' : 'Que Lumi vuelva a hablar';
+  };
+
+  if (boton()) {
+    boton().onclick = () => {
+      if (Estado.actual) {
+        Estado.actual.vozHada = !Voz.quiere();
+        Estado.guardar();
+      }
+      if (!Voz.quiere()) Voz.callar();
+      Voz.pintarBoton();
+    };
+  }
+
+  /* Al empezar a jugar (y al cambiar de jugadora) el botón se pone al día */
+  if (typeof Juego !== 'undefined' && Juego.iniciar) {
+    const iniciar = Juego.iniciar;
+    Juego.iniciar = function () {
+      const r = iniciar.apply(this, arguments);
+      Voz.pintarBoton();
+      return r;
+    };
+  }
 
   window.HadaVoz = Voz;
 })();
