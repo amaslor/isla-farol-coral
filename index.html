@@ -20793,7 +20793,7 @@ if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
      Se calculan una vez, en un reparto fijo, y solo se pintan los que caen
      dentro de la pantalla. */
   const hojas = [], charcos = [];
-  for (let k = 0; k < 700; k++) {
+  for (let k = 0; k < 1600; k++) {
     const a = k * 2.399, rr = Math.sqrt(((k * 7919) % 1000) / 1000) * 0.95, i = MUNDO.isla;
     hojas.push([i.cx + Math.cos(a) * (i.rx - 120) * rr, i.cy + Math.sin(a) * (i.ry - 100) * rr,
                 a, OTONO.hoja[k % 4]]);
@@ -20837,7 +20837,7 @@ if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
   function doblar(dibujo) {
     return function (ctx, x, y) {
       const r = OTONO.racha(this.t);
-      const inc = (0.015 + r * 0.075) * Math.sin(this.t * 2.1 + x * 0.008);
+      const inc = (0.02 + r * 0.10) * Math.sin(this.t * 2.1 + x * 0.008);
       ctx.save();
       ctx.translate(x, y); ctx.rotate(inc); ctx.translate(-x, -y);
       const v = dibujo.apply(this, arguments);
