@@ -20767,18 +20767,22 @@ ampliacion({ id: 'lluvia' });          // para que el Farol sepa que está puest
 if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
   const J = Juego;
 
-  /* ---- el suelo: prado ocre (debajo de los caminos y del poblado) */
-  const dibujarIsla = J.dibujarIsla;
-  J.dibujarIsla = function (ctx) {
-    dibujarIsla.call(this, ctx);
+  /* ---- el suelo: el prado, ocre.
+     Va colgado de dibujarZonas y no de dibujarIsla porque las zonas (el
+     bosque, la feria, el prado rosa) se pintan DESPUÉS de la isla y taparían
+     el tinte. Así queda por encima de todas ellas y por debajo de los
+     caminos, del suelo del poblado y de las vallas, que siguen limpios. */
+  const dibujarZonas = J.dibujarZonas;
+  J.dibujarZonas = function (ctx) {
+    dibujarZonas.apply(this, arguments);
     /* Dentro de la mina esto no se pinta: allí la propia mina tapa el mundo
        con roca y el otoño le caería encima. */
     const j = this.jugador;
     if (j && !OTONO.aCieloAbierto(j.x, j.y)) return;
     const i = MUNDO.isla;
-    ctx.fillStyle = 'rgba(206,150,62,0.30)';
+    ctx.fillStyle = 'rgba(208,146,56,0.36)';
     ctx.beginPath(); ctx.ellipse(i.cx, i.cy, i.rx - 130, i.ry - 110, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(150,120,70,0.14)';
+    ctx.fillStyle = 'rgba(146,112,58,0.18)';
     [[-360, -200, 400, 210], [300, 140, 320, 200], [-140, 340, 280, 150],
      [200, -340, 240, 140]].forEach(m => {
       ctx.beginPath(); ctx.ellipse(i.cx + m[0], i.cy + m[1], m[2], m[3], 0.3, 0, 7); ctx.fill();
