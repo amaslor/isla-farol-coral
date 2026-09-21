@@ -21050,16 +21050,34 @@ if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
                 'la3','-','-','-','do3','-','-','-', 're3','-','-','-','mi3','-','-','-'] };
   }
 
+  /* ---- EL CHUBASQUERO DE QUIEN YA COLOCÓ EL CRISTAL
+     Gala colocó el Cristal de Lluvia el 21-09-2026, antes de que esto
+     existiera: el Farol se encendió, pero el juego no tenía ningún
+     chubasquero que darle. Al entrar se comprueba si esta jugadora tiene ese
+     cristal puesto en el Farol y todavía no tiene la prenda; si es así, se le
+     da (no se le pone: ya está jugando con otra ropa, que elija ella). */
+  function regaloAtrasado() {
+    if (typeof Sorpresas === 'undefined' || !Estado.actual) return false;
+    const pr = Sorpresas.progreso();
+    if (!pr || !(pr.puestos || []).includes('lluvia')) return false;
+    if (Estado.actual.comprado.includes('equipolluvia')) return false;
+    Estado.dar('equipolluvia');
+    return true;
+  }
+
   /* ---- Lumi lo cuenta al entrar (una vez por partida abierta) */
   let avisado = false;
   const iniciar = J.iniciar;
   J.iniciar = function () {
     const v = iniciar.apply(this, arguments);
+    const atrasado = regaloAtrasado();
     if (!avisado) {
       avisado = true;
       setTimeout(() => Hada.decir('🍂 ¡Ha llegado el otoño a la isla! Los árboles se han puesto ' +
         'de color naranja, se ha levantado viento y está lloviendo. Cuidado con los charcos… ' +
-        'o písalos, que para eso tienes botas de agua.', 11), 6000);
+        'o písalos, que para eso tienes botas de agua.' +
+        (atrasado ? ' Ah, y tu premio estaba de camino: tienes un <b>chubasquero amarillo con ' +
+                    'capucha y botas de agua</b> esperándote en el armario.' : ''), 11), 6000);
     }
     return v;
   };
