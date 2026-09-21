@@ -736,6 +736,9 @@ const AJUSTES = {
 
     { id: 'lluvia', icono: '🌧️', nombre: 'El otoño llega a la isla', clima: true,
       cristal: { nombre: 'Cristal de Lluvia', color: '#8FD3F4' },
+      regalo: { tipo: 'conjuntos', id: 'equipolluvia',
+                nota: 'amarillo, con capucha y botas de agua para pisar charcos' },
+      pista: 'La isla ha cambiado de color: los árboles están naranjas, se ha levantado <b>viento</b> y está <b>lloviendo</b>. Hay charcos por todas partes… y tú llevas botas de agua.',
       aviso: '¡40 retos! Dile a papá lo del otoño: el chubasquero, la lluvia y el viento.' },
 
     { id: 'moto', icono: '🛵', nombre: 'La moto de Tià, y un taller más grande',
@@ -20617,6 +20620,444 @@ ROPA.mascotas.push(
       [6, 8.5, 11].forEach(fx => ctx.fillRect(fx - 0.5, -17, 1, 2.6));
     }
     ctx.restore();
+  };
+})();
+
+</script>
+<script>
+/* === ampliaciones/lluvia.js === */
+/* EL OTOÑO LLEGA A LA ISLA  ·  el cuarto Cristal Mayor (21-09-2026)
+   ─────────────────────────────────────────────────────────────────
+   Lo pidió Antonio el 21-09-2026, el día que Gala ganó el Cristal de Lluvia:
+   «que se note claramente que está en otoño, con todo tipo de elementos».
+
+   Es una expansión de CLIMA (`clima: true` en AJUSTES.sorpresas): no añade
+   sitios nuevos, repinta la isla entera. Manda el último clima ganado, así
+   que cuando llegue Halloween este otoño se retira solo.
+
+   Qué cambia mientras dura:
+     · el prado se vuelve ocre y aparecen hojas secas y charcos por el suelo
+       (también por las calles del poblado)
+     · los árboles se ponen de color otoño y salen setas junto a las rocas
+     · sopla el viento A RÁFAGAS: toda la vegetación se dobla a la vez, la
+       lluvia se tuerce, vuelan hojas y el ruido del viento sube y baja
+     · llueve de verdad: gotas, salpicaduras en el suelo, gotas en la pantalla
+       y nubes bajas cruzando
+     · la música de la isla, en tono menor
+     · al pisar un charco, salpica y suena
+     · REGALO: el chubasquero amarillo con capucha y botas de agua, que se
+       pone en el momento y no se vende en ninguna tienda (regla 33)
+   Dentro de la mina y en la Isla Tenebrosa NO llueve: la una es un interior
+   y la otra tiene su propia atmósfera. */
+
+const OTONO = {
+
+  hoja:  ['#C8642D', '#E0A83A', '#B5452B', '#D9822B'],
+  copa:  ['#C8642D', '#B5452B', '#D9822B', '#E0A83A', '#A8552A'],
+
+  /* ¿Manda el otoño en la isla? En la página de pruebas se enciende con
+     prueba-ampliaciones.html#otono (como Halloween con #halloween), para
+     poder verlo sin ganarse el cristal. */
+  activo() {
+    if (typeof window === 'undefined') return true;          // node: se comprueba todo
+    try { if (/prueba/.test(location.pathname)) return /otono|lluvia/.test(location.hash); } catch (e) {}
+    return typeof climaDeLaIsla === 'function' && climaDeLaIsla() === 'lluvia';
+  },
+
+  /* ¿Aquí cae agua? Bajo tierra no, y en la Isla Tenebrosa tampoco. */
+  aCieloAbierto(x, y) {
+    if (typeof Mina !== 'undefined' && Mina.dentro && Mina.dentro(x, y)) return false;
+    if (typeof Tenebroso !== 'undefined' && Tenebroso.enIsla && Tenebroso.enIsla(x, y)) return false;
+    return true;
+  },
+
+  /* LA RÁFAGA: un número de 0 a 1 que sube y baja sin repetirse nunca igual.
+     Lo usan el viento, la lluvia, las hojas voladoras y el sonido, todos a la
+     vez: por eso se nota que es la misma ráfaga. */
+  racha(t) {
+    const a = Math.sin(t * 0.31), b = Math.sin(t * 0.13 + 1.7), c = Math.sin(t * 0.07 + 4.2);
+    return Math.max(0, (a * 0.45 + b * 0.35 + c * 0.2) * 1.15 + 0.12);
+  },
+};
+
+/* ------------------------------------------------- EL EQUIPO DE LLUVIA
+   El chubasquero es el REGALO del cristal, y no se vende en ninguna tienda
+   (regla 33). Se añade SIEMPRE, aunque todavía no haya otoño: el juego se lo
+   da en el momento de colocar el cristal y solo después recarga la página.
+   Las botas van dentro del propio conjunto, dibujadas: las «Botas de agua»
+   sueltas ya existen desde antes (premio del reto de las piedras). */
+if (typeof ROPA !== 'undefined') {
+  ROPA.conjuntos.push(
+    { id: 'equipolluvia', nombre: 'Chubasquero y botas de agua', forma: 'vestido',
+      color: '#FFC72C', detalle: '#E09E12', precio: null, grupo: 'otono' });
+}
+
+/* Cómo se pinta. Va siempre, llueva o no: si lo lleva puesto, se ve. */
+if (typeof Avatar !== 'undefined' && Avatar.dibujar) (function () {
+  const AMARILLO = '#FFC72C', SOMBRA = '#D99A0E', REFLEJO = '#FFF6D8';
+  const BOTA = '#2F7D62', BOTACLARA = '#54A588';
+
+  const dibujar = Avatar.dibujar;
+  Avatar.dibujar = function (ctx, x, yPies, esc, look, mirando, paso) {
+    dibujar.apply(this, arguments);
+    if (look.conjunto !== 'equipolluvia') return;
+
+    ctx.save();
+    ctx.translate(x, yPies);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+    const bal = Math.sin(paso || 0) * 3;
+
+    ctx.fillStyle = AMARILLO;                              // el chubasquero, acampanado
+    ctx.beginPath();
+    ctx.moveTo(-10, -36); ctx.lineTo(10, -36);
+    ctx.lineTo(14.5, -11); ctx.lineTo(-14.5, -11);
+    ctx.closePath(); ctx.fill();
+    Avatar.capsula(ctx, -11.5 - bal * 0.5, -27, 6.5, 16);  // las mangas
+    Avatar.capsula(ctx, 11.5 + bal * 0.5, -27, 6.5, 16);
+    ctx.fillStyle = SOMBRA;                                // los puños
+    Avatar.capsula(ctx, -11.5 - bal * 0.5, -21, 6.8, 3.4);
+    Avatar.capsula(ctx, 11.5 + bal * 0.5, -21, 6.8, 3.4);
+    ctx.fillStyle = REFLEJO;                               // la franja que brilla
+    ctx.beginPath();
+    ctx.moveTo(-13.4, -18); ctx.lineTo(13.4, -18);
+    ctx.lineTo(13.7, -15.4); ctx.lineTo(-13.7, -15.4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = SOMBRA;                                // la cremallera
+    ctx.fillRect(-1.1, -36, 2.2, 25);
+    [-8.5, 8.5].forEach(d => {                             // dos bolsillos
+      ctx.beginPath(); ctx.roundRect(d - 4, -26, 8, 5.5, 1.6); ctx.fill();
+    });
+
+    /* LA CAPUCHA, puesta: una herradura que rodea la cara. Se dibuja de una
+       pieza (primero el borde de fuera y luego, de vuelta, el de dentro), así
+       queda el hueco de la cara sin tener que recortar nada. */
+    ctx.fillStyle = AMARILLO;
+    ctx.beginPath();
+    ctx.moveTo(-21, -30);
+    ctx.quadraticCurveTo(-27, -60, 0, -64);
+    ctx.quadraticCurveTo(27, -60, 21, -30);
+    ctx.lineTo(13, -32);
+    ctx.quadraticCurveTo(15, -48, 0, -54);
+    ctx.quadraticCurveTo(-15, -48, -13, -32);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = SOMBRA; ctx.lineWidth = 1.3;         // el cordón de la capucha
+    ctx.beginPath();
+    ctx.moveTo(-13, -32); ctx.quadraticCurveTo(-15, -48, 0, -54);
+    ctx.quadraticCurveTo(15, -48, 13, -32);
+    ctx.stroke();
+
+    /* LAS BOTAS DE AGUA: se pintan al final, para que asomen por debajo del
+       chubasquero y no se las coma el faldón. */
+    [-5 + bal, 5 - bal].forEach(px => {
+      ctx.fillStyle = BOTA;
+      Avatar.capsula(ctx, px, -7, 7.5, 14);                // la caña
+      Avatar.capsula(ctx, px + 0.7, -3, 10, 6.5);          // el pie, más gordo
+      ctx.fillStyle = BOTACLARA;
+      ctx.fillRect(px - 4, -13.6, 8, 2.2);                 // el ribete de arriba
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.fillRect(px - 5.2, -1.3, 10.4, 1.5);             // la suela
+    });
+    ctx.restore();
+  };
+})();
+
+/* ------------------------------------------------------------- EL CLIMA */
+ampliacion({ id: 'lluvia' });          // para que el Farol sepa que está puesta
+
+if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
+  const J = Juego;
+
+  /* ---- el suelo: prado ocre (debajo de los caminos y del poblado) */
+  const dibujarIsla = J.dibujarIsla;
+  J.dibujarIsla = function (ctx) {
+    dibujarIsla.call(this, ctx);
+    /* Dentro de la mina esto no se pinta: allí la propia mina tapa el mundo
+       con roca y el otoño le caería encima. */
+    const j = this.jugador;
+    if (j && !OTONO.aCieloAbierto(j.x, j.y)) return;
+    const i = MUNDO.isla;
+    ctx.fillStyle = 'rgba(206,150,62,0.30)';
+    ctx.beginPath(); ctx.ellipse(i.cx, i.cy, i.rx - 130, i.ry - 110, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(150,120,70,0.14)';
+    [[-360, -200, 400, 210], [300, 140, 320, 200], [-140, 340, 280, 150],
+     [200, -340, 240, 140]].forEach(m => {
+      ctx.beginPath(); ctx.ellipse(i.cx + m[0], i.cy + m[1], m[2], m[3], 0.3, 0, 7); ctx.fill();
+    });
+  };
+
+  /* ---- hojas caídas y charcos, ENCIMA de todo el suelo (también del pueblo).
+     Se calculan una vez, en un reparto fijo, y solo se pintan los que caen
+     dentro de la pantalla. */
+  const hojas = [], charcos = [];
+  for (let k = 0; k < 700; k++) {
+    const a = k * 2.399, rr = Math.sqrt(((k * 7919) % 1000) / 1000) * 0.95, i = MUNDO.isla;
+    hojas.push([i.cx + Math.cos(a) * (i.rx - 120) * rr, i.cy + Math.sin(a) * (i.ry - 100) * rr,
+                a, OTONO.hoja[k % 4]]);
+  }
+  for (let k = 0; k < 130; k++) {
+    const a = k * 2.399 + 0.7, rr = Math.sqrt(((k * 5077) % 1000) / 1000) * 0.92, i = MUNDO.isla;
+    charcos.push([i.cx + Math.cos(a) * (i.rx - 180) * rr, i.cy + Math.sin(a) * (i.ry - 150) * rr,
+                  16 + (k % 5) * 7, k]);
+  }
+  const dibujarRio = J.dibujarRio;
+  J.dibujarRio = function (ctx) {
+    dibujarRio.apply(this, arguments);
+    const j = this.jugador;
+    if (j && !OTONO.aCieloAbierto(j.x, j.y)) return;
+    const x0 = this.camX - 40, y0 = this.camY - 40;
+    const x1 = x0 + this.ANCHO + 80, y1 = y0 + this.ALTO + 80;
+    charcos.forEach(c => {                                    // primero los charcos
+      if (c[0] < x0 || c[0] > x1 || c[1] < y0 || c[1] > y1) return;
+      ctx.fillStyle = 'rgba(90,130,150,0.30)';
+      ctx.beginPath(); ctx.ellipse(c[0], c[1], c[2], c[2] * 0.42, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(c[0] - c[2] * 0.25, c[1] - c[2] * 0.1, c[2] * 0.4, c[2] * 0.14, 0, 0, 7); ctx.fill();
+      const on = (this.t * 2 + c[3]) % 2.2;                   // las ondas de las gotas
+      if (on < 1) {
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.30 * (1 - on)) + ')';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(c[0] + (c[3] % 7) - 3, c[1], c[2] * 0.55 * on, c[2] * 0.23 * on, 0, 0, 7);
+        ctx.stroke();
+      }
+    });
+    hojas.forEach(h => {                                      // y encima las hojas
+      if (h[0] < x0 || h[0] > x1 || h[1] < y0 || h[1] > y1) return;
+      ctx.fillStyle = h[3];
+      ctx.beginPath(); ctx.ellipse(h[0], h[1], 5, 2.4, h[2], 0, 7); ctx.fill();
+    });
+  };
+
+  /* ---- el viento se ve: toda la vegetación se dobla a la vez con la ráfaga */
+  function doblar(dibujo) {
+    return function (ctx, x, y) {
+      const r = OTONO.racha(this.t);
+      const inc = (0.015 + r * 0.075) * Math.sin(this.t * 2.1 + x * 0.008);
+      ctx.save();
+      ctx.translate(x, y); ctx.rotate(inc); ctx.translate(-x, -y);
+      const v = dibujo.apply(this, arguments);
+      ctx.restore();
+      return v;
+    };
+  }
+  J.palmera = doblar(J.palmera);
+  J.mata = doblar(J.mata);
+
+  const arbolOtono = function (ctx, x, y) {                   // el árbol, de color otoño
+    this.sombra(ctx, x, y, 22, 0);
+    ctx.fillStyle = '#7A4B33'; ctx.fillRect(x - 6, y - 46, 12, 46);
+    [[0, -62, 30, 0], [-22, -48, 21, 1], [22, -48, 21, 2],
+     [-8, -72, 20, 3], [14, -66, 16, 0]].forEach(c => {
+      ctx.fillStyle = OTONO.copa[c[3]];
+      ctx.beginPath(); ctx.arc(x + c[0], y + c[1], c[2], 0, 7); ctx.fill();
+    });
+    ctx.fillStyle = '#E0A83A';                                // dos hojas a punto de caer
+    ctx.beginPath(); ctx.ellipse(x + 26, y - 30, 4, 2, 0.6, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x - 27, y - 26, 4, 2, -0.5, 0, 7); ctx.fill();
+  };
+  J.arbol = doblar(arbolOtono);
+
+  /* ---- setas junto a algunas rocas */
+  const roca = J.roca;
+  J.roca = function (ctx, x, y) {
+    const v = roca.apply(this, arguments);
+    if ((x + y) % 3 !== 0) return v;
+    [[18, 2, 1], [26, 6, 0.7]].forEach(s => {
+      const sx = x + s[0], sy = y + s[1], e = s[2];
+      ctx.fillStyle = '#F2E4CE';
+      ctx.fillRect(sx - 1.6 * e, sy - 7 * e, 3.2 * e, 7 * e);
+      ctx.fillStyle = '#C0392B';
+      ctx.beginPath(); ctx.ellipse(sx, sy - 7 * e, 5.5 * e, 4 * e, 0, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath(); ctx.arc(sx - 1.5 * e, sy - 8.5 * e, 1 * e, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx + 2 * e, sy - 9.5 * e, 0.9 * e, 0, 7); ctx.fill();
+    });
+    return v;
+  };
+
+  /* ---- las mariposas se han guarecido: vuelan hojas */
+  J.mariposa = function (ctx) {
+    const r = OTONO.racha(this.t);
+    this.mariposas.forEach(b => {
+      ctx.save();
+      ctx.translate(b.x + Math.sin(this.t * 3 + b.x) * 14 * r, b.y);
+      ctx.rotate(this.t * (2 + r * 4) + b.x);
+      ctx.fillStyle = OTONO.hoja[Math.floor(b.x) % 4];
+      ctx.beginPath(); ctx.ellipse(0, 0, 6, 2.6, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    });
+  };
+
+  /* ---- EL SONIDO DEL VIENTO Y DE LA LLUVIA
+     Fabricado con el propio navegador, como todo el sonido del juego: dos
+     ruidos en bucle (uno grave para el viento, otro agudo para el agua) que
+     cuelgan del volumen maestro, así que el botón 🔊 los calla también. */
+  const Aire = {
+    viento: null, lluvia: null, filtro: null,
+    montar() {
+      const S = Sonido;
+      if (this.viento || !S.ctx) return;
+      const bucle = (semilla, suave) => {
+        const n = S.ctx.sampleRate * 4;
+        const buf = S.ctx.createBuffer(1, n, S.ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        let u = 0;
+        for (let i = 0; i < n; i++) {
+          u = (u + (Math.random() * 2 - 1) * semilla) * suave;
+          d[i] = u;
+        }
+        const src = S.ctx.createBufferSource();
+        src.buffer = buf; src.loop = true;
+        return src;
+      };
+      this.filtro = S.ctx.createBiquadFilter();                 // el silbido del viento
+      this.filtro.type = 'lowpass'; this.filtro.frequency.value = 420;
+      this.viento = S.ctx.createGain(); this.viento.gain.value = 0;
+      const v = bucle(0.14, 0.97);
+      v.connect(this.filtro); this.filtro.connect(this.viento); this.viento.connect(S.maestro);
+      v.start();
+
+      const f2 = S.ctx.createBiquadFilter();                    // el siseo del agua
+      f2.type = 'highpass'; f2.frequency.value = 1800;
+      this.lluvia = S.ctx.createGain(); this.lluvia.gain.value = 0;
+      const l = bucle(0.9, 0.5);
+      l.connect(f2); f2.connect(this.lluvia); this.lluvia.connect(S.maestro);
+      l.start();
+    },
+    ajustar(r, fuera) {
+      if (!this.viento) return;
+      this.viento.gain.value = fuera ? 0.05 + r * 0.16 : 0;
+      this.lluvia.gain.value = fuera ? 0.035 + r * 0.02 : 0;
+      this.filtro.frequency.value = 340 + r * 520;
+    },
+  };
+
+  /* ---- LA LLUVIA EN LA PANTALLA: gotas torcidas por la ráfaga, salpicaduras
+     en el suelo, gotas pegadas a la pantalla, nubes bajas y penumbra gris. */
+  const gotas = Array.from({ length: 150 }, (_, k) => ({
+    x: Math.random(), y: Math.random(), v: 0.55 + Math.random() * 0.75, l: 9 + Math.random() * 16, k,
+  }));
+  const vuelan = Array.from({ length: 16 }, (_, k) => ({
+    x: Math.random(), y: Math.random(), v: 0.5 + Math.random() * 0.7, k,
+  }));
+  const pegadas = Array.from({ length: 22 }, (_, k) => ({
+    x: Math.random(), y: Math.random(), r: 2 + Math.random() * 4, t0: -9, k,
+  }));
+  let ultimoCharco = -9, antes = null;
+
+  const dibujar = J.dibujar;
+  J.dibujar = function () {
+    dibujar.apply(this, arguments);
+    const j = this.jugador, ctx = this.ctx, W = this.ANCHO, H = this.ALTO;
+    if (!j) return;
+    const fuera = OTONO.aCieloAbierto(j.x, j.y);
+    const r = OTONO.racha(this.t);
+    Aire.montar(); Aire.ajustar(r, fuera);
+    if (!fuera) return;                                   // bajo tierra no llueve
+
+    const torcido = 0.18 + r * 0.85;                      // cuánto se tuerce el agua
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200,225,240,0.55)';           // las gotas
+    ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+    ctx.beginPath();
+    gotas.forEach(g => {
+      g.y += g.v * (0.010 + r * 0.008);
+      g.x += g.v * torcido * 0.0045;
+      if (g.y > 1.04) { g.y = -0.05; g.x = Math.random() * 1.2 - 0.1; }
+      if (g.x > 1.08) g.x = -0.06;
+      const x = g.x * W, y = g.y * H;
+      ctx.moveTo(x, y); ctx.lineTo(x - g.l * torcido * 0.55, y - g.l);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    vuelan.forEach(h => {                                 // hojas volando con la ráfaga
+      h.x += h.v * (0.001 + r * 0.006);
+      h.y += Math.sin(this.t * 1.6 + h.k) * 0.0009;
+      if (h.x > 1.06) { h.x = -0.06; h.y = Math.random(); }
+      ctx.save();
+      ctx.translate(h.x * W, h.y * H + Math.sin(this.t * 2.4 + h.k) * 18);
+      ctx.rotate(this.t * 3 + h.k);
+      ctx.fillStyle = OTONO.hoja[h.k % 4];
+      ctx.beginPath(); ctx.ellipse(0, 0, 7, 3, 0, 0, 7); ctx.fill();
+      ctx.restore();
+    });
+
+    ctx.lineWidth = 1.1;                                  // salpicaduras en el suelo
+    for (let k = 0; k < 14; k++) {
+      const s = (this.t * 3 + k * 0.37) % 1;
+      if (s > 0.35) continue;
+      const x = ((k * 197 + Math.floor(this.t * 0.7) * 313) % 100) / 100 * W;
+      const y = H * 0.35 + ((k * 331) % 100) / 100 * H * 0.6;
+      ctx.strokeStyle = 'rgba(255,255,255,' + (0.30 * (1 - s / 0.35)) + ')';
+      ctx.beginPath(); ctx.ellipse(x, y, 3 + s * 12, 1 + s * 3.5, 0, 0, 7); ctx.stroke();
+    }
+
+    pegadas.forEach(p => {                                // gotas en la pantalla
+      if (this.t - p.t0 > 3.2) { p.t0 = this.t; p.x = Math.random(); p.y = Math.random(); }
+      const v = 1 - (this.t - p.t0) / 3.2;
+      ctx.fillStyle = 'rgba(235,245,255,' + (0.30 * v) + ')';
+      ctx.beginPath(); ctx.ellipse(p.x * W, p.y * H, p.r, p.r * 1.35, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.35 * v) + ')';
+      ctx.beginPath(); ctx.arc(p.x * W - p.r * 0.3, p.y * H - p.r * 0.5, p.r * 0.3, 0, 7); ctx.fill();
+    });
+
+    ctx.fillStyle = 'rgba(70,85,105,0.16)';               // el día gris
+    ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42,
+                                       W / 2, H / 2, Math.max(W, H) * 0.8);
+    g.addColorStop(0, 'rgba(40,55,80,0)');
+    g.addColorStop(1, 'rgba(40,55,80,0.38)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(90,100,120,0.13)';              // nubarrones cruzando por arriba
+    for (let k = 0; k < 4; k++) {
+      const x = ((this.t * (14 + k * 6) + k * 520) % (W + 700)) - 350;
+      ctx.beginPath(); ctx.ellipse(x, H * 0.10 + k * 26, 240 + k * 40, 52, 0, 0, 7); ctx.fill();
+    }
+
+    // al pisar un charco, salpica y suena
+    const sem = antes && (Math.abs(j.x - antes[0]) + Math.abs(j.y - antes[1]) > 1.2);
+    antes = [j.x, j.y];
+    if (sem && this.t - ultimoCharco > 0.45) {
+      const c = charcos.find(c => Math.abs(c[0] - j.x) < c[2] && Math.abs(c[1] - j.y) < c[2] * 0.45);
+      if (c) {
+        ultimoCharco = this.t;
+        if (typeof Sonido !== 'undefined') Sonido.ruido(0.16, 1500, 0.09);
+      }
+    }
+    if (this.t - ultimoCharco < 0.35) {                   // la salpicadura, a sus pies
+      const p = (this.t - ultimoCharco) / 0.35;
+      const px = j.x - this.camX, py = j.y - this.camY;
+      ctx.strokeStyle = 'rgba(210,235,245,' + (0.6 * (1 - p)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(px, py, 8 + p * 26, 3 + p * 9, 0, 0, 7); ctx.stroke();
+    }
+  };
+
+  /* ---- la música de la isla, en tono menor (vuelve sola al cambiar el clima) */
+  if (typeof TEMAS !== 'undefined') {
+    TEMAS.isla = { tempo: 0.46, onda: 'triangle', vol: 0.05,
+      melodia: ['la3','-','do4','-','mi4','-','do4','-', 're4','-','do4','-','si3','-','-','-',
+                'do4','-','mi4','-','sol4','-','mi4','-', 're4','-','do4','-','la3','-','-','-'],
+      bajo:    ['la3','-','-','-','mi3','-','-','-', 're3','-','-','-','mi3','-','-','-',
+                'la3','-','-','-','do3','-','-','-', 're3','-','-','-','mi3','-','-','-'] };
+  }
+
+  /* ---- Lumi lo cuenta al entrar (una vez por partida abierta) */
+  let avisado = false;
+  const iniciar = J.iniciar;
+  J.iniciar = function () {
+    const v = iniciar.apply(this, arguments);
+    if (!avisado) {
+      avisado = true;
+      setTimeout(() => Hada.decir('🍂 ¡Ha llegado el otoño a la isla! Los árboles se han puesto ' +
+        'de color naranja, se ha levantado viento y está lloviendo. Cuidado con los charcos… ' +
+        'o písalos, que para eso tienes botas de agua.', 11), 6000);
+    }
+    return v;
   };
 })();
 
