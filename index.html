@@ -355,6 +355,11 @@
                 border-radius:18px; padding:10px 14px; cursor:pointer; min-width:120px}
   .ficha-animal.puesta{border-color:var(--verde); background:#E7F6E4}
   .sinAnimal{font-size:34px; height:80px; line-height:80px}
+  .ficha-animal .mimos{display:block; font-size:18px; letter-spacing:4px}
+  .miniAnimal.grande{display:block; margin:0 auto}
+  /* Jugar a la pelota */
+  .tiradas{display:flex; flex-direction:column; gap:8px; margin:12px 0}
+  .tirada{background:#fff; border:3px solid #E3D9C0; border-radius:14px; padding:8px 12px}
 
   /* La mochila de rarezas */
   .rarezas{display:flex; flex-direction:column; gap:10px; text-align:left; margin:10px 0}
@@ -568,6 +573,11 @@ const AJUSTES = {
      Las conchas salen de los retos; buscar y leer da lo que pasa en la isla. */
   conchasPorArreglar: 1,
   conchasPorEntregar: 1,
+
+  /* Cuidar a una mascota (darle de comer, jugar con ella): también simbólico
+     y con el tope diario de lo repetible. El premio de verdad es verla
+     contenta detrás de ti. */
+  conchasPorMimo: 2,
 
   /* Limpiar animales es el trabajo del día: paga bien la primera vez de cada
      día y poco después, para que siga habiendo motivo para volver mañana. */
@@ -944,6 +954,8 @@ const ROPA = {
     { id: 'pompones',  nombre: 'Pompones',           color: '#F26FA8', precio: 40, grupo: 'llevar' },
     { id: 'farolillo', nombre: 'Un farolillo',       color: '#FFD98A', precio: 55, grupo: 'llevar' },
     { id: 'globos',    nombre: 'Un ramo de globos',  color: '#FF8FA3', precio: 65, grupo: 'llevar' },
+    // bota sola mientras andas: es la pelota con la que juegas en el animalario
+    { id: 'pelotamano',nombre: 'La pelota del perro', color: '#D9F24E', precio: 30, grupo: 'llevar' },
     // premio del Cristal Dorado (20 retos): no se compra
     { id: 'linterna',  nombre: 'Linterna de minera', color: '#FFD98A', precio: null, premio: 'cristal-mina', grupo: 'llevar' },
   ],
@@ -962,6 +974,7 @@ const ROPA = {
     { id: 'collarluna',   nombre: 'Collar de luna',       precio: 45, grupo: 'collares' },
     { id: 'collarcorazon',nombre: 'Collar de corazón',    precio: 55, grupo: 'collares' },
     { id: 'collarllave',  nombre: 'Collar con llavecita', precio: 65, grupo: 'collares' },
+    { id: 'collarhuellas',nombre: 'Collar de huellitas',  precio: 50, grupo: 'collares' },
 
     { id: 'juegoperla',    nombre: 'Juego de perlas',     precio: 90, grupo: 'juegos' },
     { id: 'juegocoral',    nombre: 'Juego de coral',      precio: 110, grupo: 'juegos' },
@@ -1006,6 +1019,8 @@ const ROPA = {
     { id: 'alasdragon',nombre: 'Alas de dragón',       precio: 90, grupo: 'espalda' },
     { id: 'mariposa',  nombre: 'Alas de mariposa',     precio: 95, grupo: 'espalda' },
     { id: 'cohete',    nombre: 'Mochila cohete',       precio: 100, grupo: 'espalda' },
+    // por la ventanita asoma un bichito que se esconde y vuelve a salir
+    { id: 'mochilabicho', nombre: 'Mochila con ventanita', precio: 85, grupo: 'espalda' },
 
     // --- para el cuerpo
     { id: 'collar',    nombre: 'Collar de conchas',    precio: 30, grupo: 'cuerpo' },
@@ -1139,6 +1154,82 @@ const TEXTOS_TALLER = {
   sinConchas: 'Vuelve cuando las tengas. Esto no se va a ninguna parte.',
   yaEsTuyo: 'Eso ya es tuyo. Te espera fuera, ahí aparcado.',
 };
+
+</script>
+<script>
+/* === contenido/mascotas.js === */
+/* CUIDAR A LAS MASCOTAS (S1 del ROADMAP)
+
+   Aquí están los datos de lo que se hace con un animal del animalario:
+   darle de comer, jugar con él, ponerle nombre y ponerle un lacito.
+
+   Lo pedagógico está en la comida: cada bicho come una cosa y la ficha NO lo
+   dice con la palabra del cuenco, lo cuenta con una escena. Hay que leerla
+   para saber qué cuenco darle. Equivocarse no castiga: el animal huele el
+   cuenco, gira la cara y se vuelve a leer.
+
+   Jugar con la pelota es la tabla del día: se lanza tres veces, cada vez
+   corre los mismos pasos, y al final se cuenta cuántos ha corrido en total. */
+
+/* LOS CUENCOS. El nombre es lo que se lee en el botón; la comida no se
+   nombra igual en la ficha del animal, para que haya que entender la escena
+   y no buscar la palabra repetida. */
+const COMIDAS = [
+  { id: 'fruta',    icono: '🍓', nombre: 'Frutos rojos' },
+  { id: 'pescado',  icono: '🐟', nombre: 'Pescado fresco' },
+  { id: 'semillas', icono: '🌰', nombre: 'Semillas y piñones' },
+  { id: 'hierba',   icono: '🥬', nombre: 'Hojas verdes' },
+  { id: 'insectos', icono: '🐛', nombre: 'Bichitos del suelo' },
+  { id: 'algas',    icono: '🌿', nombre: 'Algas de la orilla' },
+  { id: 'flores',   icono: '🌸', nombre: 'Pétalos de flor' },
+  { id: 'picante',  icono: '🌶️', nombre: 'Guindillas picantes' },
+];
+
+/* QUÉ COME CADA UNO Y CÓMO SE SABE
+   `come`  → id del cuenco bueno
+   `ficha` → lo que se lee antes de elegir. Cuenta una escena, no da la
+             palabra del cuenco: ahí está la comprensión lectora. */
+const CUIDADOS = {
+  zorrito:   { come: 'fruta',    ficha: 'En otoño se mete en el zarzal y sale con los bigotes manchados de rojo.' },
+  erizo:     { come: 'insectos', ficha: 'Se pasa la noche removiendo hojas secas para pillar lo que corre por debajo.' },
+  conejito:  { come: 'hierba',   ficha: 'Cuando nadie mira, se cuela en el huerto de Mila y deja las lechugas sin una hoja.' },
+  gatito:    { come: 'pescado',  ficha: 'Se sienta en el muelle a esperar a los barcos y ronronea al oler las redes.' },
+  nutria:    { come: 'pescado',  ficha: 'Bucea en el río y sale boca arriba, con la cena aún coleando entre las manos.' },
+  cangrejo:  { come: 'algas',    ficha: 'Rasca las rocas mojadas de la orilla y se lleva a la boca lo verde que se pega a ellas.' },
+  tortuguita:{ come: 'hierba',   ficha: 'Tarda toda la mañana en cruzar el prado, y lo cruza mordisqueando por el camino.' },
+  pinguino:  { come: 'pescado',  ficha: 'Se tira de barriga al agua fría y vuelve con algo plateado en el pico.' },
+  pez:       { come: 'algas',    ficha: 'Dentro de su pecera mordisquea todo el día lo verde que crece en el cristal.' },
+  dragon:    { come: 'picante',  ficha: 'Solo come cosas que arden en la lengua: después estornuda y le sale una chispita.' },
+  pajarito:  { come: 'semillas', ficha: 'Se posa en los pinos y abre las piñas a picotazos para sacar lo de dentro.' },
+  unicornito:{ come: 'flores',   ficha: 'Solo se acerca al prado cuando está lleno de color, y deja los tallos sin corona.' },
+  flamenco:  { come: 'algas',    ficha: 'Mete la cabeza del revés en la laguna y filtra lo verde que flota en el fondo.' },
+  tucan:     { come: 'fruta',    ficha: 'Con ese pico enorme alcanza las bayas de la rama más fina sin romperla.' },
+  camaleon:  { come: 'insectos', ficha: 'Se queda quieto, quieto… y saca la lengua a toda pastilla cuando algo zumba cerca.' },
+  axolote:   { come: 'insectos', ficha: 'En el fondo del agua busca las lombrices que se esconden en el barro.' },
+  pulpito:   { come: 'pescado',  ficha: 'Sale de su cueva de noche, abraza lo que nada despacio y se lo lleva dentro.' },
+  pavoreal:  { come: 'semillas', ficha: 'Picotea el suelo del poblado detrás de las gallinas, a por lo que se cae del saco.' },
+};
+
+/* LOS NOMBRES. Se elige de una lista tocando un botón: en el iPad no hay
+   teclado cómodo y la regla 5 dice que nada exija escribir. */
+const NOMBRES_MASCOTA = [
+  'Luna', 'Nube', 'Trufa', 'Canela', 'Chispa', 'Copito', 'Mora', 'Pepita',
+  'Bigotes', 'Estrella', 'Musgo', 'Bolita', 'Rayo', 'Sol', 'Tofu', 'Pinta',
+];
+
+/* LOS LACITOS. Se dibujan en el cuello del animal y se ven por la isla. */
+const LAZOS = [
+  { id: 'rosa',     nombre: 'Rosa',     color: '#F26FA8' },
+  { id: 'rojo',     nombre: 'Rojo',     color: '#E8506B' },
+  { id: 'azul',     nombre: 'Azul',     color: '#4FA8DC' },
+  { id: 'amarillo', nombre: 'Amarillo', color: '#F2C14E' },
+  { id: 'verde',    nombre: 'Verde',    color: '#7ED6A5' },
+  { id: 'morado',   nombre: 'Morado',   color: '#B58BE0' },
+];
+
+/* LA PELOTA: cuántos pasos corre cada vez que se la lanzan.
+   A Gala, tablas de verdad; a Inés, de dos en dos y de cinco en cinco. */
+const PASOS_PELOTA = { mayor: [3, 4, 5, 6, 7, 8], pequena: [2, 5, 10] };
 
 </script>
 <script>
@@ -5090,6 +5181,8 @@ const Estado = {
       descubiertos: {},         // sitios de la isla que ya ha visitado
       secretos: {},             // cosas escondidas que ya ha encontrado
       mascotas: [],             // animales del animalario (se empieza sin ninguno)
+      mascotasCuidado: {},      // el nombre y el lacito que le ha puesto a cada una
+      mimos: { dia: '', hechos: {} },   // a quién ha dado de comer y con quién ha jugado hoy
       vehiculos: [],            // patinete, bici… los del taller de Tià
       montura: null,            // en qué va montada ahora (null = a pie)
       rarezas: [],              // objetos raros de la mochila
@@ -5176,6 +5269,8 @@ const Estado = {
     p.descubiertos = {};
     p.secretos = {};
     p.mascotas = [];
+    p.mascotasCuidado = {};
+    p.mimos = { dia: '', hechos: {} };
     p.rarezas = [];
     p.tope = { dia: '', dadas: 0 };
     p.entregado = {};
@@ -5280,6 +5375,46 @@ const Estado = {
     setTimeout(() => Pistas.dar('mascota'), 1500);
     if (!this.actual.look.mascota) this.actual.look.mascota = id;   // la primera se pone sola
     this.guardar();
+  },
+
+  /* EL CUIDADO DE CADA MASCOTA (nombre y lacito)
+     Lo que se le pone se queda puesto para siempre; lo que se hace con ella
+     (comer y jugar) es de hoy y mañana vuelve a estar por hacer. */
+  cuidadoDe(id) {
+    if (!this.actual.mascotasCuidado) this.actual.mascotasCuidado = {};
+    if (!this.actual.mascotasCuidado[id]) this.actual.mascotasCuidado[id] = { nombre: '', lazo: '' };
+    return this.actual.mascotasCuidado[id];
+  },
+
+  ponerNombreMascota(id, nombre) {
+    this.cuidadoDe(id).nombre = nombre || '';
+    this.guardar();
+  },
+
+  ponerLazoMascota(id, lazo) {
+    this.cuidadoDe(id).lazo = lazo || '';
+    this.guardar();
+  },
+
+  /* Los mimos del día: cada mascota puede comer una vez y jugar una vez */
+  mimosDeHoy() {
+    const p = this.actual;
+    if (!p.mimos || p.mimos.dia !== this.hoy()) p.mimos = { dia: this.hoy(), hechos: {} };
+    return p.mimos.hechos;
+  },
+
+  yaMimo(id, que) { return (this.mimosDeHoy()[id] || []).includes(que); },
+
+  apuntarMimo(id, que) {
+    const h = this.mimosDeHoy();
+    if (!h[id]) h[id] = [];
+    if (!h[id].includes(que)) h[id].push(que);
+    this.guardar();
+  },
+
+  /* Cuidada del todo hoy: ha comido y ha jugado. Va más contenta por la isla. */
+  mascotaContenta(id) {
+    return !!id && this.yaMimo(id, 'comer') && this.yaMimo(id, 'jugar');
   },
 
   // --- Vehículos ----------------------------------------------------------
@@ -5992,6 +6127,23 @@ const Avatar = {
       this.estrella(ctx, mx + 11, my - 32, 4.5, 1.8, 5);
     }
 
+    /* LA PELOTA DEL PERRO: no se lleva en la mano, va botando al lado.
+       Bota con el mismo paso que andas, así que al correr bota más rápido. */
+    if (man && man.id === 'pelotamano') {
+      const altura = Math.abs(Math.sin(paso * 2.2)) * 16;
+      const px = mx + 10, py = my + 16 - altura;
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';                 // la sombra en el suelo
+      ctx.beginPath();
+      ctx.ellipse(px, my + 18, 5 - altura * 0.12, 1.8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = man.color;
+      ctx.beginPath(); ctx.arc(px, py, 5, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#FFF'; ctx.lineWidth = 1.2;      // la costura de la pelota
+      ctx.beginPath(); ctx.arc(px - 4, py, 5, -0.8, 0.8); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px + 4, py, 5, Math.PI - 0.8, Math.PI + 0.8); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath(); ctx.arc(px - 1.6, py - 1.8, 1.4, 0, 7); ctx.fill();
+    }
+
     // --- complemento por detrás
     if (look.complemento === 'alas') {
       ctx.fillStyle = 'rgba(180, 235, 255, 0.75)';
@@ -6668,15 +6820,84 @@ const Avatar = {
     ctx.fill();
   },
 
-  /* La mascota que la sigue */
-  dibujarMascota(ctx, x, yPies, esc, id, mirando, t) {
+  /* La mascota que la sigue.
+     `extra` es lo que se le ha puesto o lo que le pasa hoy:
+       { lazo: 'rosa', contenta: true }   (ver motor/mascotas.js) */
+  dibujarMascota(ctx, x, yPies, esc, id, mirando, t, extra) {
     if (!id) return;                                 // todavía no tiene mascota
     const m = ROPA.mascotas.find(e => e.id === id);
     if (!m) return;
-    if (m.id === 'gatito') return this.dibujarGato(ctx, x, yPies, esc, m, mirando, t);
-    if (m.id === 'nutria') return this.dibujarNutria(ctx, x, yPies, esc, m, mirando, t);
-    if (m.id === 'dragon') return this.dibujarDragon(ctx, x, yPies, esc, m, mirando, t);
-    if (m.forma) return this.dibujarBicho(ctx, x, yPies, esc, m, mirando, t);
+    const ex = extra || {};
+
+    /* Cuidada del todo hoy (ha comido y ha jugado): cada pocos segundos da
+       un saltito y le sale un corazón. Es todo el premio de cuidarla. */
+    let salto = 0;
+    if (ex.contenta) {
+      const fase = t % 4;
+      if (fase < 1) salto = Math.abs(Math.sin(fase * Math.PI * 2)) * 4;
+    }
+    const y = yPies - salto;
+
+    if (m.id === 'gatito') this.dibujarGato(ctx, x, y, esc, m, mirando, t);
+    else if (m.id === 'nutria') this.dibujarNutria(ctx, x, y, esc, m, mirando, t);
+    else if (m.id === 'dragon') this.dibujarDragon(ctx, x, y, esc, m, mirando, t);
+    else if (m.forma) this.dibujarBicho(ctx, x, y, esc, m, mirando, t);
+    else this.dibujarMascotaBase(ctx, x, y, esc, m, mirando, t);
+
+    if (ex.lazo) this.dibujarLazo(ctx, x, y, esc, m, mirando, ex.lazo);
+    if (ex.contenta) this.corazonMascota(ctx, x, y, esc, t);
+  },
+
+  /* EL LACITO
+     Va en el cuello de cada bicho. Cada forma tiene su sitio, porque las
+     cabezas no están a la misma altura; el resto usa el de por defecto. */
+  ANCLA_LAZO: {
+    conejo: [7, -13], erizo: [8, -6], cangrejo: [0, -16], tortuga: [8, -12],
+    pinguino: [2, -16], pez: [0, -24], pajaro: [5, -13], unicornio: [6, -14],
+    flamenco: [4, -26], tucan: [4, -16], camaleon: [5, -11], axolote: [4, -11],
+    pulpo: [0, -14], pavoreal: [4, -18],
+  },
+
+  dibujarLazo(ctx, x, yPies, esc, m, mirando, lazoId) {
+    const l = (typeof LAZOS !== 'undefined') && LAZOS.find(o => o.id === lazoId);
+    if (!l) return;
+    const a = this.ANCLA_LAZO[m.forma] || [4, -14];
+    ctx.save();
+    ctx.translate(x, yPies);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+    ctx.translate(a[0], a[1]);
+    ctx.fillStyle = l.color;
+    ctx.beginPath(); ctx.ellipse(-3.2, 0, 3, 2.2, -0.35, 0, 7); ctx.fill();   // ala izquierda
+    ctx.beginPath(); ctx.ellipse(3.2, 0, 3, 2.2, 0.35, 0, 7); ctx.fill();     // ala derecha
+    ctx.fillStyle = '#FFFFFF';
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath(); ctx.ellipse(-3.2, -0.6, 1.4, 0.9, -0.35, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = l.color;
+    ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, 7); ctx.fill();                    // el nudo
+    ctx.restore();
+  },
+
+  /* El corazón de la mascota contenta: sube y se desvanece */
+  corazonMascota(ctx, x, yPies, esc, t) {
+    const fase = t % 4;
+    if (fase > 1.6) return;
+    const sube = fase * 14;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - fase / 1.6);
+    ctx.translate(x, yPies - 30 * esc - sube);
+    ctx.scale(esc, esc);
+    ctx.fillStyle = '#F26FA8';
+    ctx.beginPath();
+    ctx.moveTo(0, 3);
+    ctx.bezierCurveTo(-5, -1, -3.5, -6, 0, -3.5);
+    ctx.bezierCurveTo(3.5, -6, 5, -1, 0, 3);
+    ctx.fill();
+    ctx.restore();
+  },
+
+  /* El cuerpo de las mascotas que no tienen forma propia (zorrito) */
+  dibujarMascotaBase(ctx, x, yPies, esc, m, mirando, t) {
     ctx.save();
     ctx.translate(x, yPies);
     ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
@@ -9376,32 +9597,43 @@ const Animalario = {
         'a alguien, y en <b>la Casa dels Bitxos</b>, la tienda de Ona, hay más en venta.');
     }
 
-    const fichas = suyas.map((m, i) => `
+    /* Cada animal lleva su nombre, su lacito y lo que le falta de hoy: de un
+       vistazo se ve a quién queda por dar de comer o con quién no se ha
+       jugado. Al tocarlo se abre su ficha para cuidarlo. */
+    const fichas = suyas.map((m, i) => {
+      const comio = Estado.yaMimo(m.id, 'comer'), jugo = Estado.yaMimo(m.id, 'jugar');
+      return `
       <button class="ficha-animal ${p.look.mascota === m.id ? 'puesta' : ''}" data-v="${m.id}">
         <canvas class="miniAnimal" width="90" height="80" data-i="${i}"></canvas>
-        <b>${m.nombre}</b>
-      </button>`).join('');
+        <b>${Mascotas.comoSeLlama(m.id)}</b>
+        <small class="mimos">${comio ? '🍎' : '⬜'} ${jugo ? '🎾' : '⬜'}</small>
+      </button>`;
+    }).join('');
 
     UI.abrir(`
       <div class="quien">El animalario</div>
-      <p class="dice">¿Quién te acompaña hoy?</p>
+      <p class="dice">Toca un animal para cuidarlo o para que te acompañe.</p>
       <div class="animales">${fichas}
-        <button class="ficha-animal ${!p.look.mascota ? 'puesta' : ''}" data-v="">
-          <div class="sinAnimal">🚫</div><b>Ninguna</b></button>
+        <button class="ficha-animal" data-v="">
+          <div class="sinAnimal">🚫</div><b>Que no me siga nadie</b></button>
       </div>
-      <p class="pista" id="pista">Las demás se quedan aquí tan a gusto.</p>
+      <p class="pista" id="pista">🍎 comer · 🎾 jugar. Lo que hagas hoy vuelve a estar mañana.</p>
     `);
 
     UI.modal.querySelectorAll('.miniAnimal').forEach(c => {
       const ctx = c.getContext('2d');
-      Avatar.dibujarMascota(ctx, 45, 70, 1.6, suyas[+c.dataset.i].id, 1, 0);
+      const id = suyas[+c.dataset.i].id;
+      Avatar.dibujarMascota(ctx, 45, 70, 1.6, id, 1, 0, Mascotas.adornos(id));
     });
     UI.modal.querySelectorAll('.ficha-animal').forEach(b =>
       b.onclick = () => {
         Sonido.clic();
-        p.look.mascota = b.dataset.v || null;
-        Estado.guardar();
-        this.abrir();
+        if (!b.dataset.v) {                      // «que no me siga nadie»
+          p.look.mascota = null;
+          Estado.guardar();
+          return this.abrir();
+        }
+        Mascotas.ficha(b.dataset.v);
       });
   },
 };
@@ -10141,6 +10373,280 @@ const Taller = {
         } },
       { texto: 'Mejor no', accion: () => this.pintar() },
     ]);
+  },
+};
+
+</script>
+<script>
+/* === motor/mascotas.js === */
+/* EL CUIDADO DE LAS MASCOTAS
+   Se entra desde el animalario: se toca un animal y se abre su ficha.
+   Cuatro cosas: darle de comer, jugar con él, ponerle nombre y un lacito.
+
+   Reglas que cumple:
+   · Nada que castigue: darle el cuenco que no es solo hace que gire la cara.
+   · Dos niveles: a Gala cuatro cuencos y tablas; a Inés dos cuencos y contar.
+   · Se descubre jugando: no sale ningún cartel solo, hay que entrar a mirar.
+   · Todo con botones grandes: vale con el dedo y con el ratón, sin teclado.
+   · Lo que se hace hoy vuelve a poderse hacer mañana: nunca se acaba. */
+
+const Mascotas = {
+
+  /* Cómo se llama: el nombre que le ha puesto, o el de su especie */
+  comoSeLlama(id) {
+    const m = ROPA.mascotas.find(o => o.id === id);
+    const puesto = Estado.cuidadoDe(id).nombre;
+    return puesto || (m ? m.nombre : '');
+  },
+
+  lazoDe(id) { return Estado.cuidadoDe(id).lazo; },
+
+  /* Lo que se le dibuja encima cuando anda por la isla */
+  adornos(id) {
+    return { lazo: this.lazoDe(id), contenta: Estado.mascotaContenta(id) };
+  },
+
+  barajar(lista) {
+    const c = lista.slice();
+    for (let i = c.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [c[i], c[j]] = [c[j], c[i]];
+    }
+    return c;
+  },
+
+  /* ------------------------------------------------ LA FICHA DEL ANIMAL */
+  ficha(id, aviso) {
+    const p = Estado.actual;
+    const m = ROPA.mascotas.find(o => o.id === id);
+    if (!m) return Animalario.abrir();
+    const c = CUIDADOS[id] || { ficha: 'Todavía nadie sabe mucho de este bicho.' };
+    const comio = Estado.yaMimo(id, 'comer');
+    const jugo  = Estado.yaMimo(id, 'jugar');
+    const suya  = p.look.mascota === id;
+
+    UI.abrir(`
+      <div class="quien">${this.comoSeLlama(id)}</div>
+      <canvas class="miniAnimal grande" width="160" height="130"></canvas>
+      <p class="dice">${c.ficha}</p>
+      <div class="opciones">
+        <button class="rutina ${comio ? 'hecha' : ''}" data-q="comer">
+          <span class="rutina-icono">🍎</span><b>Darle de comer</b>
+          <small>${comio ? '✅ ya ha comido hoy' : 'tiene hambre'}</small></button>
+        <button class="rutina ${jugo ? 'hecha' : ''}" data-q="jugar">
+          <span class="rutina-icono">🎾</span><b>Jugar a la pelota</b>
+          <small>${jugo ? '✅ ya habéis jugado hoy' : 'os lo pasaréis bien'}</small></button>
+        <button class="rutina" data-q="nombre">
+          <span class="rutina-icono">✏️</span><b>Ponerle nombre</b>
+          <small>${Estado.cuidadoDe(id).nombre ? 'se llama ' + Estado.cuidadoDe(id).nombre : 'todavía no tiene'}</small></button>
+        <button class="rutina" data-q="lazo">
+          <span class="rutina-icono">🎀</span><b>Ponerle un lacito</b>
+          <small>${this.lazoDe(id) ? 'lleva uno puesto' : 'sin lacito'}</small></button>
+      </div>
+      <p class="pista" id="pistaMascota">${aviso ||
+        (comio && jugo ? '¡Hoy está cuidadísima! Se le nota en cómo anda.'
+                       : 'Cuidarla del todo es darle de comer y jugar con ella.')}</p>
+      <div class="botones">
+        <button class="btn ${suya ? 'gris' : 'defecto'}" id="acompanar">
+          ${suya ? 'Hoy ya te acompaña' : 'Que me acompañe hoy'}</button>
+        <button class="btn gris" id="volverAnimalario">Volver al animalario</button>
+      </div>
+    `);
+
+    const cv = UI.modal.querySelector('.miniAnimal');
+    Avatar.dibujarMascota(cv.getContext('2d'), 80, 112, 2.6, id, 1, 0, this.adornos(id));
+
+    UI.modal.querySelectorAll('.rutina').forEach(b => b.onclick = () => {
+      Sonido.clic();
+      const q = b.dataset.q;
+      if (q === 'comer')  return this.comer(id);
+      if (q === 'jugar')  return this.jugar(id);
+      if (q === 'nombre') return this.elegirNombre(id);
+      if (q === 'lazo')   return this.elegirLazo(id);
+    });
+    document.getElementById('acompanar').onclick = () => {
+      Sonido.clic();
+      p.look.mascota = id;
+      Estado.guardar();
+      this.ficha(id, `${this.comoSeLlama(id)} sale contigo. Las demás se quedan aquí tan a gusto.`);
+    };
+    document.getElementById('volverAnimalario').onclick = () => { Sonido.clic(); Animalario.abrir(); };
+  },
+
+  /* ------------------------------------------------------ DARLE DE COMER
+     Los cuencos salen barajados y la ficha no nombra ninguno: para acertar
+     hay que entender lo que se acaba de leer. Fallar no castiga. */
+  comer(id, aviso) {
+    if (Estado.yaMimo(id, 'comer')) {
+      return this.ficha(id, 'Ya ha comido hoy. Mañana volverá a tener hambre.');
+    }
+    const c = CUIDADOS[id];
+    if (!c) return this.ficha(id, 'Este bicho come de todo.');
+    const nivel = Estado.actual.nivel;
+    const buena = COMIDAS.find(x => x.id === c.come);
+    const otras = this.barajar(COMIDAS.filter(x => x.id !== c.come));
+    const cuantas = nivel === 'mayor' ? 3 : 1;          // a Gala, cuatro cuencos siempre
+    const cuencos = this.barajar([buena].concat(otras.slice(0, cuantas)));
+
+    UI.abrir(`
+      <div class="quien">La hora de comer</div>
+      <p class="dice">${c.ficha}</p>
+      <p class="dice"><b>¿Qué cuenco le pones?</b></p>
+      <div class="opciones">
+        ${cuencos.map(x => `<button class="rutina" data-v="${x.id}">
+            <span class="rutina-icono">${x.icono}</span><b>${x.nombre}</b></button>`).join('')}
+      </div>
+      <p class="pista" id="pistaComida">${aviso || 'Vuelve a leer lo que hace: ahí está la respuesta.'}</p>
+      <div class="botones"><button class="btn gris" id="volverFicha">Ahora no</button></div>
+    `);
+
+    UI.modal.querySelectorAll('.rutina').forEach(b => b.onclick = () => {
+      if (b.dataset.v !== c.come) {
+        Sonido.suspiro();
+        document.getElementById('pistaComida').innerHTML =
+          'Lo huele, gira la cara y se queda mirándote. <b>Eso no es lo suyo.</b> Lee otra vez qué hace.';
+        return;
+      }
+      Sonido.nam();
+      Estado.apuntarMimo(id, 'comer');
+      this.premio(id, `<b>${this.comoSeLlama(id)}</b> se lo come todo y rebaña el cuenco. ` +
+        `Lo has sabido porque lo has leído: ${buena.icono} <b>${buena.nombre.toLowerCase()}</b>.`);
+    });
+    document.getElementById('volverFicha').onclick = () => { Sonido.clic(); this.ficha(id); };
+  },
+
+  /* ------------------------------------------------------ JUGAR A LA PELOTA
+     Tres lanzamientos iguales y al final la cuenta: a Gala una tabla,
+     a Inés contar de dos en dos o de cinco en cinco. */
+  jugar(id) {
+    if (Estado.yaMimo(id, 'jugar')) {
+      return this.ficha(id, 'Hoy ya habéis jugado. Está tumbada, resoplando de gusto.');
+    }
+    const nivel = Estado.actual.nivel;
+    const lista = PASOS_PELOTA[nivel] || PASOS_PELOTA.mayor;
+    const pasos = lista[Math.floor(Math.random() * lista.length)];
+    const veces = 3;
+    let lanzadas = 0;
+
+    const pintar = () => {
+      const marcas = [];
+      for (let i = 0; i < veces; i++) {
+        marcas.push(`<div class="tirada">${i < lanzadas
+          ? `🎾 Tirada ${i + 1}: ha corrido <b>${pasos} pasos</b>`
+          : `⬜ Tirada ${i + 1}`}</div>`);
+      }
+      UI.abrir(`
+        <div class="quien">La pelota</div>
+        <p class="dice">Le lanzas la pelota y sale disparada a por ella.
+           <b>Cada vez corre los mismos pasos.</b></p>
+        <div class="tiradas">${marcas.join('')}</div>
+        <div class="botones">
+          <button class="btn defecto" id="lanzar">🎾 Lanzar la pelota</button>
+          <button class="btn gris" id="volverFicha">Volver</button>
+        </div>
+      `);
+      document.getElementById('lanzar').onclick = () => {
+        Sonido.salto();
+        lanzadas++;
+        if (lanzadas >= veces) this.cuenta(id, pasos, veces);
+        else pintar();
+      };
+      document.getElementById('volverFicha').onclick = () => { Sonido.clic(); this.ficha(id); };
+    };
+    pintar();
+  },
+
+  /* La cuenta de la pelota. Equivocarse solo enseña cómo se cuenta. */
+  cuenta(id, pasos, veces, aviso) {
+    const total = pasos * veces;
+    const malas = [total + pasos, Math.max(1, total - pasos), pasos + veces];
+    const opciones = this.barajar([total].concat(
+      malas.filter((x, i, a) => x !== total && a.indexOf(x) === i).slice(0, 2)));
+
+    UI.abrir(`
+      <div class="quien">La pelota</div>
+      <p class="dice">Le has lanzado la pelota <b>${veces} veces</b> y cada vez ha corrido
+         <b>${pasos} pasos</b>.<br><b>¿Cuántos pasos ha corrido en total?</b></p>
+      <div class="opciones">
+        ${opciones.map(x => `<button class="rutina" data-v="${x}">
+            <span class="rutina-icono">${x}</span><b>pasos</b></button>`).join('')}
+      </div>
+      <p class="pista" id="pistaPelota">${aviso || 'Son ' + veces + ' veces lo mismo.'}</p>
+    `);
+
+    UI.modal.querySelectorAll('.rutina').forEach(b => b.onclick = () => {
+      if (+b.dataset.v !== total) {
+        Sonido.suspiro();
+        document.getElementById('pistaPelota').innerHTML =
+          `Casi. Cuenta otra vez: ${Array(veces).fill(pasos).join(' + ')} = …`;
+        return;
+      }
+      Sonido.acierto();
+      Estado.apuntarMimo(id, 'jugar');
+      this.premio(id, `¡Qué manera de correr! <b>${veces} × ${pasos} = ${total} pasos.</b> ` +
+        `Sumar ${veces} veces lo mismo es multiplicar: por eso vale la tabla del ${pasos}.`);
+    });
+  },
+
+  /* Lo que pasa al acabar un mimo: la moraleja, la concha simbólica y, si
+     ha comido y ha jugado, el aviso de que hoy va contentísima. */
+  premio(id, texto) {
+    const dadas = Estado.darConchasConTope(AJUSTES.conchasPorMimo);
+    if (dadas) Sonido.moneda();
+    UI.refrescarHud();
+    const contenta = Estado.mascotaContenta(id);
+    UI.dialogo(this.comoSeLlama(id),
+      texto + (dadas ? `<br><br>🐚 <b>+${dadas}</b> por cuidarla.` : '') +
+      (contenta ? '<br><br>Hoy ha comido y ha jugado: <b>sale dando saltitos</b> contigo.' : ''),
+      [{ texto: 'Seguir', accion: () => this.ficha(id) }]);
+  },
+
+  /* ------------------------------------------------------- PONERLE NOMBRE
+     Con botones, nunca escribiendo: en la tableta no hay teclado cómodo. */
+  elegirNombre(id) {
+    const puesto = Estado.cuidadoDe(id).nombre;
+    const nombres = this.barajar(NOMBRES_MASCOTA).slice(0, 12).sort((a, b) => a.localeCompare(b));
+    UI.abrir(`
+      <div class="quien">¿Cómo se va a llamar?</div>
+      <div class="opciones">
+        ${nombres.map(n => `<button class="rutina ${n === puesto ? 'hecha' : ''}" data-v="${n}">
+            <b>${n}</b></button>`).join('')}
+        <button class="rutina ${!puesto ? 'hecha' : ''}" data-v="">
+          <span class="rutina-icono">🚫</span><b>Sin nombre</b></button>
+      </div>
+      <p class="pista">Se le puede cambiar todas las veces que quieras.</p>
+    `);
+    UI.modal.querySelectorAll('.rutina').forEach(b => b.onclick = () => {
+      Sonido.clic();
+      Estado.ponerNombreMascota(id, b.dataset.v);
+      this.ficha(id, b.dataset.v ? `Desde hoy se llama <b>${b.dataset.v}</b>.`
+                                 : 'Se queda sin nombre, tan a gusto.');
+    });
+  },
+
+  /* -------------------------------------------------------- EL LACITO
+     Se dibuja en el cuello y se ve mientras te sigue por la isla. */
+  elegirLazo(id) {
+    const puesto = this.lazoDe(id);
+    UI.abrir(`
+      <div class="quien">Un lacito</div>
+      <div class="animales">
+        ${LAZOS.map(l => `<button class="ficha-animal ${l.id === puesto ? 'puesta' : ''}" data-v="${l.id}">
+            <canvas class="miniAnimal" width="90" height="80" data-l="${l.id}"></canvas>
+            <b>${l.nombre}</b></button>`).join('')}
+        <button class="ficha-animal ${!puesto ? 'puesta' : ''}" data-v="">
+          <div class="sinAnimal">🚫</div><b>Sin lacito</b></button>
+      </div>
+      <p class="pista">Lo llevará puesto por toda la isla.</p>
+    `);
+    UI.modal.querySelectorAll('.miniAnimal').forEach(c => {
+      Avatar.dibujarMascota(c.getContext('2d'), 45, 70, 1.6, id, 1, 0, { lazo: c.dataset.l });
+    });
+    UI.modal.querySelectorAll('.ficha-animal').forEach(b => b.onclick = () => {
+      Sonido.clic();
+      Estado.ponerLazoMascota(id, b.dataset.v);
+      this.ficha(id, b.dataset.v ? '¡Qué guapa con el lacito!' : 'Fuera el lacito.');
+    });
   },
 };
 
@@ -13119,7 +13625,9 @@ const Juego = {
     cosas.push({ y: m.y, f: () => {
       if (!Estado.actual.look.mascota) return;
       this.sombra(ctx, m.x, m.y, 13, 0);
-      Avatar.dibujarMascota(ctx, m.x, m.y, 0.95, Estado.actual.look.mascota, m.mirando, this.t);
+      const suya = Estado.actual.look.mascota;
+      Avatar.dibujarMascota(ctx, m.x, m.y, 0.95, suya, m.mirando, this.t,
+        typeof Mascotas !== 'undefined' ? Mascotas.adornos(suya) : null);
     } });
     /* Yendo en algo, se pinta al final de todo: si no, el agua del lago o la
        pista de los coches la taparían por completo. */
@@ -21089,39 +21597,551 @@ if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
 /* QUÉ FRASES DE LUMI ESTÁN GRABADAS
    Lo escribe voz.py; no se toca a mano. */
 const VOZ_LUMI = [
+  '012ffa1e',
   '016fda40',
+  '0179cd32',
+  '03433aa3',
+  '045c24aa',
+  '0489b306',
+  '0495c52a',
+  '05396ccb',
+  '0585d541',
+  '05b5e548',
+  '05c629ab',
+  '0618e6e0',
+  '071520d6',
+  '07b1bb35',
+  '07bc6a34',
+  '07c2d93f',
+  '07d077d0',
+  '08453c14',
+  '097dd71d',
+  '099336f3',
   '09e226ca',
+  '0ad0220d',
+  '0b205a4c',
+  '0b34297a',
+  '0b4c7a99',
+  '0b61acd6',
+  '0b867095',
+  '0bc2c43d',
+  '0bce3362',
+  '0c4d68b0',
+  '0c9dc021',
+  '0cca0d61',
+  '0de98ba8',
+  '0df29adc',
+  '0efc6865',
+  '0f2b19da',
+  '0f4739b6',
+  '0f5cafc2',
+  '10d6954b',
+  '115bba6a',
   '11c78fe2',
+  '1234c410',
+  '12c701bd',
+  '12d35684',
+  '134adb6c',
+  '15c9e3b7',
+  '15ce3156',
+  '163d434e',
+  '16d12d6d',
+  '16d75d44',
+  '171f2e4d',
   '175d9635',
+  '179c0e74',
   '17c829e7',
+  '17fda0c8',
   '193d83e7',
+  '1a533737',
+  '1aa053db',
+  '1aac8bd8',
+  '1ab3a3fb',
+  '1b0782e3',
   '1b5ace90',
   '1cc3ae96',
+  '1ccc99a5',
+  '1ccca56f',
+  '1cf6b8f0',
+  '1d45130d',
+  '1dab460f',
+  '1dadec2b',
+  '1e0d17e1',
+  '1e5e8d8c',
+  '1ea3ea0c',
+  '1f335341',
+  '1ff4e03b',
+  '2070e376',
+  '20772566',
+  '21f1fdfd',
+  '22982a48',
+  '23540629',
+  '24309bf8',
+  '24638ab1',
+  '24dc1139',
+  '259d3637',
+  '25ea203f',
+  '25f9673c',
+  '27098261',
+  '2745b38f',
+  '283a0b23',
+  '28d126aa',
+  '291e58ab',
+  '29d4db1c',
+  '29f1ad7d',
+  '2aeed063',
+  '2b18ace3',
+  '2cdee5cd',
+  '2ce5d7f5',
+  '2d554bf2',
+  '2daea3d5',
+  '2e19a089',
+  '2e797a67',
+  '2ea880f1',
+  '2f268910',
+  '2fb46997',
+  '2fd0bf23',
   '30f27827',
+  '310d43f8',
+  '314ebc3d',
+  '324abfc2',
+  '328e1622',
+  '32a757a3',
+  '336d42fb',
+  '34dd8e15',
+  '351a918b',
+  '35f1cfbc',
+  '3700df28',
+  '39007d60',
+  '39558cec',
+  '39bc41ed',
+  '3a21e30d',
+  '3a4005cf',
+  '3aa072c2',
+  '3abe02a3',
+  '3b672af7',
+  '3c83145b',
   '3d7affef',
+  '3da1ac0f',
   '3dad15c9',
+  '3e0a05fe',
   '3f47eaed',
+  '3f5949d8',
+  '40c0c524',
+  '40cc902e',
+  '418b81fd',
+  '428c85ac',
+  '4293a20f',
+  '43273541',
+  '43ff481c',
+  '449b4ddd',
+  '4547d8b9',
+  '4557cf2c',
+  '4572b07b',
+  '45b4bec0',
   '45fbe1c7',
+  '4669dbcc',
+  '4687f631',
+  '4730dd35',
+  '477d5364',
+  '479daace',
+  '47c47d6d',
+  '47e10e1e',
+  '47f56d48',
+  '47f9f0db',
+  '4886053b',
+  '489346b0',
+  '489a9e01',
+  '48ae0a00',
+  '48caba6b',
+  '48f0c764',
   '49353066',
+  '4a0863af',
+  '4b120fc6',
+  '4d4e9c2e',
   '4d6277a1',
+  '4d7ec3de',
+  '4db67465',
   '4dfd3077',
+  '501e5b3f',
+  '50df2110',
+  '5103a12b',
+  '5128c6da',
+  '519a5be7',
+  '53466b1d',
+  '53e1b113',
+  '5444b584',
+  '5492d9ab',
+  '559d79bc',
+  '55ab04ec',
+  '5610e9c4',
+  '56aea12e',
+  '5801ef53',
+  '5846db34',
+  '58e2504a',
+  '5a44569d',
+  '5a4adb7c',
+  '5a98bf4f',
+  '5ab6fa6c',
+  '5b849dc2',
+  '5b990e14',
+  '5c0ef2a3',
+  '5c3fffe7',
+  '5c654f5e',
+  '5d730b4f',
+  '5dfa5b5a',
+  '5e3d4f69',
+  '5e59baa3',
+  '5e861280',
+  '5eb1f468',
+  '5ee2f6a4',
+  '5ee43921',
   '5fccd559',
+  '603ec772',
+  '61e3c15f',
+  '62adbfc4',
+  '62ceefac',
+  '62d08f91',
+  '63080229',
+  '6445f85e',
+  '649d45b8',
+  '669e3514',
   '66f4a96d',
+  '6870383c',
+  '687bb114',
+  '68b6474b',
+  '68ca9623',
+  '6958200e',
+  '69656965',
   '69b6716c',
+  '69c2e6b4',
+  '6ab2d549',
+  '6bfabe33',
+  '6cc6a74f',
+  '6dc2cff1',
+  '6e85760a',
+  '6e8ff4f7',
+  '6e922891',
+  '6e975e35',
+  '6f616d94',
+  '6f6f4a4b',
+  '6fb87f50',
+  '6fd5765c',
+  '70cf545c',
+  '71071e8e',
+  '71b0d45f',
+  '72e65f39',
+  '739782e4',
+  '73bf2f39',
+  '7430cd63',
+  '74ad9e43',
+  '750fd88c',
+  '7533983f',
+  '759261be',
   '75c6793f',
+  '7665e11a',
+  '77be8014',
+  '7807571d',
+  '781b6544',
+  '78e85654',
+  '78f7a76f',
+  '79ac21f0',
+  '79b36cf7',
+  '7a3a2705',
+  '7b842685',
+  '7bbee607',
+  '7bd2d0fd',
+  '7c4ea910',
+  '7c516baa',
+  '7c54830d',
+  '7c75de70',
+  '7eb3c233',
+  '7ed2f6ec',
+  '7f6030f7',
+  '7f8bf005',
+  '7fa75f27',
+  '7fab857c',
+  '8032f433',
+  '81a3a298',
+  '820bfc89',
+  '8272dcbf',
+  '834f3d25',
+  '835bdcdd',
+  '839cc63c',
+  '84382eab',
+  '84640de4',
+  '848be5ad',
+  '84e36a5f',
+  '84ef18e3',
+  '857465f1',
+  '857ec048',
+  '86322afa',
+  '8751e4b4',
+  '87afcbf5',
+  '87b8b2b2',
+  '87c28e3a',
   '87f90156',
+  '8951132c',
+  '898c2d59',
+  '899afc6a',
   '89c131a0',
+  '8a857f94',
+  '8afa7b64',
+  '8b5e304d',
+  '8bdab3a7',
+  '8c9ff0cf',
+  '8ca51784',
+  '8cd87c3a',
+  '8ce7c9cb',
+  '8e30abe5',
+  '8e85c23d',
+  '8ec7c3c3',
+  '8f39003a',
+  '8fcd3765',
+  '90fcdad3',
+  '91ba4198',
+  '91fe5968',
+  '922463f6',
+  '93a6b9ad',
+  '93d404eb',
+  '944f1de2',
+  '94659408',
+  '95190aa9',
+  '958c3deb',
+  '95a4ac22',
+  '95e59f7e',
+  '9616d709',
+  '969cb944',
+  '9743bc24',
+  '9743c307',
+  '97569535',
+  '97b7ad8b',
+  '982673df',
+  '982db7d4',
+  '986b58d8',
+  '98ba2bcb',
+  '9907e76b',
+  '99507818',
+  '9979a2da',
+  '9a6f75d7',
+  '9abef139',
+  '9c083268',
+  '9c0d213e',
+  '9c327aff',
+  '9c52096b',
+  '9c60a956',
+  '9c612c80',
+  '9d38ae5b',
+  '9dae98d2',
+  '9e0bbac4',
+  '9eaa022c',
+  '9f20e5ee',
+  '9f5be999',
+  '9fdf13fd',
+  'a0457c29',
+  'a09346b2',
+  'a0d9bb80',
+  'a1582fad',
+  'a211a52d',
+  'a2794801',
+  'a3a27037',
+  'a3c6e158',
+  'a3f53bb3',
   'a4f374cf',
+  'a578eb77',
+  'a5d634bf',
+  'a61d0224',
+  'a6781d32',
+  'a6ccda7d',
+  'a6e7a529',
+  'a71ce0c9',
+  'a76cda57',
+  'a7987276',
+  'a7dbc5f0',
+  'a7f48ac4',
+  'aa81b4a6',
+  'aa9973aa',
+  'abd368fb',
+  'ac6deccf',
+  'ac7e5da0',
+  'ad878b3b',
+  'ada1c83c',
+  'ae2ed6b0',
+  'ae5ae841',
+  'ae6acbfa',
+  'ae994a2d',
+  'aeddc104',
+  'aee8397b',
+  'afd5dcef',
+  'b0166203',
+  'b0553748',
+  'b17adc49',
+  'b253fc7e',
+  'b26079ac',
+  'b29a23da',
+  'b2ade435',
+  'b2ea24ff',
+  'b364edcc',
+  'b3e9ee6d',
+  'b4073642',
+  'b45d3091',
+  'b60c645b',
+  'b6219b95',
+  'b6dc7e19',
+  'b7b74694',
+  'b88734c9',
+  'b912ed31',
+  'b951b7a2',
+  'b9bd93d4',
+  'ba12de65',
+  'ba529613',
+  'ba88f897',
+  'baafaab1',
   'bb080866',
+  'bbc3b67a',
+  'bbdabb3d',
+  'bd3e24e9',
+  'bdbb8560',
+  'be7f1443',
+  'beb63633',
+  'bf0ce58e',
+  'bf6f2a5f',
+  'bf8a1cd9',
+  'bfcfec02',
+  'c05f9fac',
+  'c0bbc528',
+  'c1aadd78',
+  'c227ff80',
+  'c27734c8',
+  'c2bca4a2',
+  'c2d7e17c',
+  'c36f606d',
+  'c3ede596',
+  'c42ce65d',
+  'c512d2c4',
+  'c57603ae',
+  'c59c69d9',
+  'c61752e7',
+  'c64fc41c',
+  'c6935bdd',
+  'c6d542f9',
+  'c70f49b7',
+  'c731ec6c',
+  'c74d7495',
+  'c768ac8a',
+  'c769d86c',
+  'c7b21789',
+  'c82b1790',
+  'c836724f',
+  'c8842e8a',
+  'c88660a7',
+  'c8bae37d',
+  'c962aa48',
+  'c9cb9099',
+  'c9df51cb',
+  'ca54456b',
+  'cb0333ce',
   'cb7bef9e',
+  'cc69ba7d',
+  'cc9595ee',
+  'ccd3587b',
+  'cd12e338',
+  'cdbd17e9',
   'cdc4c7c2',
+  'ce1d099c',
   'ce843ba8',
+  'ceb1d28f',
+  'cf273444',
+  'cfc9b9e8',
+  'd00494ba',
+  'd1954ed8',
+  'd20d3db7',
+  'd22d5530',
+  'd2699f24',
   'd42856da',
+  'd4d7eff9',
+  'd555f589',
+  'd55e2251',
+  'd5b10918',
+  'd5e446cd',
+  'd73235a8',
+  'd80ce3cb',
+  'd8605474',
+  'd86123c6',
+  'd87ea538',
+  'd9fbfc60',
+  'da57ca26',
+  'da9f323f',
+  'dab5e25c',
+  'daed970e',
+  'daf31564',
+  'db67e861',
+  'dbb9c480',
+  'dc9557b6',
+  'dd17ccda',
+  'dda08ac4',
+  'dde601e2',
+  'defaf6f1',
+  'df6035a8',
+  'df987956',
+  'e01faf05',
+  'e0b8b446',
+  'e16d3fd5',
   'e1958f12',
+  'e22939bc',
+  'e3142472',
+  'e4eaf820',
+  'e5a4424d',
+  'e62897cb',
+  'e6578cf2',
+  'e7633935',
+  'e7fa8aa9',
+  'e821394a',
+  'e9118551',
+  'e9b4e720',
+  'ea783cbf',
   'ea7e28b7',
+  'eaa1526e',
+  'eab54cfc',
+  'eaee4b35',
+  'eaf4610d',
+  'eb023289',
+  'eb38ed88',
+  'eb82e881',
+  'ec06d0c2',
   'ecf7fe1e',
+  'ed1d298c',
+  'edbf72ab',
+  'efe3ab25',
+  'f00a4fc8',
+  'f0ca0eb1',
+  'f0f4b570',
+  'f104aed1',
+  'f26ec8cc',
+  'f2c5080a',
+  'f2e66697',
+  'f3db64d5',
+  'f5a3b3af',
+  'f5ce2e35',
+  'f653c29d',
+  'f6b49c20',
   'f84572b6',
+  'f87e6f94',
+  'f97071cd',
+  'f9b9bb5b',
+  'f9d9bc36',
+  'fa1beac0',
+  'fa49b378',
+  'fb7df0a2',
+  'fb8f9fa2',
+  'fcda987c',
+  'fd08dcef',
   'fe3b6eb7',
+  'fe8b2e8e',
+  'fea4c0ea',
+  'feb13216',
+  'febce601',
+  'ff02980c',
 ];
 
 </script>
@@ -21139,9 +22159,14 @@ const VOZ_LUMI = [
    suena a robot y cambia de un aparato a otro. Así suena igual en todos y es
    la voz que eligió Antonio (Mónica, más aguda y con un poco de eco).
 
-   Solo hablan las frases que están en `voz/frases.txt`. Las que llevan
-   números o nombres que cambian (el nombre de un sitio, una pista) se quedan
-   escritas, como siempre: no se pueden grabar de antemano. */
+   Habla TODO lo que tiene escrito (21-09-2026, lo pidió Antonio). Como
+   muchas frases se montan con piezas («¡Has encontrado» + el nombre del
+   sitio), está grabada cada oración por separado y aquí se encadenan: si la
+   frase entera no está, suenan sus trozos uno detrás de otro. Lo único que
+   sigue mudo es lo que lleva un número que cambia en cada partida.
+
+   Las frases las saca del propio juego `node voz-textos.js` y las graba
+   `python3 voz.py`. */
 
 /* Registrarla es lo que hace que el juego la dé por hecha cuando se coloca su
    cristal (si no, celebraría y diría «pídeselo a papá»). No añade nada al
@@ -21153,6 +22178,7 @@ if (typeof ampliacion === 'function') ampliacion({ id: 'hadaHabla' });
 
   const Voz = {
     guardados: {},
+    cola: [],
     sonando: null,
 
     /* El mismo número que saca voz.py del texto, para encontrar el archivo:
@@ -21188,21 +22214,51 @@ if (typeof ampliacion === 'function') ampliacion({ id: 'hadaHabla' });
       return !(typeof Estado !== 'undefined' && Estado.actual && Estado.actual.vozHada === false);
     },
 
+    /* Partir en oraciones, igual que hace voz-textos.js al grabarlas. Los
+       saltos de línea también cortan. */
+    oraciones(texto) {
+      return texto.replace(/<br\s*\/?>/g, ' … ')
+        .split(/(?<=[.!?…])\s+/).map(s => s.trim()).filter(Boolean);
+    },
+
+    /* Qué se puede decir de este texto:
+         · si está grabado entero, eso (suena mejor, con su entonación);
+         · si no, los trozos que sí estén, uno detrás de otro. Así también
+           suenan las frases que el juego monta con piezas («¡Has encontrado»
+           + el nombre del sitio, «¡Plof!» + la pista del reto…). */
+    trozos(texto) {
+      const entero = this.nombre(texto);
+      if (VOZ_LUMI.indexOf(entero) >= 0) return [entero];
+      return this.oraciones(texto).map(o => this.nombre(o))
+        .filter(id => VOZ_LUMI.indexOf(id) >= 0);
+    },
+
     decir(texto) {
       if (typeof Sonido !== 'undefined' && !Sonido.encendido) return;
       if (!this.quiere()) return;
-      const id = this.nombre(texto);
-      if (VOZ_LUMI.indexOf(id) < 0) return;         // esa frase no está grabada
+      const cola = this.trozos(texto);
+      if (!cola.length) return;                      // nada grabado de esta frase
       this.callar();                                 // no se pisan dos frases
+      this.cola = cola;
+      this.seguir();
+    },
+
+    /* Va soltando la cola: cuando acaba un trozo, empieza el siguiente */
+    seguir() {
+      const id = this.cola.shift();
+      if (!id) { this.sonando = null; return; }
       const a = this.pista(id);
       a.currentTime = 0;
+      a.onended = () => this.seguir();
       const p = a.play();
-      if (p && p.catch) p.catch(() => {});
+      if (p && p.catch) p.catch(() => this.seguir());
       this.sonando = a;
     },
 
     callar() {
+      this.cola = [];
       if (!this.sonando) return;
+      this.sonando.onended = null;
       this.sonando.pause();
       this.sonando.currentTime = 0;
       this.sonando = null;
