@@ -5107,7 +5107,7 @@ const Estado = {
       pedidos: [],              // peticiones antiguas a Teo (ya no se hacen; se leen con las cartas)
       cartas: [],               // las cartas que ha echado al buzón de correos
       hechosHoy: { dia: '', ids: [] },    // retos ya superados hoy: no se repiten
-      progreso: { retos: 0, ganadas: [], puestos: [] },  // los cristales: retos contados, cristales mayores ganados y ya encajados en el Farol
+      progreso: { retos: 0, ganadas: [], puestos: [], dia: '' },  // los cristales: retos contados, mayores ganados, ya encajados en el Farol y el día en que llenó la última barra (uno al día)
       cristalesEnMano: [],      // cristales mayores que lleva encima y aún no ha llevado al Farol
       retosDelDia: { dia: '', ids: [] },  // qué sitios tienen reto hoy
       ultimaVariante: {},       // qué versión salió la última vez en cada reto
@@ -5193,7 +5193,7 @@ const Estado = {
     p.ultimaVariante = {};
     p.variantesVistas = {};
     p.fallosHoy = { dia: '', ids: {} };
-    p.progreso = { retos: 0, ganadas: [], puestos: [] };
+    p.progreso = { retos: 0, ganadas: [], puestos: [], dia: '' };
     p.cristalesEnMano = [];
     // si llevaba puesto algo que ya no es suyo, se vuelve a lo de serie
     const base = lookPorDefecto();
@@ -11545,6 +11545,11 @@ const Pistas = {
    pedagogía de esto. Y como mañana los retos de hoy vuelven a contar, la
    cuenta no se agota aunque ya hayan visitado la isla entera.
 
+   UNA BARRA AL DÍA, NI UNA MÁS (20-09-2026, lo pidió Antonio). Llenada la
+   barra, ese día ya no sube más: el cristal siguiente es de mañana. Los
+   retos de después siguen pagando conchas. Así se abre como mucho una
+   expansión al día y el juego dura, en vez de vaciarse en una tarde.
+
    EL CRISTAL LO LLEVAN ELLAS. Al llenar la barra, el Cristal Mayor aparece en
    la mano de la jugadora: hay que ir andando hasta el Farol y colocarlo allí
    (Juego.colocarCristal). Hasta que no lo coloca, la expansión no se abre.
@@ -11717,15 +11722,33 @@ const Sorpresas = {
     return this.progreso().puestos.map(id => this.color(this.premioDe(id)));
   },
 
-  /* UN RETO NUEVO DEL DÍA. Se llama desde Desafio.exito(). */
+  /* UN RETO NUEVO DEL DÍA. Se llama desde Desafio.exito().
+
+     TOPE: UN CRISTAL POR DÍA (20-09-2026, lo pidió Antonio). La barra se
+     llena como mucho UNA VEZ AL DÍA. Al llenarla queda apuntado el día
+     (pr.dia) y los retos que se hagan después ya no la mueven: siguen
+     pagando conchas y valiendo para todo lo demás, pero el cristal siguiente
+     es cosa de mañana. Sin esto, una tarde larga se llevaba por delante tres
+     o cuatro expansiones de golpe y al día siguiente ya no quedaba nada nuevo
+     que descubrir: mejor un premio cada día que todos en una tarde. */
   sumar() {
     if (!Estado.actual) return;
+    if (this.topeDelDia()) {            // hoy ya está: se avisa una vez y no suma
+      if (this.avisado !== Estado.hoy()) this.aviso = true;
+      return;
+    }
     const pr = this.progreso();
     pr.retos++;
+    if (this.faltan() === 0) {
+      pr.dia = Estado.hoy();            // barra llena hoy: cerrada hasta mañana
+      this.pendiente = this.siguiente();
+    }
     Estado.guardar();
     this.pintar();
-    if (this.faltan() === 0) this.pendiente = this.siguiente();
   },
+
+  /* ¿Ha llenado ya la barra hoy? */
+  topeDelDia() { return this.progreso().dia === Estado.hoy(); },
 
   /* LA BARRA, arriba a la izquierda */
   pintar() {
@@ -11739,6 +11762,13 @@ const Sorpresas = {
       relleno.style.width = '100%';
       relleno.style.background = this.color(s);
       caja.title = 'Llevas ' + this.comoSeLlama(s) + ': llévalo al Farol, en el centro de la isla';
+      return;
+    }
+    if (this.topeDelDia()) {                  // el cristal de hoy ya está dado
+      texto.textContent = '¡mañana!';
+      relleno.style.width = '100%';
+      relleno.style.background = '#9FB6D8';
+      caja.title = 'Hoy ya has conseguido tu cristal. Mañana la barra vuelve a subir.';
       return;
     }
     const hechos = this.cada() - this.faltan();
@@ -11755,11 +11785,27 @@ const Sorpresas = {
       if (!Estado.actual) return;
       // La barra puede estar ya llena al entrar (partida vieja, retos que ya contaban)
       if (!this.pendiente && this.faltan() === 0) this.pendiente = this.siguiente();
-      if (!this.pendiente || UI.estaAbierto()) return;
-      const s = this.pendiente;
-      this.pendiente = null;
-      this.celebrar(s);
+      if (UI.estaAbierto()) return;
+      if (this.pendiente) {
+        const s = this.pendiente;
+        this.pendiente = null;
+        this.celebrar(s);
+        return;
+      }
+      /* Ha ganado un reto con el tope del día puesto: se le explica una vez,
+         sin cortar el cartel del reto que acaba de ganar. */
+      if (this.aviso) { this.aviso = false; this.avisado = Estado.hoy(); this.avisarTope(); }
     }, 700);
+  },
+
+  /* HOY YA TIENE SU CRISTAL. Que no parezca que la barra está rota. */
+  avisarTope() {
+    UI.dialogo('💎 El cristal de hoy ya es tuyo',
+      '<b>¡Muy bien!</b> Hoy ya has llenado la barra, así que el cristal siguiente ' +
+      'te espera <b>mañana</b>. 🌙<br><br>' +
+      'Los retos que hagas ahora siguen dándote <b>conchas</b>: puedes seguir jugando, ' +
+      'comprando y explorando todo lo que quieras.',
+      [{ texto: 'Vale', accion: () => UI.cerrar() }]);
   },
 
   /* LLENÓ LA BARRA: el cristal aparece EN SU MANO.
