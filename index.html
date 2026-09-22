@@ -437,6 +437,7 @@
   .rareza-icono{font-size:32px}
   .rareza small{color:var(--tinta-suave)}
   .rareza-grande{font-size:70px; line-height:1.1}
+  .rareza .tirar{flex:0 0 auto; margin-left:auto; white-space:nowrap}
 
   /* LA FIESTA DE LOS GLOBOS (el minijuego del salón de Coco) */
   .globos-como{font-size:18px; max-width:26em}
@@ -10190,13 +10191,28 @@ const Correo = {
 
   /* Las cartas de todas las jugadoras de este aparato, las más nuevas primero.
      Incluye las peticiones antiguas a Teo, para que no se pierda ninguna. */
-  todas() {
+  todas() { return this.todasConSitio().map(r => r.carta); },
+
+  /* Lo mismo, pero apuntando de dónde sale cada carta, para poder borrarla.
+     El apunte va aparte y NO se guarda dentro de la carta. */
+  todasConSitio() {
     const lista = [];
-    (Estado.perfiles || []).forEach(p => {
-      (p.cartas || []).forEach(x => lista.push(x));
-      (p.pedidos || []).forEach(x => lista.push(Object.assign({ para: 'teo', quien: p.nombre }, x)));
+    (Estado.perfiles || []).forEach((p, iP) => {
+      (p.cartas || []).forEach((x, i) => lista.push({ carta: x, perfil: iP, lista: 'cartas', i: i }));
+      (p.pedidos || []).forEach((x, i) => lista.push({
+        carta: Object.assign({ para: 'teo', quien: p.nombre }, x),
+        perfil: iP, lista: 'pedidos', i: i }));
     });
-    return lista.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+    return lista.sort((a, b) =>
+      ((b.carta.fecha || '').localeCompare(a.carta.fecha || '')));
+  },
+
+  /* Borra una carta del aparato. No tiene vuelta atrás: se pregunta antes. */
+  borrar(sitio) {
+    const p = (Estado.perfiles || [])[sitio.perfil];
+    if (!p || !p[sitio.lista]) return;
+    p[sitio.lista].splice(sitio.i, 1);
+    Estado.guardar();
   },
 
   cuantas() { return this.todas().length; },
@@ -10208,14 +10224,17 @@ const Correo = {
 
   /* El saco del cartero: aquí las lee Antonio */
   leer() {
-    const todas = this.todas();
-    const filas = todas.length ? todas.map(x => {
+    const sitios = this.todasConSitio();
+    const todas = sitios.map(r => r.carta);
+    const filas = sitios.length ? sitios.map((r, n) => {
+      const x = r.carta;
       const f = new Date(x.fecha);
       const cuando = isNaN(f) ? '' : f.toLocaleDateString('es-ES',
         { day: 'numeric', month: 'long' }) + ', ' + f.toLocaleTimeString('es-ES',
         { hour: '2-digit', minute: '2-digit' });
       return `<div class="rareza"><div><b>De ${x.quien || ''} para ${this.nombrePara(x.para)}</b>
-              <small>${cuando}</small><br>${x.texto.replace(/</g, '&lt;')}</div></div>`;
+              <small>${cuando}</small><br>${x.texto.replace(/</g, '&lt;')}</div>
+              <button class="btn gris tirar" data-n="${n}">🗑️ Tirarla</button></div>`;
     }).join('') : '<p class="pista">Todavía no hay cartas en el buzón.</p>';
 
     UI.abrir(`
@@ -10227,7 +10246,21 @@ const Correo = {
         <button class="btn gris" id="cerrarCartas">Cerrar</button>
       </div>
     `);
-    document.getElementById('cerrarCartas').onclick = () => UI.cerrar();
+    document.getElementById('cerrarCartas').onclick = () => {
+      UI.cerrar();
+      if (typeof Inicio !== 'undefined') Inicio.pintarAvisoGuardado();
+    };
+    document.querySelectorAll('.tirar').forEach(b => {
+      b.onclick = () => {
+        const r = sitios[+b.dataset.n];
+        UI.dialogo('✉️ Tirar la carta',
+          'Se va a borrar la carta de <b>' + (r.carta.quien || '') + '</b> para <b>' +
+          this.nombrePara(r.carta.para) + '</b>. No se puede recuperar.', [
+            { texto: '🗑️ Sí, tirarla', accion: () => { Correo.borrar(r); Correo.leer(); } },
+            { texto: 'No', accion: () => Correo.leer() },
+          ]);
+      };
+    });
     document.getElementById('copiarCartas').onclick = (ev) => {
       const texto = todas.map(x => '· De ' + (x.quien || '') + ' para ' +
         this.nombrePara(x.para) + ': ' + x.texto).join('\n');
