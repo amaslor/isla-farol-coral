@@ -7,8 +7,22 @@
 <style>
   :root{
     color-scheme: light;      /* el juego es siempre claro, aunque el Mac esté en oscuro */
-    --crema:#FDF6E3; --tinta:#2F2A28; --turquesa:#3C8DA6; --coral:#F0836F;
-    --verde:#5FA55A; --sombra:0 4px 0 rgba(0,0,0,.12);
+    /* PALETA «FAROL DE CORAL» (22-09-2026). Antes: fondo beis, títulos azul
+       claro y botón verde, el aspecto de cualquier juego hecho con Claude.
+       Ahora: papel cálido, coral para quien habla y la luz ámbar del Farol
+       para el botón que hay que pulsar. El verde queda SOLO para «bien». */
+    --papel:#FFFCF5;        /* el panel de las ventanas */
+    --crema:#FAF2E1;        /* el fondo de la página */
+    --arena:#F5EDDB;        /* chips, barras vacías, el botón de cerrar */
+    --borde:#E8DCC2;
+    --tinta:#2B2723; --tinta-suave:#7C7365;
+    --coral:#CE5B44;        /* quien habla, los precios, los avisos */
+    --farol:#EFA82C; --farol-hondo:#C9821A;   /* el botón principal */
+    --mar:#1F6B7C; --mar-hondo:#14505E;       /* los botones normales */
+    --verde:#4E9B5B; --verde-hondo:#3B7845;   /* solo «bien» */
+    --turquesa:var(--mar);  /* nombre viejo: lo usan muchas piezas del juego */
+    --sombra:0 3px 0 rgba(43,39,35,.10);
+    --sombra-caja:0 18px 50px rgba(28,40,44,.30);
   }
   /* Todos los controles llevan su color escrito: si no, el modo oscuro del
      sistema los pinta en blanco sobre blanco y no se lee nada. */
@@ -21,31 +35,63 @@
     display:flex; justify-content:center; align-items:center; min-height:100vh; min-height:100dvh;
   }
   .oculto{display:none !important}
-  h1{font-size:30px; margin:.2em 0; color:var(--turquesa)}
+  h1{font-size:30px; margin:.2em 0; color:var(--coral); letter-spacing:.4px}
   p{margin:.5em 0}
 
+  /* LOS BOTONES, EN TRES ALTURAS (22-09-2026)
+       .defecto  ámbar  → lo que hay que pulsar (uno por ventana)
+       .btn      mar    → las demás cosas que se pueden hacer
+       .gris     papel  → salir, dejarlo, volver
+     Todos miden lo mismo: antes el principal era más grande y más alto que
+     los otros y la fila quedaba desigual. */
   .btn{
-    font:inherit; font-weight:bold; background:var(--turquesa); color:#fff;
-    border:0; border-radius:14px; padding:14px 22px; margin:6px;
-    cursor:pointer; box-shadow:var(--sombra); min-height:52px;
+    font:inherit; font-weight:bold; font-size:18px;
+    background:var(--mar); color:#FFF9EC;
+    border:0; border-radius:16px; padding:12px 22px; margin:6px;
+    cursor:pointer; box-shadow:0 3px 0 var(--mar-hondo); min-height:58px;
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    transition:transform .08s, box-shadow .08s, filter .12s;
   }
   .btn:hover{filter:brightness(1.07)}
-  .btn.defecto{background:var(--verde); font-size:21px; padding:16px 30px}
-  .btn .tecla{display:block; font-size:12px; font-weight:normal; opacity:.85; letter-spacing:1px}
-  .cerrar{position:absolute; top:10px; right:12px; width:44px; height:44px; border:0;
-          border-radius:50%; background:#EFE6D0; color:#8A837A; font-size:20px; cursor:pointer}
-  .cerrar:hover{background:#E4D8BC}
-  .btn.bien{background:var(--verde)}
-  .btn.mal{background:#C9C4BC}
-  .enlace{background:none;border:0;color:#9A938A;font:inherit;font-size:14px;cursor:pointer;text-decoration:underline}
+  .btn:active{transform:translateY(2px); box-shadow:0 1px 0 var(--mar-hondo)}
+  .btn.defecto{background:var(--farol); color:#3D2B07; box-shadow:0 3px 0 var(--farol-hondo)}
+  .btn.defecto:active{box-shadow:0 1px 0 var(--farol-hondo)}
+  /* El recordatorio de la tecla: una chapita dentro del botón, no una segunda
+     línea debajo (eso es lo que hacía el botón principal más alto). */
+  .btn .tecla{font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;
+              background:rgba(0,0,0,.12); border-radius:7px; padding:3px 8px; opacity:.9}
+  /* El dibujito de cada botón, en su columna: así en una lista quedan alineados */
+  .btn .icono-btn{font-size:24px; width:1.5em; flex:none; text-align:center}
+  .cerrar{position:absolute; top:14px; right:14px; width:42px; height:42px; border:0;
+          border-radius:50%; background:var(--arena); color:var(--tinta-suave);
+          font-size:19px; cursor:pointer; box-shadow:0 2px 0 rgba(43,39,35,.08)}
+  .cerrar:hover{background:#EFE3C9; color:var(--tinta)}
+  .btn.bien{background:var(--verde); color:#fff; box-shadow:0 3px 0 var(--verde-hondo)}
+  .btn.mal{background:#D8D2C6; color:#8B8478; box-shadow:0 3px 0 #C3BCAE}
+  .btn.gris{background:var(--papel); color:var(--tinta-suave);
+            box-shadow:inset 0 0 0 2px var(--borde), 0 3px 0 #E4D8BE}
+  .btn.gris:hover{background:#FFF8E9; color:var(--tinta)}
+  /* Las filas de botones: todos a la misma altura y centrados */
+  .botones{display:flex; flex-wrap:wrap; gap:12px; justify-content:center;
+           align-items:stretch; margin:18px 0 2px}
+  .botones .btn{margin:0}
+  /* Y cuando son tres o más, o son largos: en lista, uno debajo de otro y
+     todos igual de anchos (lo pidió Antonio con el menú de los vehículos). */
+  .botones.lista{flex-direction:column; align-items:stretch;
+                 max-width:440px; margin-left:auto; margin-right:auto}
+  .botones.lista .btn{width:100%; justify-content:flex-start; gap:14px; text-align:left}
+  .botones.lista .btn .tecla{margin-left:auto}
+  .enlace{background:none;border:0;color:var(--tinta-suave);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline}
 
   /* ---------- pantallas ---------- */
   #inicio,#crear{text-align:center; padding:24px; max-width:900px}
   #listaPerfiles{display:flex; gap:18px; flex-wrap:wrap; justify-content:center; margin-top:18px}
-  .ficha{background:#fff; color:var(--tinta); border-radius:20px; padding:14px 18px; box-shadow:var(--sombra); min-width:170px}
-  .ficha small{display:block; color:#8A837A; font-size:15px}
+  .ficha{background:var(--papel); color:var(--tinta); border:1px solid var(--borde);
+         border-radius:22px; padding:16px 20px; box-shadow:0 8px 22px rgba(40,34,26,.10); min-width:178px}
+  .ficha small{display:block; color:var(--tinta-suave); font-size:15px}
+  .ficha .btn{width:100%; margin:12px 0 2px}
   /* La línea que dice si en este aparato se está guardando la partida */
-  #avisoGuardado{font-size:15px; color:#8A837A; margin-top:18px}
+  #avisoGuardado{font-size:15px; color:var(--tinta-suave); margin-top:18px}
   #avisoGuardado.alerta{color:#B4462F; background:#FFE9E2; border-radius:14px;
                         padding:12px 18px; max-width:34em; margin:18px auto 0; font-weight:bold}
   .fila-enlaces{display:flex; gap:10px; justify-content:center; margin-top:4px}
@@ -53,13 +99,14 @@
   .mini{display:block; margin:0 auto}
 
   #textoPedido{font:inherit; font-size:17px; color:var(--tinta); background:#fff; width:100%;
-               border:3px solid #E3D9C0; border-radius:14px; padding:12px; resize:vertical;
+               border:3px solid var(--borde); border-radius:14px; padding:12px; resize:vertical;
                box-sizing:border-box; margin:6px 0}
   #crear input{font:inherit; color:var(--tinta); background:#fff; padding:12px;
-               border:3px solid #E3D9C0; border-radius:12px; width:min(340px,80vw); text-align:center}
-  .elige{font:inherit; color:var(--tinta); background:#fff; border:3px solid #E3D9C0;
-         border-radius:16px; padding:12px 18px; margin:6px; cursor:pointer; min-height:56px}
-  .elige.elegido{border-color:var(--turquesa); background:#E7F4F8}
+               border:3px solid var(--borde); border-radius:12px; width:min(340px,80vw); text-align:center}
+  .elige{font:inherit; color:var(--tinta); background:var(--papel); border:2px solid var(--borde);
+         border-radius:16px; padding:12px 18px; margin:6px; cursor:pointer; min-height:58px}
+  .elige:hover{border-color:#D9C9A6}
+  .elige.elegido{border-color:var(--mar); background:#E9F3F5; box-shadow:0 0 0 3px rgba(31,107,124,.16)}
   .grupo{margin:14px 0}
   .grupo b{display:block; margin-bottom:4px}
   #avisoCrear{color:var(--coral); min-height:28px; font-weight:bold}
@@ -73,17 +120,18 @@
   #lienzo{width:100%; height:100%; display:block; background:#4FB8D8; touch-action:manipulation}
   #hud{position:absolute; top:10px; left:14px; right:14px; display:flex; gap:12px; align-items:center;
        font-weight:bold; text-shadow:0 2px 0 #fff; pointer-events:none}
-  #hud .caja-hud{background:rgba(255,255,255,.85); border-radius:12px; padding:4px 12px}
+  #hud .caja-hud{background:rgba(255,252,245,.92); border-radius:999px; padding:5px 14px;
+                 box-shadow:0 2px 8px rgba(40,34,26,.12)}
   #hud .der{margin-left:auto; pointer-events:auto}
   #hud .barrita{display:inline-block; width:56px; height:9px; vertical-align:middle;
-    background:#e3dcc9; border-radius:5px; overflow:hidden; margin-left:4px}
+    background:var(--arena); border-radius:5px; overflow:hidden; margin-left:4px}
   #hud .barrita i{display:block; height:100%; width:0;
-    background:linear-gradient(90deg,#f5a623,#f8d24a); transition:width .5s ease}
+    background:linear-gradient(90deg,var(--farol-hondo),var(--farol)); transition:width .5s ease}
   /* Arriba del todo: si va en el centro, tapa al personaje */
-  .tecla-globo{display:inline-block; background:var(--verde); color:#fff; border-radius:8px;
+  .tecla-globo{display:inline-block; background:var(--mar); color:#FFF9EC; border-radius:8px;
                padding:0 9px; margin:0 3px}
-  #hadaGlobo small{display:block; color:#7A736A; font-size:15px; font-weight:normal}
-  #globo b{display:inline-block; background:var(--verde); color:#fff; border-radius:8px;
+  #hadaGlobo small{display:block; color:var(--tinta-suave); font-size:15px; font-weight:normal}
+  #globo b{display:inline-block; background:var(--mar); color:#FFF9EC; border-radius:8px;
            padding:1px 10px; margin-right:6px}
   /* OJO: el contenedor de los mandos ocupa todo el ancho y 168 px de alto, así
      que tapaba el botón «Bajarme» de la barra del paseo (y los clics en la
@@ -96,11 +144,12 @@
   #mandos button{font-size:24px; width:66px; height:58px; border:0; border-radius:18px;
                  background:rgba(255,255,255,.9); box-shadow:var(--sombra); cursor:pointer;
                  font-family:inherit; font-weight:bold; color:var(--tinta)}
-  #mandos .accion{background:var(--verde); color:#fff; font-size:26px}
+  #mandos .accion{background:var(--farol); color:#3D2B07; font-size:26px}
   .cruceta{display:flex; flex-direction:column; align-items:center; gap:6px}
   .cruceta div{display:flex; gap:6px}
-  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada,#bClima{font-size:20px; border:0; border-radius:10px;
-           padding:4px 8px; background:rgba(255,255,255,.85); cursor:pointer; margin-right:6px}
+  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada,#bClima{font-size:20px; border:0; border-radius:999px;
+           padding:5px 9px; background:rgba(255,252,245,.92); cursor:pointer; margin-right:6px;
+           box-shadow:0 2px 8px rgba(40,34,26,.12)}
 
   /* Los avisos van abajo: arriba taparían las piedras del río */
   .aviso{position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
@@ -109,29 +158,41 @@
   @keyframes sube{from{opacity:0; transform:translate(-50%,10px)}}
 
   /* ---------- ventanas ---------- */
-  #modal{position:fixed; inset:0; background:rgba(47,42,40,.45);
+  #modal{position:fixed; inset:0;
+         background:radial-gradient(120% 90% at 50% 38%, rgba(22,48,55,.44), rgba(16,26,30,.64));
          display:flex; align-items:center; justify-content:center; padding:16px; z-index:10}
   /* Mientras hay una ventana abierta, la página de debajo no se mueve. En la
      tableta, sin esto, abrir y cerrar un reto arrastraba el scroll y hacía
      reaparecer la barra del navegador. (12-09-2026) */
   body.con-modal{overflow:hidden}
-  .caja{position:relative; background:var(--crema); border-radius:24px; padding:30px 26px 24px; max-width:860px;
+  /* La ventana: papel claro con una cinta de coral y ámbar arriba. La cinta
+     es el fondo del propio recuadro, así que no se va al hacer scroll. */
+  .caja{position:relative; border-radius:26px; padding:34px 26px 26px; max-width:860px;
+        background:linear-gradient(90deg,var(--coral),var(--farol)) no-repeat top/100% 7px,
+                   var(--papel);
+        border:1px solid var(--borde);
         width:100%; max-height:92vh; max-height:92dvh; overflow:auto;
-        box-shadow:0 10px 40px rgba(0,0,0,.3); text-align:center;
+        box-shadow:var(--sombra-caja); text-align:center;
         -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
-  .quien{font-weight:bold; color:var(--coral); font-size:17px}
-  .dice{font-size:22px; line-height:1.75; margin:10px auto; max-width:22em}
-  .pregunta{font-weight:bold; color:var(--turquesa)}
-  .pista{min-height:30px; color:#7A736A; font-size:17px}
+  /* Quién habla: su nombre y una rayita ámbar debajo, como un rótulo */
+  .quien{font-weight:bold; color:var(--coral); font-size:18px; letter-spacing:.5px;
+         line-height:1.4; max-width:26em; margin:0 auto}
+  .quien::after{content:''; display:block; width:54px; height:3px; border-radius:3px;
+                background:var(--farol); margin:10px auto 0}
+  .dice{font-size:21px; line-height:1.75; margin:16px auto 6px; max-width:23em}
+  .pregunta{font-weight:bold; color:var(--tinta)}
+  .pista{min-height:30px; color:var(--tinta-suave); font-size:17px}
   .altavoz{min-height:44px}
-  .btn-voz{font:inherit; color:var(--tinta); background:#FFF3C4; border:3px solid #F2C14E; border-radius:12px;
-           padding:8px 16px; cursor:pointer; font-size:16px}
+  .btn-voz{font:inherit; color:var(--tinta); background:#FFF3C4; border:2px solid #F2C14E; border-radius:999px;
+           padding:8px 18px; cursor:pointer; font-size:16px}
   .contador{font-size:19px; margin:8px}
   .cuenta-grande{font-size:46px; font-weight:bold; margin:14px}
 
   .tarjetas{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
-  .tarjeta{font:inherit; color:var(--tinta); background:#fff; border:3px solid #E3D9C0; border-radius:20px;
-           padding:16px; width:190px; cursor:pointer; display:flex; flex-direction:column; gap:8px}
+  .tarjeta{font:inherit; color:var(--tinta); background:#fff; border:2px solid var(--borde); border-radius:20px;
+           padding:16px; width:190px; cursor:pointer; display:flex; flex-direction:column; gap:8px;
+           box-shadow:0 3px 0 rgba(43,39,35,.07); transition:transform .1s, border-color .1s}
+  .tarjeta:hover{border-color:#D9C9A6; transform:translateY(-2px)}
   .tarjeta .icono{font-size:30px}
   .tarjeta.bien{border-color:var(--verde); background:#E7F6E4}
   .tarjeta.mal{border-color:#DDD6CC; opacity:.55}
@@ -149,14 +210,14 @@
   .bm-sobra{background:#EEE; border-color:#AAA; font-size:14px}
   .bm-puntos{background:none; border-color:transparent}
   .bm-seg.hueco{background:#fff; border-style:dashed; color:var(--coral); font-size:20px}
-  .bm-pie{font-size:15px; color:#7A736A; text-align:center}
+  .bm-pie{font-size:15px; color:var(--tinta-suave); text-align:center}
   .bm-seg.bm-g{min-width:0; overflow:hidden}
   @media (max-width:500px){ .bm-seg.bm-g{font-size:14px} }
   .hueco-txt{color:var(--coral)}
   .nota-teo{background:#FFFBEA; border:2px dashed #E3C77A; border-radius:14px; padding:10px 16px; text-align:left}
   .carta{background:#FFFDF6; border:2px solid #E8D9B0; border-radius:12px; padding:14px 18px; text-align:left;
          max-width:520px; margin:8px auto; box-shadow:0 2px 0 #E8D9B0}
-  .carta-fecha{text-align:right; font-size:14px; color:#7A736A; margin-bottom:8px}
+  .carta-fecha{text-align:right; font-size:14px; color:var(--tinta-suave); margin-bottom:8px}
   .carta-campo{display:block; margin:6px 0}
   .carta-campo select{font:inherit; font-size:17px; padding:6px 8px; border-radius:10px; max-width:100%; margin-top:4px}
   .carta-saludo{margin:12px 0 6px; font-weight:bold}
@@ -164,28 +225,28 @@
   .carta-firma{text-align:right; margin-top:8px}
   .mesa{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:560px; margin:8px auto}
   .pegatina{font:inherit; width:64px; height:64px; display:flex; align-items:center; justify-content:center;
-            background:#fff; border:3px solid #E3D9C0; border-radius:14px; cursor:pointer}
+            background:#fff; border:3px solid var(--borde); border-radius:14px; cursor:pointer}
   .pegatina.dentro{border-color:var(--verde); background:#E7F6E4; box-shadow:0 0 0 3px #BFE6B8}
   .pegatina.fuera{opacity:.45}
   .informe{text-align:left; max-height:60vh; overflow:auto}
   .informe-tabla{overflow-x:auto}
   .informe table{border-collapse:collapse; width:100%; font-size:15px; margin:8px 0}
-  .informe th, .informe td{border-bottom:1px solid #E3D9C0; padding:6px; vertical-align:top}
-  .informe td small{color:#7A736A}
+  .informe th, .informe td{border-bottom:1px solid var(--borde); padding:6px; vertical-align:top}
+  .informe td small{color:var(--tinta-suave)}
 
   /* El álbum de pegatinas */
   .album{display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin:10px 0}
-  .pegatina{background:#fff; border:3px solid #E3D9C0; border-radius:16px; padding:10px 6px;
+  .pegatina{background:#fff; border:3px solid var(--borde); border-radius:16px; padding:10px 6px;
             display:flex; flex-direction:column; gap:4px; font-size:15px}
   .pegatina-icono{font-size:34px}
   .pegatina.plata{border-color:#B8C4CC; background:#F4F7F9}
   .pegatina.oro{border-color:#F2C14E; background:#FFF6D8}
   .pegatina.vacia{border-style:dashed; opacity:.5}
   /* El Cuaderno de Manitas: los cromos que faltan salen apagados y con su pista */
-  .cromo{background:#fff; border:3px solid #E3D9C0; border-radius:16px; padding:10px 8px;
+  .cromo{background:#fff; border:3px solid var(--borde); border-radius:16px; padding:10px 8px;
          text-align:center; display:flex; flex-direction:column; gap:4px}
   .cromo .cara{font-size:38px; line-height:1.1}
-  .cromo small{color:#7A736A; font-size:13px; line-height:1.4}
+  .cromo small{color:var(--tinta-suave); font-size:13px; line-height:1.4}
   .cromo.hecho{border-color:var(--verde); background:#E7F6E4}
   .cromo.falta{border-style:dashed}
   .cromo.falta .cara{filter:grayscale(1); opacity:.45}
@@ -215,23 +276,23 @@
 
   .monton{background:#F2E2B6; border-radius:18px; padding:12px; min-height:56px; font-size:28px}
   .cestas{display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
-  .cesta{font:inherit; color:var(--tinta); font-size:34px; background:#fff; border:3px solid #E3D9C0;
+  .cesta{font:inherit; color:var(--tinta); font-size:34px; background:#fff; border:3px solid var(--borde);
          border-radius:18px; padding:10px 14px; cursor:pointer; min-width:110px}
   .cesta .dentro{display:block; font-size:17px; line-height:1.2; word-break:break-all}
   .cesta .cuenta{display:block; font-size:20px; color:var(--turquesa)}
 
-  .botones.grandes .btn{font-size:30px; min-width:110px}
+  .botones.grandes .btn{font-size:30px; min-width:118px; justify-content:center}
 
   /* La cerradura del huevo */
   .pantallita{font-size:40px; font-weight:bold; letter-spacing:6px; background:#2F3A3A;
               color:#8FE3C8; border-radius:14px; padding:8px; margin:10px auto; max-width:220px}
   .teclado{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:340px; margin:0 auto}
   .tecla-num{font:inherit; color:var(--tinta); font-size:22px; font-weight:bold; background:#fff;
-             border:3px solid #E3D9C0; border-radius:14px; padding:12px 0; cursor:pointer}
+             border:3px solid var(--borde); border-radius:14px; padding:12px 0; cursor:pointer}
   .tecla-num.borrar{background:#F6E7D0}
 
   /* La norma de ortografía y sus colores: naranja a/o/u, azul e/i */
-  .norma{background:#FFF9EC; border:3px solid #E3D9C0; border-radius:16px;
+  .norma{background:#FFF9EC; border:3px solid var(--borde); border-radius:16px;
          padding:12px 16px; margin:10px 0; text-align:left; line-height:1.6}
   .voc-forta{color:#D2691E; font-weight:bold}
   .voc-fluixa{color:#2E86AB; font-weight:bold}
@@ -244,21 +305,21 @@
 
   /* Dentro de casa: las tres puertas */
   .puertas{display:flex; flex-direction:column; gap:10px}
-  .puerta{font:inherit; color:var(--tinta); background:#fff; border:3px solid #E3D9C0;
-          border-radius:18px; padding:12px 16px; cursor:pointer; text-align:left;
-          display:flex; align-items:center; gap:14px}
-  .puerta:hover{border-color:var(--turquesa); background:#F2FAFC}
+  .puerta{font:inherit; color:var(--tinta); background:#fff; border:2px solid var(--borde);
+          border-radius:18px; padding:14px 16px; cursor:pointer; text-align:left;
+          display:flex; align-items:center; gap:14px; box-shadow:0 3px 0 rgba(43,39,35,.07)}
+  .puerta:hover{border-color:var(--mar); background:#F3FAFB}
   .puerta-icono{font-size:34px}
-  .puerta small{display:block; color:#8A837A; font-weight:normal}
+  .puerta small{display:block; color:var(--tinta-suave); font-weight:normal}
   .aviso-tienda{background:#FFF3C4; border-radius:14px; padding:10px 14px; color:#7A6A3A}
 
   /* El baño */
   .rutinas{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:12px 0}
-  .rutina{font:inherit; color:var(--tinta); background:#fff; border:3px solid #E3D9C0;
+  .rutina{font:inherit; color:var(--tinta); background:#fff; border:3px solid var(--borde);
           border-radius:18px; padding:12px 10px; cursor:pointer; width:140px}
   .rutina.hecha{border-color:var(--verde); background:#E7F6E4}
   .rutina-icono{display:block; font-size:34px}
-  .rutina small{display:block; color:#8A837A}
+  .rutina small{display:block; color:var(--tinta-suave)}
 
   /* La barra del paseo: cuánto queda */
   #barraTiempo{position:absolute; bottom:92px; left:50%; transform:translateX(-50%);
@@ -301,7 +362,9 @@
     #mandos button{width:58px; height:52px; font-size:21px; border-radius:15px}
 
     /* Las ventanas, a pantalla casi completa */
-    .caja{padding:22px 14px 16px; border-radius:18px; max-height:94vh}
+    .caja{padding:28px 14px 18px; border-radius:20px; max-height:94vh}
+    .btn{font-size:17px; min-height:54px; padding:11px 18px}
+    .botones.lista{max-width:none}
     .dice{font-size:19px}
     .tarjeta{width:150px; padding:12px; font-size:15px}
     .opcion{width:108px}
@@ -348,13 +411,13 @@
   /* El tutorial */
   .tuto-icono{font-size:52px; line-height:1.1}
   .tuto-puntos{display:flex; gap:6px; justify-content:center; margin:10px 0}
-  .punto{width:9px; height:9px; border-radius:50%; background:#E3D9C0}
+  .punto{width:9px; height:9px; border-radius:50%; background:var(--borde)}
   .punto.activo{background:var(--turquesa); transform:scale(1.3)}
-  .btn.gris{background:#C9C2B4}
+  /* (el botón .gris está arriba, con los demás botones) */
 
   /* El animalario */
   .animales{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
-  .ficha-animal{font:inherit; color:var(--tinta); background:#fff; border:3px solid #E3D9C0;
+  .ficha-animal{font:inherit; color:var(--tinta); background:#fff; border:3px solid var(--borde);
                 border-radius:18px; padding:10px 14px; cursor:pointer; min-width:120px}
   .ficha-animal.puesta{border-color:var(--verde); background:#E7F6E4}
   .sinAnimal{font-size:34px; height:80px; line-height:80px}
@@ -362,21 +425,21 @@
   .miniAnimal.grande{display:block; margin:0 auto}
   /* Jugar a la pelota */
   .tiradas{display:flex; flex-direction:column; gap:8px; margin:12px 0}
-  .tirada{background:#fff; border:3px solid #E3D9C0; border-radius:14px; padding:8px 12px}
+  .tirada{background:#fff; border:3px solid var(--borde); border-radius:14px; padding:8px 12px}
 
   /* La mochila de rarezas */
   .rarezas{display:flex; flex-direction:column; gap:10px; text-align:left; margin:10px 0}
   .rareza{display:flex; gap:12px; align-items:center; background:#fff; border-radius:16px;
           padding:10px 14px; box-shadow:var(--sombra)}
   .rareza-icono{font-size:32px}
-  .rareza small{color:#7A736A}
+  .rareza small{color:var(--tinta-suave)}
   .rareza-grande{font-size:70px; line-height:1.1}
 
   /* LA FIESTA DE LOS GLOBOS (el minijuego del salón de Coco) */
   .globos-como{font-size:18px; max-width:26em}
   .escalera{display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
             gap:4px; margin:10px 0}
-  .peldano{background:#EFE6D0; color:#8A837A; border-radius:12px; padding:3px 11px;
+  .peldano{background:#EFE6D0; color:var(--tinta-suave); border-radius:12px; padding:3px 11px;
            font-weight:bold; font-size:16px; min-width:34px}
   .peldano.tengo{color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25)}
   .peldano.dorado{box-shadow:0 0 0 3px #F2C14E}
@@ -404,7 +467,7 @@
      los textos sueltos y no se sabía dónde acababa uno y empezaba el otro. */
   .cosas{display:flex; flex-direction:column; gap:12px; text-align:left; margin:12px 0}
   .cosa{display:flex; gap:14px; align-items:flex-start; background:#fff;
-        border:3px solid #E3D9C0; border-radius:18px; padding:12px 16px}
+        border:3px solid var(--borde); border-radius:18px; padding:12px 16px}
   .cosa.pieza{border-color:#9FCBE8; background:#F2F9FD}
   .cosa.objeto{border-color:#F0B49F; background:#FFF6F2}
   .cosa-icono{font-size:34px; line-height:1.2; width:48px; min-width:48px; height:48px;
@@ -412,8 +475,8 @@
               background:#fff; border-radius:50%; box-shadow:var(--sombra)}
   .cosa-texto{display:flex; flex-direction:column; gap:2px}
   .cosa-texto b{font-size:18px; line-height:1.35}
-  .cosa-eti{font-size:13px; font-weight:bold; color:#8A837A; letter-spacing:.3px}
-  .cosa small{color:#7A736A; font-size:15px; line-height:1.5; display:block; margin-top:2px}
+  .cosa-eti{font-size:13px; font-weight:bold; color:var(--tinta-suave); letter-spacing:.3px}
+  .cosa small{color:var(--tinta-suave); font-size:15px; line-height:1.5; display:block; margin-top:2px}
   .opcion .tuyo{display:block; color:var(--verde); font-weight:bold; font-size:13px}
 
   /* El mapa */
@@ -423,7 +486,7 @@
   .espejo-lado{flex:2.2; min-width:300px}
   #espejo{background:#fff; border-radius:20px; box-shadow:var(--sombra)}
   .pestanas{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0}
-  .pestana{font:inherit; color:var(--tinta); font-size:15px; background:#fff; border:2px solid #E3D9C0;
+  .pestana{font:inherit; color:var(--tinta); font-size:15px; background:#fff; border:2px solid var(--borde);
            border-radius:12px; padding:8px 12px; cursor:pointer}
   .pestana.activa{background:var(--turquesa); color:#fff; border-color:var(--turquesa)}
   .opciones{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
@@ -433,19 +496,19 @@
   .opcion .prevista.bicho{width:96px; height:96px}
   /* El rótulo de cada estantería: ocupa toda la fila */
   .grupo-titulo{flex-basis:100%; margin:12px 0 2px; font-size:16px; color:var(--turquesa);
-                text-align:left; border-bottom:2px solid #E3D9C0; padding-bottom:4px;
+                text-align:left; border-bottom:2px solid var(--borde); padding-bottom:4px;
                 display:flex; justify-content:space-between; align-items:baseline; gap:8px}
-  .grupo-titulo small{color:#9A938A; font-size:14px; font-weight:normal; white-space:nowrap}
+  .grupo-titulo small{color:var(--tinta-suave); font-size:14px; font-weight:normal; white-space:nowrap}
   /* Cuántas prendas tiene de cada estilo: el armario como colección */
   .cuentas{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin:8px 0 4px}
-  .cuenta-chip{background:#fff; border:2px solid #E3D9C0; border-radius:12px;
-               padding:3px 10px; font-size:14px; color:#7A736A}
+  .cuenta-chip{background:#fff; border:2px solid var(--borde); border-radius:12px;
+               padding:3px 10px; font-size:14px; color:var(--tinta-suave)}
   .cuenta-chip b{color:var(--turquesa)}
   .cuenta-chip.activa{border-color:var(--turquesa); background:#EAF6F6}
   .cuenta-chip.total{background:#FFF3C4; border-color:#EBD88A; color:#7A6A3A}
   .cuenta-chip.total b{color:#7A6A3A}
   .grupo-titulo:first-child{margin-top:0}
-  .opcion{font:inherit; color:var(--tinta); font-size:14px; background:#fff; border:3px solid #E3D9C0;
+  .opcion{font:inherit; color:var(--tinta); font-size:14px; background:#fff; border:3px solid var(--borde);
           border-radius:14px; padding:8px 6px; cursor:pointer; width:120px; position:relative}
   .opcion.puesta{border-color:var(--verde); background:#E7F6E4}
   .opcion.bloqueada{opacity:.7}
@@ -458,9 +521,9 @@
   .opcion .muestra{display:block; width:100%; height:22px; border-radius:8px; margin-bottom:4px}
   .opcion .precio{display:block; color:var(--coral); font-weight:bold}
   /* El taller: debajo de cada vehículo, en una línea, cómo se conduce */
-  .opcion .comova{display:block; color:#7A736A; font-size:12px; line-height:1.25; margin:2px 0 4px}
+  .opcion .comova{display:block; color:var(--tinta-suave); font-size:12px; line-height:1.25; margin:2px 0 4px}
   .opcion .prevista.rueda{width:104px; height:80px}
-  .pronto{display:inline-block; background:#EFE9DC; color:#9A938A; border-radius:10px;
+  .pronto{display:inline-block; background:#EFE9DC; color:var(--tinta-suave); border-radius:10px;
           padding:2px 8px; margin:0 3px; font-size:14px}
 </style>
 </head>
@@ -778,6 +841,9 @@ const AJUSTES = {
 
     { id: 'cabana2', icono: '🏠', nombre: 'Decorar la cabaña por dentro',
       cristal: { nombre: 'Cristal de Hierba', color: '#8FD46A' },
+      regalo: { tipo: 'conjuntos', id: 'petocarpintera',
+                nota: 'con su lápiz en el bolsillo, para trabajar con Bruna' },
+      pista: 'Al lado de tu cabaña ha montado su taller <b>Bruna, la carpintera</b>, y tu cabaña tiene una puerta nueva por dentro: <b>la habitación</b>, que ya puedes decorar.',
       aviso: '¡90 retos! Dile a papá que quieres decorar tu cabaña.' },
 
     /* Puesto 10: la pidió Antonio el 21-09-2026 pensando en NOVIEMBRE, que es
@@ -5215,6 +5281,7 @@ const Estado = {
       vehiculos: [],            // patinete, bici… los del taller de Tià
       montura: null,            // en qué va montada ahora (null = a pie)
       mejorCaballito: 0,        // su récord de caballito en la moto, en segundos
+      cabana: { tiene: [], puesto: {} },  // los muebles de su habitación y dónde los ha puesto
       rarezas: [],              // objetos raros de la mochila
       tope: { dia: '', dadas: 0 },        // conchas de hoy por lo repetible sin fin
       entregado: {},            // encargos ya entregados a su dueño
@@ -7477,23 +7544,42 @@ const UI = {
     }
   },
 
-  /* Diálogo de un personaje. El primero de la lista es el botón grande. */
+  /* Diálogo de un personaje. El primero de la lista es el botón grande.
+     Con tres opciones o más (o si alguna es larga) los botones van EN LISTA:
+     uno debajo de otro, todos igual de anchos y con el dibujito alineado en su
+     columna. En fila quedaban de tamaños distintos y se leían mal. (22-09-2026) */
   dialogo(quien, texto, opciones) {
     const ops = opciones || [{ texto: 'Vale', accion: () => UI.cerrar() }];
+    const enLista = ops.length >= 3 || ops.some(o => this.sinIcono(o.texto).length > 20);
     const botones = ops.map((o, i) =>
-      `<button class="btn ${i === 0 ? 'defecto' : ''}" data-i="${i}">${o.texto}` +
+      `<button class="btn ${i === 0 ? 'defecto' : ''}" data-i="${i}">${this.conIcono(o.texto)}` +
       (i === 0 ? '<span class="tecla">espacio</span>' : '') + '</button>').join('');
 
     this.abrir(`
       ${quien ? `<div class="quien">${quien}</div>` : ''}
       <p class="dice">${texto}</p>
       <div class="altavoz" id="zonaVoz"></div>
-      <div class="botones">${botones}</div>
+      <div class="botones${enLista ? ' lista' : ''}">${botones}</div>
     `);
     this.modal.querySelectorAll('.btn').forEach(b => {
       b.onclick = () => { Sonido.clic(); ops[+b.dataset.i].accion(); };
     });
     this.prepararAltavoz(texto);
+  },
+
+  /* Si el texto del botón empieza por un dibujito, se separa del rótulo para
+     que en una lista todos los dibujitos caigan en la misma columna. */
+  partirIcono(texto) {
+    const m = /^(\S{1,3})\s+(.+)$/u.exec(texto);
+    return (m && /\p{Extended_Pictographic}/u.test(m[1])) ? m : null;
+  },
+  conIcono(texto) {
+    const m = this.partirIcono(texto);
+    return m ? `<span class="icono-btn">${m[1]}</span><span>${m[2]}</span>` : texto;
+  },
+  sinIcono(texto) {
+    const m = this.partirIcono(texto);
+    return m ? m[2] : texto;
   },
 
   // --- El altavoz: no está, aparece --------------------------------------
@@ -23692,6 +23778,1591 @@ if (typeof Juego !== 'undefined' && GEL.ganada()) (function () {
 
 </script>
 <script>
+/* === ampliaciones/cabana.js === */
+/* LA CABAÑA POR DENTRO  ·  la novena expansión (Cristal de Hierba)
+   ─────────────────────────────────────────────────────────────────
+   Estaba en la cola desde el principio («Decorar la cabaña por dentro»).
+   La cabaña era un menú con tres puertas (espejo, armario, baño); ahora
+   tiene una cuarta: LA HABITACIÓN, que se ve dibujada A PANTALLA COMPLETA y
+   se decora tocando las cosas en el propio dibujo.
+
+   CÓMO SE CONSIGUEN LAS COSAS (lo pidió Antonio el 22-09-2026): SE COMPRAN.
+   La habitación empieza casi vacía —la cama pelada, las paredes de tabla y
+   el suelo de tablones— y todo lo demás sale de LA FUSTERÍA DE BRUNA, la
+   tienda nueva al lado de la cabaña: 50 cosas en 14 sitios, cada una con su
+   precio en conchas. Lo pedagógico del comprar es el precio: hay que hacer
+   retos, y cuando no llega, la resta se ve escrita («te faltan X»), igual
+   que en el taller de Tià.
+
+   Y Bruna sigue teniendo su TRABAJO DEL DÍA, que es de lo que vive esta
+   expansión por dentro (regla 24): MEDIR. El PERÍMETRO («¿cuánta cinta hace
+   falta para rematar todo el borde?») es de dos pasos de verdad —sumar los
+   dos lados y después el doble— y el ÁREA («¿cuántas baldosas tapa?») es la
+   multiplicación que se ve con los ojos. Ninguna de las dos estaba en el
+   juego.
+
+   Cumple la regla 33: el premio del cristal es tangible —el peto de
+   carpintera, que se pone en el momento, y la colcha de cuadros ya puesta
+   en la cama— y trae un cambio que se ve en la isla: la fustería.
+
+   Del motor no se toca nada: solo el campo `cabana` de la plantilla de
+   motor/estado.js, que ya existe (lo que tiene y dónde lo ha puesto). */
+
+const CASITA = {
+
+  abierta() { return typeof sorpresaAbierta === 'function' ? sorpresaAbierta('cabana2') : true; },
+
+  /* ---------------------------------------------------- LOS 14 SITIOS
+     La habitación se dibuja siempre en un cuadro de 1000 × 620, y luego se
+     estira a lo que dé la pantalla. Por eso todo va en esas coordenadas:
+       ancla → dónde se planta ese trasto (el suelo está en y = 470)
+       zona  → [x, y, ancho, alto]: dónde hay que tocar para cambiarlo
+       caja  → lo que ocupa el dibujo alrededor del (0,0) de su sitio:
+               con eso la fichita de la tienda se encuadra sola, sin cuentas
+               a mano (una cosa puede traer su propia `caja` si es rara).
+     El orden de la lista es el orden en que se mira quién ha sido tocado:
+     lo pequeño y lo que está delante, primero. */
+  SITIOS: [
+    { id: 'peli',       nombre: 'La película',  icono: '🎬', necesita: 'tele',
+      ancla: [420, 372], zona: [358, 332, 124, 78],  caja: [-64, -41, 64, 41] },
+    { id: 'tele',       nombre: 'La tele',      icono: '📺',
+      ancla: [420, 470], zona: [325, 292, 190, 182], caja: [-88, -190, 88, 0] },
+    { id: 'peluche',    nombre: 'El peluche',   icono: '🧸',
+      ancla: [248, 386], zona: [214, 306, 76, 82],   caja: [-30, -78, 30, 2] },
+    { id: 'cuadro',     nombre: 'El cuadro',    icono: '🖼️',
+      ancla: [150, 135], zona: [64, 70, 172, 130],   caja: [-82, -63, 82, 63] },
+    { id: 'libros',     nombre: 'Los libros',   icono: '📚', necesita: 'estanteria',
+      ancla: [900, 470], zona: [832, 282, 138, 176], caja: [-74, -178, 74, 6] },
+    { id: 'estanteria', nombre: 'La estantería',icono: '🗄️',
+      ancla: [900, 470], zona: [818, 264, 166, 212], caja: [-74, -202, 74, 2] },
+    { id: 'cortinas',   nombre: 'Las cortinas', icono: '🪟',
+      ancla: [660, 60],  zona: [566, 38, 190, 176],  caja: [-104, -18, 104, 150] },
+    { id: 'lampara',    nombre: 'La luz',       icono: '💡',
+      ancla: [310, 470], zona: [268, 244, 86, 232],  caja: [-68, -228, 68, 6] },
+    { id: 'planta',     nombre: 'La planta',    icono: '🪴',
+      ancla: [780, 470], zona: [722, 298, 116, 178], caja: [-64, -152, 64, 6] },
+    { id: 'rincon',     nombre: 'El rincón',    icono: '🧺',
+      ancla: [880, 588], zona: [822, 512, 116, 84],  caja: [-50, -72, 50, 6] },
+    { id: 'alfombra',   nombre: 'La alfombra',  icono: '🟫',
+      ancla: [440, 552], zona: [278, 510, 324, 84],  caja: [-162, -48, 162, 48] },
+    { id: 'colcha',     nombre: 'La cama',      icono: '🛏️',
+      ancla: [40, 470],  zona: [18, 328, 284, 148],  caja: [-8, -162, 254, 2] },
+    { id: 'suelo',      nombre: 'El suelo',     icono: '🪵', fondo: true },
+    { id: 'pared',      nombre: 'Las paredes',  icono: '🎨', fondo: true },
+  ],
+
+  /* --------------------------------------------------- LO QUE SE VENDE
+     a y b son los dos colores de cada cosa; el dibujo los usa como quiere.
+     precio 0 = lo que ya tiene desde el principio (la pared y el suelo de
+     siempre), para que la habitación nunca se vea hueca. */
+  COSAS: {
+    pared: [
+      { id: 'paredMadera',    nombre: 'Tablas de madera',  precio: 0,  a: '#E4D3B4', b: '#B99C63' },
+      { id: 'paredMar',       nombre: 'Pared color mar',   precio: 40, a: '#BFE3EE', b: '#96CCE0' },
+      { id: 'paredFlores',    nombre: 'Papel de flores',   precio: 45, a: '#F8E5E9', b: '#F08CA0' },
+      { id: 'paredBosque',    nombre: 'Papel de hojas',    precio: 45, a: '#DFEBD2', b: '#5FA55A' },
+      { id: 'paredEstrellas', nombre: 'Cielo de estrellas',precio: 55, a: '#3C5A9E', b: '#FFE066' },
+    ],
+    suelo: [
+      { id: 'sueloTablones', nombre: 'Tablones de siempre', precio: 0,  a: '#C8A883', b: '#8B6A46' },
+      { id: 'sueloPiedra',   nombre: 'Suelo de piedra',     precio: 45, a: '#C9C4BC', b: '#A29C93' },
+      { id: 'sueloParquet',  nombre: 'Parquet claro',       precio: 55, a: '#E3C79A', b: '#C39F6C' },
+      { id: 'sueloBaldosas', nombre: 'Baldosas de ajedrez', precio: 55, a: '#F4F1E8', b: '#7FC8C0' },
+    ],
+    colcha: [
+      { id: 'colchaCuadros', nombre: 'Colcha de cuadros', precio: 40, a: '#C0392B', b: '#F4F1E8' },
+      { id: 'mantaLana',     nombre: 'Manta de lana',     precio: 40, a: '#E6DCC8', b: '#C2A97E' },
+      { id: 'edredonNubes',  nombre: 'Edredón de nubes',  precio: 45, a: '#8FC7E8', b: '#FFFFFF' },
+      { id: 'colchaSirena',  nombre: 'Colcha de sirena',  precio: 55, a: '#3FB8A8', b: '#A88FD4' },
+    ],
+    peluche: [
+      { id: 'pelucheOso',       nombre: 'Oso de peluche',   precio: 30, a: '#B98A5E', b: '#E0C49B' },
+      { id: 'pelucheGato',      nombre: 'Gato de peluche',  precio: 30, a: '#B9B2A8', b: '#F4F1E8' },
+      { id: 'pelucheFoca',      nombre: 'Foca de peluche',  precio: 35, a: '#9FB6C4', b: '#E3ECF2' },
+      { id: 'pelucheDragon',    nombre: 'Dragón de peluche',precio: 45, a: '#5FA55A', b: '#F2C14E' },
+      { id: 'pelucheUnicornio', nombre: 'Unicornio',        precio: 45, a: '#FFFFFF', b: '#F08CA0' },
+    ],
+    cuadro: [
+      { id: 'cuadroMar',    nombre: 'Cuadro del mar',   precio: 30, a: '#7FC8E8', b: '#F6E7BF' },
+      { id: 'posterLumi',   nombre: 'Póster de Lumi',   precio: 35, a: '#FFF3C4', b: '#7CF0C8' },
+      { id: 'mapaIsla',     nombre: 'Mapa de la isla',  precio: 45, a: '#EFE0BC', b: '#C0703A' },
+      { id: 'fotoMascota',  nombre: 'Foto de tu mascota', precio: 50, a: '#F7F1E1', b: '#C8A24B' },
+    ],
+    tele: [
+      { id: 'teleCoral', nombre: 'La tele de Bruna', precio: 150, a: '#4A4440', b: '#2F3A3A' },
+    ],
+    peli: [
+      { id: 'peliMar',      nombre: 'El mar',        precio: 20, a: '#2E86AB', b: '#FFFFFF' },
+      { id: 'peliCohete',   nombre: 'El cohete',     precio: 25, a: '#1E2148', b: '#FFE066' },
+      { id: 'peliGatos',    nombre: 'Los gatitos',   precio: 25, a: '#FFE9D6', b: '#B9B2A8' },
+      { id: 'peliCaballos', nombre: 'Los caballos',  precio: 30, a: '#A8D08A', b: '#8D5A3B' },
+    ],
+    cortinas: [
+      { id: 'cortinasLino',   nombre: 'Cortinas de lino',   precio: 35, a: '#EDE3D3', b: '#CDBFA6' },
+      { id: 'visillosFlores', nombre: 'Visillos de flores', precio: 35, a: '#FFFFFF', b: '#F08CA0' },
+      { id: 'estorRayas',     nombre: 'Estor de rayas',     precio: 40, a: '#5FA55A', b: '#F4F1E8' },
+      { id: 'cortinasMar',    nombre: 'Cortinas del mar',   precio: 45, a: '#3E7FA6', b: '#EAF6FB' },
+    ],
+    estanteria: [
+      { id: 'estanteriaCajas', nombre: 'Cajas apiladas',       precio: 60, a: '#C99B63', b: '#8D5A3B' },
+      { id: 'estanteriaMadera',nombre: 'Estantería de madera', precio: 70, a: '#8D5A3B', b: '#CFA06A' },
+      { id: 'vitrina',         nombre: 'Vitrina con cristal',  precio: 90, a: '#F4F1E8', b: '#9CC7D8' },
+    ],
+    libros: [
+      { id: 'librosColores', nombre: 'Libros de colores', precio: 25, a: '#E8506B', b: '#3C5A9E' },
+      { id: 'caracolas',     nombre: 'Caracolas y fósiles',precio: 30, a: '#F6E7BF', b: '#C2A97E' },
+      { id: 'macetitas',     nombre: 'Macetitas',         precio: 30, a: '#5FA55A', b: '#C0703A' },
+      { id: 'trofeos',       nombre: 'Copas y medallas',  precio: 35, a: '#F2C14E', b: '#C8A24B' },
+    ],
+    planta: [
+      { id: 'cactus',       nombre: 'Un cactus',        precio: 30, a: '#5FA55A', b: '#C0703A' },
+      { id: 'planta',       nombre: 'Una planta grande',precio: 35, a: '#4E9A51', b: '#C0703A' },
+      { id: 'helecho',      nombre: 'Un helecho',       precio: 35, a: '#3E8C52', b: '#9CC7D8' },
+      { id: 'floresJarron', nombre: 'Flores en jarrón', precio: 40, a: '#F08CA0', b: '#7FC8E8' },
+    ],
+    alfombra: [
+      { id: 'esteraEsparto',    nombre: 'Estera de esparto',    precio: 35, a: '#D8C08A', b: '#B99C63' },
+      { id: 'alfombraTrapo',    nombre: 'Alfombra de trapo',    precio: 40, a: '#E8506B', b: '#F2C14E' },
+      { id: 'alfombraEstrellas',nombre: 'Alfombra de estrellas',precio: 50, a: '#3C5A9E', b: '#FFE066' },
+      { id: 'alfombraPelo',     nombre: 'Alfombra de pelo',     precio: 55, a: '#F5C6D6', b: '#FFFFFF' },
+    ],
+    lampara: [
+      { id: 'farolillo',  nombre: 'Un farolillo',      precio: 35, a: '#F2C14E', b: '#7A4B2F',
+        caja: [-44, -264, 44, -142] },
+      { id: 'guirnalda',  nombre: 'Guirnalda de luces',precio: 40, a: '#FFE066', b: '#5E4A3A',
+        caja: [-46, -352, 266, -286] },
+      { id: 'lamparaPie', nombre: 'Lámpara de pie',    precio: 45, a: '#F6E7BF', b: '#7A4B2F' },
+    ],
+    rincon: [
+      { id: 'cesto', nombre: 'Cesto de mimbre',  precio: 30, a: '#D8C08A', b: '#B99C63',
+        caja: [-46, -70, 46, 6] },
+      { id: 'puf',   nombre: 'Un puf',           precio: 35, a: '#E8506B', b: '#C0392B' },
+      { id: 'baul',  nombre: 'Baúl con herrajes',precio: 50, a: '#7A4B2F', b: '#C8A24B' },
+    ],
+  },
+
+  /* ------------------------------------------- LO QUE SE GUARDA EN LA PARTIDA
+     `tiene` = lo que ha comprado; `puesto` = qué ha puesto en cada sitio.
+     Es el mismo campo `cabana` de la plantilla: no se toca el motor. */
+  datos() {
+    const p = Estado.actual;
+    if (!p.cabana) p.cabana = { tiene: [], puesto: {} };
+    if (!p.cabana.tiene) p.cabana.tiene = [];
+    if (!p.cabana.puesto) p.cabana.puesto = {};
+    const d = p.cabana;
+    // la pared y el suelo de siempre son suyos desde el primer día
+    ['paredMadera', 'sueloTablones'].forEach(id => {
+      if (!d.tiene.includes(id)) d.tiene.push(id);
+      const s = this.sitioDe(id);
+      if (!d.puesto[s]) d.puesto[s] = id;
+    });
+    return d;
+  },
+  tiene(id) { return this.datos().tiene.includes(id); },
+  dar(id) {
+    const d = this.datos();
+    if (!d.tiene.includes(id)) d.tiene.push(id);
+    if (!d.puesto[this.sitioDe(id)]) d.puesto[this.sitioDe(id)] = id;   // el primero se pone solo
+    Estado.guardar();
+  },
+  poner(sitio, id) { this.datos().puesto[sitio] = id; Estado.guardar(); },
+  puesto(sitio) { return this.datos().puesto[sitio] || null; },
+  sitioDe(id) { return Object.keys(this.COSAS).find(s => this.COSAS[s].some(c => c.id === id)); },
+  cosa(id) {
+    const s = this.sitioDe(id);
+    return s ? this.COSAS[s].find(c => c.id === id) : null;
+  },
+  sitio(id) { return this.SITIOS.find(s => s.id === id); },
+
+  /* Las que se venden (las gratis no cuentan para el «llevas X de Y») */
+  enVenta() { return [].concat.apply([], Object.values(this.COSAS)).filter(c => c.precio > 0); },
+  todos() { return [].concat.apply([], Object.values(this.COSAS)); },
+  compradas() { return this.enVenta().filter(c => this.tiene(c.id)).length; },
+
+  /* Un sitio puede pedir otro: la película necesita una tele, y los libros,
+     una estantería donde ponerlos. */
+  falta(sitioId) {
+    const s = this.sitio(sitioId);
+    return (s && s.necesita && !this.puesto(s.necesita)) ? this.sitio(s.necesita) : null;
+  },
+};
+
+/* ------------------------------------------------- EL PETO DE CARPINTERA
+   El regalo del cristal. Se añade siempre: el juego lo entrega en el momento
+   de colocar el Cristal de Hierba. No se vende en ninguna tienda (regla 33). */
+if (typeof ROPA !== 'undefined') {
+  ROPA.conjuntos.push(
+    { id: 'petocarpintera', nombre: 'Peto de carpintera', forma: 'camiseta',
+      color: '#6E8FA8', detalle: '#C8A24B', precio: null, grupo: 'diario' });
+}
+
+if (typeof Avatar !== 'undefined' && Avatar.dibujar) (function () {
+  const dibujar = Avatar.dibujar;
+  Avatar.dibujar = function (ctx, x, yPies, esc, look, mirando, paso) {
+    dibujar.apply(this, arguments);
+    if (look.conjunto !== 'petocarpintera') return;
+    ctx.save();
+    ctx.translate(x, yPies);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+    ctx.fillStyle = '#6E8FA8';                          // el peto, encima de la camiseta
+    ctx.fillRect(-7.5, -28, 15, 16);
+    [-1, 1].forEach(d => {                              // los tirantes
+      ctx.fillRect(d * 4.2 - 1.3, -34, 2.6, 7);
+    });
+    ctx.fillStyle = '#C8A24B';                          // el bolsillo y el botón
+    ctx.fillRect(-4.5, -24, 9, 7);
+    [-1, 1].forEach(d => { ctx.beginPath(); ctx.arc(d * 5.4, -27.5, 1.2, 0, 7); ctx.fill(); });
+    ctx.fillStyle = '#8D5A3B';                          // un lápiz en el bolsillo
+    ctx.fillRect(2.4, -27, 1.2, 4);
+    ctx.restore();
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════════════════
+   LOS DIBUJOS
+   Cada cosa se dibuja UNA sola vez, alrededor del (0,0) de su sitio. Así el
+   mismo dibujo sirve para la habitación (en grande, en su sitio) y para la
+   fichita de la tienda (pequeño, centrado). Nada de dibujar dos veces.
+   ══════════════════════════════════════════════════════════════════════ */
+const Trastos = {
+
+  /* --------------------------------------------------------- LA CAMA */
+  colcha(ctx, m) {
+    ctx.fillStyle = '#7A4B2F';                                  // patas y cabecero
+    ctx.fillRect(-4, -156, 26, 106);
+    ctx.fillRect(228, -118, 24, 68);
+    ctx.fillStyle = '#A6784D';                                  // el somier
+    ctx.fillRect(0, -82, 252, 44);
+    ctx.fillStyle = '#8B6A46';
+    ctx.fillRect(8, -38, 12, 38); ctx.fillRect(228, -38, 12, 38);
+    ctx.fillStyle = '#E6DCC8';                                  // el colchón
+    ctx.fillRect(4, -96, 244, 20);
+    ctx.fillStyle = '#F4F1E8';                                  // la almohada
+    ctx.fillRect(22, -118, 76, 26);
+    ctx.strokeStyle = '#DDD6C6'; ctx.lineWidth = 2;
+    ctx.strokeRect(22, -118, 76, 26);
+    if (!m) return;                                             // sin colcha: cama pelada
+    ctx.fillStyle = m.a;
+    ctx.fillRect(6, -104, 240, 58);
+    ctx.fillStyle = m.b;
+    if (m.id === 'colchaCuadros') {
+      for (let i = 0; i < 6; i++) ctx.fillRect(14 + i * 40, -104, 14, 58);
+      for (let j = 0; j < 3; j++) ctx.fillRect(6, -98 + j * 20, 240, 7);
+    } else if (m.id === 'edredonNubes') {
+      [[60, 14], [140, 6], [206, 18]].forEach(n => {
+        ctx.beginPath(); ctx.arc(6 + n[0], -104 + n[1], 13, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(6 + n[0] + 14, -100 + n[1], 9, 0, 7); ctx.fill();
+      });
+    } else if (m.id === 'colchaSirena') {
+      for (let f = 0; f < 3; f++) for (let i = 0; i < 9; i++) {   // escamas
+        ctx.beginPath();
+        ctx.arc(20 + i * 26 + (f % 2) * 13, -92 + f * 18, 11, Math.PI, 0);
+        ctx.fill();
+      }
+    } else {
+      for (let i = 0; i < 8; i++) {                               // las trenzas de la lana
+        ctx.beginPath();
+        ctx.ellipse(24 + i * 29, -76, 11, 26, 0, 0, 7); ctx.fill();
+      }
+    }
+  },
+
+  /* ------------------------------------------------------ EL PELUCHE
+     Todos se dibujan igual (sentado, patas, cuerpo, cabeza) y cambian las
+     orejas: así son cinco peluches con un dibujo y medio. */
+  peluche(ctx, m) {
+    if (!m) return;
+    const c = m.a, d = m.b;
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(-16, -8, 9, 7, 0, 0, 7); ctx.fill();   // las patas
+    ctx.beginPath(); ctx.ellipse(16, -8, 9, 7, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -22, 18, 16, 0, 0, 7); ctx.fill();  // el cuerpo
+    ctx.fillStyle = d;
+    ctx.beginPath(); ctx.ellipse(0, -18, 10, 9, 0, 0, 7); ctx.fill();   // la barriga
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.arc(0, -48, 16, 0, 7); ctx.fill();             // la cabeza
+
+    if (m.id === 'pelucheOso') {
+      [-11, 11].forEach(x => { ctx.beginPath(); ctx.arc(x, -59, 6, 0, 7); ctx.fill(); });
+    } else if (m.id === 'pelucheGato') {
+      [-1, 1].forEach(s => {
+        ctx.beginPath();
+        ctx.moveTo(s * 5, -58); ctx.lineTo(s * 15, -68); ctx.lineTo(s * 15, -54);
+        ctx.closePath(); ctx.fill();
+      });
+    } else if (m.id === 'pelucheDragon') {
+      ctx.fillStyle = m.b;                                              // las púas
+      [-34, -24, -14].forEach(y => {
+        ctx.beginPath();
+        ctx.moveTo(-16, y); ctx.lineTo(-24, y + 3); ctx.lineTo(-16, y + 7);
+        ctx.closePath(); ctx.fill();
+      });
+      ctx.fillStyle = c;
+      [-1, 1].forEach(s => {                                            // dos cuernitos
+        ctx.beginPath(); ctx.ellipse(s * 9, -60, 3, 7, s * 0.4, 0, 7); ctx.fill();
+      });
+    } else if (m.id === 'pelucheUnicornio') {
+      ctx.fillStyle = '#F2C14E';                                        // el cuerno
+      ctx.beginPath();
+      ctx.moveTo(-3, -60); ctx.lineTo(0, -74); ctx.lineTo(3, -60); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = d;                                                // la melena
+      ctx.beginPath(); ctx.ellipse(-13, -50, 7, 12, 0.4, 0, 7); ctx.fill();
+    } else {                                                            // la foca
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(0, -36, 6, 5, 0, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = '#3B3330';                                          // ojos y nariz
+    [-6, 6].forEach(x => { ctx.beginPath(); ctx.arc(x, -50, 2.2, 0, 7); ctx.fill(); });
+    ctx.beginPath(); ctx.ellipse(0, -44, 3, 2.2, 0, 0, 7); ctx.fill();
+  },
+
+  /* ------------------------------------------------------- EL CUADRO */
+  cuadro(ctx, m, t) {
+    if (!m) return;
+    const w = 150, h = 112;
+    ctx.fillStyle = '#8D5A3B';                                   // el marco
+    ctx.fillRect(-w / 2 - 7, -h / 2 - 7, w + 14, h + 14);
+    ctx.fillStyle = m.a;
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-w / 2, -h / 2, w, h); ctx.clip();
+
+    if (m.id === 'cuadroMar') {
+      ctx.fillStyle = '#7FC8E8'; ctx.fillRect(-w / 2, -h / 2, w, h * 0.55);
+      ctx.fillStyle = '#2E86AB'; ctx.fillRect(-w / 2, 6, w, h);
+      ctx.fillStyle = '#FFE066';
+      ctx.beginPath(); ctx.arc(-40, -28, 14, 0, 7); ctx.fill();
+      ctx.fillStyle = '#F4F1E8';                                 // un velero
+      ctx.beginPath(); ctx.moveTo(22, 4); ctx.lineTo(22, -30); ctx.lineTo(48, 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#C0392B';
+      ctx.beginPath(); ctx.moveTo(6, 4); ctx.lineTo(56, 4); ctx.lineTo(46, 16); ctx.lineTo(16, 16); ctx.closePath(); ctx.fill();
+    } else if (m.id === 'posterLumi') {
+      ctx.fillStyle = '#FFF3C4'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = '#F2C14E';
+      for (let i = 0; i < 6; i++) Avatar.estrella(ctx, -62 + i * 25, 40 - (i % 2) * 8, 6, 2.6, 5);
+      Trastos.lumi(ctx, 0, -6, 2.1);                             // el hada, a lo grande
+    } else if (m.id === 'mapaIsla') {
+      ctx.fillStyle = '#EFE0BC'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = '#A8D08A';                                 // la isla
+      ctx.beginPath(); ctx.ellipse(-4, 4, 52, 34, 0.15, 0, 7); ctx.fill();
+      ctx.fillStyle = '#5FA55A';
+      ctx.beginPath(); ctx.ellipse(18, -6, 18, 11, 0.4, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#C0703A'; ctx.lineWidth = 2;            // el camino
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(-42, 22); ctx.quadraticCurveTo(-4, -2, 34, 16); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#E8506B';                                 // el Farol, con su cruz
+      Avatar.estrella(ctx, -6, 0, 8, 3.4, 4);
+    } else {                                                     // la foto de su mascota
+      ctx.fillStyle = '#F7F1E1'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = '#DCEBD6';
+      ctx.beginPath(); ctx.ellipse(0, 46, 66, 26, 0, 0, 7); ctx.fill();
+      const suya = (typeof Estado !== 'undefined' && Estado.actual) ? Estado.actual.look.mascota : null;
+      if (suya && Avatar.dibujarMascota) {
+        Avatar.dibujarMascota(ctx, 0, 34, 2.2, suya, 1, t || 0);
+      } else {
+        ctx.fillStyle = '#C2A97E';                               // aún no tiene: una huella
+        ctx.beginPath(); ctx.ellipse(0, 8, 15, 12, 0, 0, 7); ctx.fill();
+        [[-16, -12], [-6, -20], [6, -20], [16, -12]].forEach(d => {
+          ctx.beginPath(); ctx.ellipse(d[0], d[1], 6, 7, 0, 0, 7); ctx.fill();
+        });
+      }
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 2;
+    ctx.strokeRect(-w / 2, -h / 2, w, h);
+  },
+
+  /* ---------------------------------------------------------- LA TELE */
+  tele(ctx, m) {
+    if (!m) return;
+    ctx.fillStyle = '#8D5A3B';                                   // el mueble bajo
+    ctx.fillRect(-88, -62, 176, 52);
+    ctx.fillStyle = '#6B4A33';
+    ctx.fillRect(-88, -14, 176, 8);
+    ctx.fillRect(-80, -6, 10, 6); ctx.fillRect(70, -6, 10, 6);
+    ctx.fillStyle = '#A6784D';
+    ctx.fillRect(-78, -54, 68, 34); ctx.fillRect(10, -54, 68, 34);
+    ctx.fillStyle = '#C8A24B';
+    [[-44, -37], [44, -37]].forEach(p => {
+      ctx.beginPath(); ctx.arc(p[0], p[1], 3, 0, 7); ctx.fill();
+    });
+    ctx.fillStyle = m.a;                                         // la caja de la tele
+    ctx.fillRect(-72, -160, 144, 98);
+    ctx.fillStyle = m.b;
+    ctx.fillRect(-64, -152, 128, 82);
+    ctx.fillStyle = '#5FA55A';                                   // el pilotito de encendido
+    ctx.beginPath(); ctx.arc(62, -66, 3.4, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#4A4440'; ctx.lineWidth = 3;              // las antenas
+    ctx.beginPath(); ctx.moveTo(-18, -160); ctx.lineTo(-38, -186); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(18, -160); ctx.lineTo(38, -188); ctx.stroke();
+  },
+
+  /* ------------------------------------------------------ LA PELÍCULA
+     Se dibuja dentro de la pantalla y se MUEVE: es lo único animado de la
+     habitación (con la guirnalda). t son segundos. */
+  peli(ctx, m, t) {
+    const w = 128, h = 82;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-w / 2, -h / 2, w, h); ctx.clip();
+    if (!m) {                                                    // tele encendida sin cinta
+      ctx.fillStyle = '#2F3A3A'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ['#E8506B', '#F2C14E', '#5FA55A', '#3C5A9E'].forEach((c, i) => {
+        ctx.fillStyle = c; ctx.fillRect(-w / 2 + i * 32, -h / 2, 32, h);
+      });
+      ctx.restore();
+      return;
+    }
+    const ir = (v, largo) => ((v % largo) + largo) % largo;      // dar la vuelta al llegar
+
+    if (m.id === 'peliMar') {
+      ctx.fillStyle = '#9BD7EE'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = '#FFE066';
+      ctx.beginPath(); ctx.arc(-44, -26, 9, 0, 7); ctx.fill();
+      ctx.fillStyle = '#2E86AB'; ctx.fillRect(-w / 2, 4, w, h);
+      const bx = ir(t * 16, w + 40) - w / 2 - 20;                // el velero cruza
+      ctx.fillStyle = '#F4F1E8';
+      ctx.beginPath(); ctx.moveTo(bx, 4); ctx.lineTo(bx, -18); ctx.lineTo(bx + 16, 4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#C0392B';
+      ctx.beginPath(); ctx.moveTo(bx - 10, 4); ctx.lineTo(bx + 20, 4); ctx.lineTo(bx + 14, 12); ctx.lineTo(bx - 4, 12); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = m.b; ctx.lineWidth = 2;                  // las olas
+      for (let f = 0; f < 3; f++) {
+        ctx.beginPath();
+        for (let x = -w / 2; x < w / 2; x += 8) {
+          ctx.lineTo(x, 16 + f * 12 + Math.sin(x * 0.12 + t * 2 + f) * 2.5);
+        }
+        ctx.stroke();
+      }
+    } else if (m.id === 'peliCohete') {
+      ctx.fillStyle = '#1E2148'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      for (let i = 0; i < 14; i++) {                             // estrellas que caen
+        const y = ir(i * 17 + t * 12, h) - h / 2;
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.4 + (i % 3) * 0.2) + ')';
+        ctx.fillRect(-w / 2 + ((i * 29) % w), y, 2, 2);
+      }
+      const cy = 30 - ir(t * 22, 110);                           // el cohete sube
+      ctx.fillStyle = '#F4F1E8';
+      ctx.beginPath(); ctx.moveTo(0, cy - 20); ctx.lineTo(8, cy + 6); ctx.lineTo(-8, cy + 6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#E8506B';
+      ctx.beginPath(); ctx.moveTo(-8, cy + 6); ctx.lineTo(-14, cy + 12); ctx.lineTo(-8, cy - 2); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(8, cy + 6); ctx.lineTo(14, cy + 12); ctx.lineTo(8, cy - 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = m.b;
+      ctx.beginPath(); ctx.ellipse(0, cy + 12 + Math.sin(t * 20) * 2, 5, 9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#C9C4BC';                                 // la luna, quieta
+      ctx.beginPath(); ctx.arc(44, -24, 10, 0, 7); ctx.fill();
+    } else if (m.id === 'peliGatos') {
+      ctx.fillStyle = m.a; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = '#F2C14E'; ctx.fillRect(-w / 2, 22, w, h);
+      const salto = Math.abs(Math.sin(t * 2.4)) * 14;            // el gato salta
+      const gx = -20;
+      ctx.fillStyle = m.b;
+      ctx.beginPath(); ctx.ellipse(gx, 14 - salto, 17, 12, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(gx + 14, 0 - salto, 11, 0, 7); ctx.fill();
+      [-1, 1].forEach(s => {
+        ctx.beginPath();
+        ctx.moveTo(gx + 10 + s * 3, -8 - salto); ctx.lineTo(gx + 12 + s * 7, -17 - salto);
+        ctx.lineTo(gx + 17, -7 - salto); ctx.closePath(); ctx.fill();
+      });
+      ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(gx - 16, 12 - salto);
+      ctx.quadraticCurveTo(gx - 32, 2 - salto - Math.sin(t * 5) * 6, gx - 26, -12 - salto);
+      ctx.stroke();
+      ctx.fillStyle = '#E8506B';                                 // el ovillo, rodando
+      const ox = 34 - ir(t * 10, 70);
+      ctx.beginPath(); ctx.arc(ox, 18, 8, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3B3330';
+      [-1, 1].forEach(s => { ctx.beginPath(); ctx.arc(gx + 12 + s * 4, -1 - salto, 1.8, 0, 7); ctx.fill(); });
+    } else {
+      ctx.fillStyle = '#BFE3EE'; ctx.fillRect(-w / 2, -h / 2, w, h);
+      ctx.fillStyle = m.a; ctx.fillRect(-w / 2, 6, w, h);        // la pradera
+      const cx = ir(t * 20, w + 60) - w / 2 - 30;                // el caballo galopa
+      const tr = Math.sin(t * 9) * 3;
+      ctx.fillStyle = m.b;
+      ctx.beginPath(); ctx.ellipse(cx, 6 + tr * 0.4, 20, 11, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 18, -8 + tr * 0.4, 10, 7, 0.5, 0, 7); ctx.fill();
+      ctx.fillRect(cx + 22, -14, 5, 8);
+      ctx.strokeStyle = m.b; ctx.lineWidth = 4;
+      [-12, -2, 8, 16].forEach((d, i) => {
+        ctx.beginPath();
+        ctx.moveTo(cx + d, 12); ctx.lineTo(cx + d + Math.sin(t * 9 + i) * 6, 24);
+        ctx.stroke();
+      });
+      ctx.fillStyle = '#5FA55A';
+      for (let i = 0; i < 9; i++) ctx.fillRect(-w / 2 + i * 15, 26, 3, 8);
+    }
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';                    // el brillo del cristal
+    ctx.beginPath();
+    ctx.moveTo(-w / 2, -h / 2); ctx.lineTo(-w / 2 + 42, -h / 2); ctx.lineTo(-w / 2, h / 2);
+    ctx.closePath(); ctx.fill();
+  },
+
+  /* ------------------------------------------- LA VENTANA Y LAS CORTINAS
+     La ventana está siempre (es de la casa); lo que se compra es la tela. */
+  ventana(ctx) {
+    const w = 156, h = 130;
+    ctx.fillStyle = '#7FC8E8'; ctx.fillRect(-w / 2, 0, w, h);          // el cielo
+    ctx.fillStyle = '#5FB0D8'; ctx.fillRect(-w / 2, h * 0.56, w, h * 0.44);
+    ctx.fillStyle = '#F6E7BF'; ctx.fillRect(-w / 2, h * 0.5, w, 10);   // la playa
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(-34, 34, 15, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(-16, 38, 11, 0, 7); ctx.fill();
+    ctx.fillStyle = '#5FA55A';                                          // una palmera lejos
+    ctx.fillRect(44, 44, 5, 26);
+    ctx.fillStyle = '#3E8C52';
+    ctx.beginPath(); ctx.ellipse(46, 42, 17, 7, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8D5A3B'; ctx.lineWidth = 9;
+    ctx.strokeRect(-w / 2, 0, w, h);
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-w / 2, h / 2); ctx.lineTo(w / 2, h / 2); ctx.stroke();
+  },
+
+  cortinas(ctx, m) {
+    if (!m) return;
+    const w = 156, h = 130;
+    ctx.fillStyle = '#7A4B2F';                                          // la barra
+    ctx.fillRect(-w / 2 - 22, -14, w + 44, 7);
+    [-1, 1].forEach(lado => {
+      const cx = lado < 0 ? -w / 2 - 12 : w / 2 + 12;
+      ctx.fillStyle = m.a;
+      ctx.beginPath();
+      ctx.moveTo(cx, -10);
+      ctx.quadraticCurveTo(cx + lado * 42, h * 0.5, cx + lado * 10, h + 18);
+      ctx.lineTo(cx - lado * 24, h + 18);
+      ctx.quadraticCurveTo(cx - lado * 18, h * 0.45, cx - lado * 24, -10);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = m.b;
+      if (m.id === 'visillosFlores') {
+        [[0, 30], [10, 66], [-6, 100]].forEach(f => {
+          ctx.beginPath(); ctx.arc(cx - lado * 8 + f[0], f[1], 5, 0, 7); ctx.fill();
+        });
+      } else if (m.id === 'estorRayas') {
+        [24, 52, 80, 108].forEach(d => ctx.fillRect(cx - lado * 24, d, 24, 7));
+      } else if (m.id === 'cortinasMar') {
+        ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+        [36, 72, 108].forEach(d => {
+          ctx.beginPath();
+          for (let x = 0; x <= 24; x += 4) {
+            ctx.lineTo(cx - lado * x, d + Math.sin(x * 0.4) * 3);
+          }
+          ctx.stroke();
+        });
+      } else {
+        ctx.fillRect(cx - lado * 22, h + 6, 22, 9);
+      }
+    });
+  },
+
+  /* --------------------------------------------------- LA ESTANTERÍA */
+  estanteria(ctx, m) {
+    if (!m) return;
+    if (m.id === 'estanteriaCajas') {
+      [[-62, -62], [4, -62], [-62, -128], [4, -128], [-30, -192]].forEach(c => {
+        ctx.fillStyle = m.a; ctx.fillRect(c[0], c[1], 58, 60);
+        ctx.fillStyle = m.b;
+        ctx.fillRect(c[0], c[1], 58, 6); ctx.fillRect(c[0], c[1] + 54, 58, 6);
+        ctx.fillRect(c[0], c[1], 6, 60); ctx.fillRect(c[0] + 52, c[1], 6, 60);
+      });
+    } else if (m.id === 'vitrina') {
+      ctx.fillStyle = m.a; ctx.fillRect(-72, -200, 144, 200);       // el mueble, pintado de blanco
+      ctx.fillStyle = m.b; ctx.globalAlpha = 0.5;                   // el cristal
+      ctx.fillRect(-62, -190, 124, 182);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = m.a;                                          // los travesaños
+      [-1, 1].forEach(s => ctx.fillRect(s * 30 - 3, -190, 6, 182));
+      [0, 60, 120].forEach(d => ctx.fillRect(-62, -130 + d, 124, 7));
+      ctx.strokeStyle = '#8FB6C6'; ctx.lineWidth = 3;
+      ctx.strokeRect(-72, -200, 144, 200);
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath(); ctx.moveTo(-50, -22); ctx.lineTo(-18, -178); ctx.stroke();
+    } else {
+      ctx.fillStyle = m.a; ctx.fillRect(-72, -196, 144, 196);       // la caja
+      ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.fillRect(-62, -188, 124, 180);  // el hueco
+      ctx.fillStyle = m.b;                                          // y las baldas, encima
+      [0, 62, 124].forEach(d => ctx.fillRect(-68, -130 + d, 136, 8));
+      ctx.fillRect(-72, -196, 144, 9);
+    }
+  },
+
+  /* Lo que se pone EN la estantería. Se coloca en las tres baldas. */
+  libros(ctx, m) {
+    if (!m) return;
+    const baldas = [-132, -70, -8];                                     // donde apoya cada cosa
+    if (m.id === 'librosColores') {
+      const colores = [m.a, '#F2C14E', m.b, '#5FA55A', '#E07A3C'];
+      baldas.forEach((y, f) => {
+        for (let i = 0; i < 6; i++) {
+          ctx.fillStyle = colores[(i + f) % colores.length];
+          const alto = 38 + ((i + f) % 3) * 6;
+          ctx.fillRect(-56 + i * 18, y - alto, 13, alto);
+        }
+      });
+    } else if (m.id === 'caracolas') {
+      baldas.forEach((y, f) => {
+        for (let i = 0; i < 3; i++) {
+          const x = -44 + i * 44 + (f % 2) * 8;
+          ctx.fillStyle = f % 2 ? m.a : m.b;
+          ctx.beginPath(); ctx.ellipse(x, y - 12, 15, 12, 0.3, 0, 7); ctx.fill();
+          ctx.strokeStyle = 'rgba(120,90,60,0.5)'; ctx.lineWidth = 2;
+          for (let r = 4; r < 14; r += 4) {
+            ctx.beginPath(); ctx.arc(x, y - 12, r, 2.4, 5.6); ctx.stroke();
+          }
+        }
+      });
+    } else if (m.id === 'macetitas') {
+      baldas.forEach((y, f) => {
+        for (let i = 0; i < 3; i++) {
+          const x = -42 + i * 42;
+          ctx.fillStyle = m.b;
+          ctx.beginPath();
+          ctx.moveTo(x - 11, y - 20); ctx.lineTo(x + 11, y - 20);
+          ctx.lineTo(x + 8, y); ctx.lineTo(x - 8, y); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = m.a;
+          [[-9, -30], [9, -33], [0, -40]].forEach(h => {
+            ctx.beginPath(); ctx.ellipse(x + h[0], y + h[1], 9, 6, h[0] * 0.05, 0, 7); ctx.fill();
+          });
+        }
+      });
+    } else {
+      baldas.forEach((y, f) => {
+        for (let i = 0; i < 3; i++) {
+          const x = -42 + i * 42;
+          ctx.fillStyle = (i + f) % 2 ? m.b : m.a;
+          if ((i + f) % 2) {                                            // una medalla
+            ctx.beginPath(); ctx.arc(x, y - 14, 11, 0, 7); ctx.fill();
+            ctx.fillStyle = '#E8506B'; ctx.fillRect(x - 5, y - 34, 10, 12);
+          } else {                                                      // una copa
+            ctx.beginPath();
+            ctx.moveTo(x - 12, y - 34); ctx.lineTo(x + 12, y - 34);
+            ctx.lineTo(x + 5, y - 12); ctx.lineTo(x - 5, y - 12); ctx.closePath(); ctx.fill();
+            ctx.fillRect(x - 10, y - 6, 20, 6);
+            ctx.fillRect(x - 3, y - 12, 6, 6);
+          }
+        }
+      });
+    }
+  },
+
+  /* -------------------------------------------------------- LA PLANTA */
+  planta(ctx, m) {
+    if (!m) return;
+    const maceta = (col) => {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(-26, -38); ctx.lineTo(26, -38); ctx.lineTo(19, 0); ctx.lineTo(-19, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillRect(-26, -38, 52, 8);
+    };
+    if (m.id === 'cactus') {
+      maceta(m.b);
+      ctx.fillStyle = m.a;
+      Trastos.capsula(ctx, 0, -86, 26, 106);                            // el tronco
+      Trastos.capsula(ctx, -22, -92, 15, 44);                           // los brazos
+      Trastos.capsula(ctx, 22, -76, 15, 40);
+      ctx.fillStyle = '#F08CA0';                                        // su flor
+      ctx.beginPath(); ctx.arc(0, -138, 8, 0, 7); ctx.fill();
+    } else if (m.id === 'helecho') {
+      maceta(m.b);
+      ctx.strokeStyle = m.a; ctx.lineWidth = 5;
+      [-1.1, -0.6, 0, 0.6, 1.1].forEach(a => {
+        ctx.beginPath();
+        ctx.moveTo(0, -38);
+        ctx.quadraticCurveTo(a * 46, -110, a * 62, -134 + Math.abs(a) * 26);
+        ctx.stroke();
+      });
+      ctx.fillStyle = m.a;
+      [-1.1, -0.6, 0, 0.6, 1.1].forEach(a => {
+        for (let i = 1; i <= 4; i++) {
+          ctx.beginPath();
+          ctx.ellipse(a * 14 * i, -52 - i * 20, 11, 6, a * 0.5, 0, 7); ctx.fill();
+        }
+      });
+    } else if (m.id === 'floresJarron') {
+      ctx.fillStyle = m.b;                                              // el jarrón
+      ctx.beginPath();
+      ctx.moveTo(-17, -46);
+      ctx.quadraticCurveTo(-30, -20, -15, 0);
+      ctx.lineTo(15, 0);
+      ctx.quadraticCurveTo(30, -20, 17, -46);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#5FA55A'; ctx.lineWidth = 4;
+      [[-38, -110], [0, -128], [36, -106]].forEach(f => {
+        ctx.beginPath(); ctx.moveTo(0, -46); ctx.quadraticCurveTo(f[0] * 0.4, -80, f[0], f[1]); ctx.stroke();
+      });
+      [[-38, -110, m.a], [0, -128, '#F2C14E'], [36, -106, '#FFFFFF']].forEach(f => {
+        ctx.fillStyle = f[2];
+        for (let i = 0; i < 5; i++) {
+          const a = i * 1.257;
+          ctx.beginPath(); ctx.ellipse(f[0] + Math.cos(a) * 10, f[1] + Math.sin(a) * 10, 8, 8, 0, 0, 7); ctx.fill();
+        }
+        ctx.fillStyle = '#F2C14E';
+        ctx.beginPath(); ctx.arc(f[0], f[1], 6, 0, 7); ctx.fill();
+      });
+    } else {
+      maceta(m.b);
+      ctx.strokeStyle = '#3E7A3A'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(0, -38); ctx.lineTo(0, -108); ctx.stroke();
+      ctx.fillStyle = m.a;
+      [[-34, -84, 0.5], [34, -94, -0.5], [-10, -126, 0.15], [20, -116, -0.25]].forEach(h => {
+        ctx.save(); ctx.translate(h[0], h[1]); ctx.rotate(h[2]);
+        ctx.beginPath(); ctx.ellipse(0, 0, 30, 17, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(26, 0); ctx.stroke();
+        ctx.restore();
+      });
+    }
+  },
+
+  /* ------------------------------------------------------ LA ALFOMBRA */
+  alfombra(ctx, m) {
+    if (!m) return;
+    ctx.fillStyle = m.a;
+    ctx.beginPath(); ctx.ellipse(0, 0, 158, 44, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = m.b;
+    if (m.id === 'alfombraTrapo') {
+      [-24, 0, 24].forEach(d => {
+        ctx.beginPath(); ctx.ellipse(0, d * 0.35, 142 - Math.abs(d) * 1.6, 9, 0, 0, 7); ctx.fill();
+      });
+    } else if (m.id === 'esteraEsparto') {
+      ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 148 - Math.abs(i) * 16, 40 - Math.abs(i) * 4.6, 0, 0, 7); ctx.stroke();
+      }
+    } else if (m.id === 'alfombraPelo') {
+      for (let i = 0; i < 90; i++) {                                    // pelito largo
+        const a = i * 2.4, r = 0.35 + (i % 7) / 10;
+        ctx.fillStyle = i % 3 ? m.b : m.a;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * 150 * r, Math.sin(a) * 42 * r, 9, 5, a, 0, 7); ctx.fill();
+      }
+    } else {
+      [[-96, -10], [-36, 10], [26, -14], [90, 8], [0, -2], [-64, 16], [62, 18]].forEach(e => {
+        Avatar.estrella(ctx, e[0], e[1], 13, 5.5, 5);
+      });
+    }
+  },
+
+  /* ----------------------------------------------------------- LA LUZ */
+  lampara(ctx, m, t) {
+    if (!m) return;
+    if (m.id === 'lamparaPie') {
+      ctx.fillStyle = m.b;
+      ctx.beginPath(); ctx.ellipse(0, -4, 30, 9, 0, 0, 7); ctx.fill();
+      ctx.fillRect(-4, -180, 8, 178);
+      ctx.fillStyle = m.a;                                              // la pantalla
+      ctx.beginPath();
+      ctx.moveTo(-38, -178); ctx.lineTo(38, -178); ctx.lineTo(28, -222); ctx.lineTo(-28, -222);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,230,102,0.30)';                         // la luz que echa
+      ctx.beginPath();
+      ctx.moveTo(-38, -178); ctx.lineTo(38, -178); ctx.lineTo(66, -110); ctx.lineTo(-66, -110);
+      ctx.closePath(); ctx.fill();
+    } else if (m.id === 'farolillo') {
+      ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, -260); ctx.lineTo(0, -206); ctx.stroke();
+      ctx.fillStyle = m.b;
+      ctx.fillRect(-20, -212, 40, 7); ctx.fillRect(-20, -152, 40, 7);
+      ctx.fillStyle = m.a;
+      ctx.beginPath();
+      ctx.moveTo(-18, -206);
+      ctx.quadraticCurveTo(-30, -180, -18, -152);
+      ctx.lineTo(18, -152);
+      ctx.quadraticCurveTo(30, -180, 18, -206);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,230,102,0.35)';
+      ctx.beginPath(); ctx.arc(0, -180, 42, 0, 7); ctx.fill();
+    } else {                                                            // la guirnalda
+      /* Cuelga de pared a pared por el hueco que queda entre el cuadro y la
+         ventana; por eso no va centrada en su sitio, sino tirando a la derecha. */
+      ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-40, -346);
+      ctx.quadraticCurveTo(110, -272, 260, -340);
+      ctx.stroke();
+      for (let i = 0; i <= 8; i++) {
+        const u = i / 8;
+        const x = -40 + u * 300;
+        const y = -346 + (1 - Math.pow(2 * u - 1, 2)) * 40 + (u * 6);
+        const enciende = (Math.sin((t || 0) * 2.5 + i) + 1) / 2;
+        ctx.fillStyle = ['#FFE066', '#E8506B', '#7CF0C8', '#F2A65A'][i % 4];
+        ctx.globalAlpha = 0.45 + enciende * 0.55;
+        ctx.beginPath(); ctx.ellipse(x, y + 9, 7, 9, 0, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+  },
+
+  /* -------------------------------------------------------- EL RINCÓN */
+  rincon(ctx, m) {
+    if (!m) return;
+    if (m.id === 'baul') {
+      ctx.fillStyle = m.a;
+      ctx.fillRect(-46, -46, 92, 46);
+      ctx.beginPath(); ctx.ellipse(0, -46, 46, 22, 0, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = m.b;
+      ctx.fillRect(-46, -28, 92, 8);
+      ctx.fillRect(-7, -46, 14, 26);
+      ctx.fillStyle = '#5E3A24';
+      ctx.fillRect(-5, -30, 10, 10);
+    } else if (m.id === 'puf') {
+      ctx.fillStyle = m.b;
+      ctx.beginPath(); ctx.ellipse(0, -6, 48, 16, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = m.a;
+      ctx.beginPath(); ctx.ellipse(0, -26, 46, 28, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+      [-0.6, 0, 0.6].forEach(a => {
+        ctx.beginPath(); ctx.ellipse(0, -26, 46 * Math.cos(a) * 0.55, 28, 0, 0, 7); ctx.stroke();
+      });
+    } else {
+      ctx.fillStyle = '#E8506B';                                        // mantas dobladas dentro
+      ctx.beginPath(); ctx.ellipse(-10, -58, 19, 8, 0.15, 0, 7); ctx.fill();
+      ctx.fillStyle = '#F4F1E8';
+      ctx.beginPath(); ctx.ellipse(11, -61, 14, 7, -0.15, 0, 7); ctx.fill();
+      ctx.fillStyle = m.a;                                              // y el cesto, delante
+      ctx.beginPath();
+      ctx.moveTo(-40, -52); ctx.lineTo(40, -52); ctx.lineTo(31, 0); ctx.lineTo(-31, 0);
+      ctx.closePath(); ctx.fill();
+      ctx.fillRect(-42, -58, 84, 8);                                    // el borde de arriba
+      ctx.strokeStyle = m.b; ctx.lineWidth = 3;
+      [-40, -26, -12].forEach(y => {
+        ctx.beginPath(); ctx.moveTo(-38 + (y + 52) * 0.17, y); ctx.lineTo(38 - (y + 52) * 0.17, y); ctx.stroke();
+      });
+    }
+  },
+
+  /* Lumi para el póster. Es la misma hada de motor/hada.js, pero aquella se
+     pinta en su propio lienzo y no se puede llamar desde aquí; esto es su
+     retrato, quieta y en grande. */
+  lumi(ctx, cx, cy, e) {
+    ctx.save();
+    ctx.translate(cx, cy); ctx.scale(e, e);
+    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 30);       // el resplandor
+    g.addColorStop(0, 'rgba(255,240,170,0.75)');
+    g.addColorStop(1, 'rgba(255,240,170,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 30, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(190,240,255,0.80)';                    // las alas
+    [-1, 1].forEach(s => {
+      ctx.beginPath(); ctx.ellipse(s * 11, -6, 9, 12, s * 0.6, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(s * 9, 5, 6, 8, s * 0.4, 0, 7); ctx.fill();
+    });
+    ctx.fillStyle = '#7ED6A5';                                   // el vestido
+    ctx.beginPath();
+    ctx.moveTo(-5, -4); ctx.lineTo(5, -4); ctx.lineTo(8, 11); ctx.lineTo(-8, 11);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#F5D6BE';                                   // brazos y piernas
+    ctx.fillRect(-9, -2, 3, 7); ctx.fillRect(6, -2, 3, 7);
+    ctx.fillRect(-4, 11, 3, 6);  ctx.fillRect(1, 11, 3, 6);
+    ctx.beginPath(); ctx.arc(0, -11, 8, 0, 7); ctx.fill();       // la cabeza
+    ctx.fillStyle = '#FFD98A';                                   // la melena
+    ctx.beginPath(); ctx.arc(0, -13, 8.5, Math.PI, 0); ctx.fill();
+    [-1, 1].forEach(s => {
+      ctx.beginPath(); ctx.ellipse(s * 7, -8, 3.5, 6, s * 0.3, 0, 7); ctx.fill();
+    });
+    ctx.fillStyle = '#3A3A3A';                                   // ojos
+    [-2.6, 2.6].forEach(x => { ctx.beginPath(); ctx.arc(x, -11, 1.3, 0, 7); ctx.fill(); });
+    ctx.strokeStyle = '#C4776B'; ctx.lineWidth = 1;              // y la sonrisa
+    ctx.beginPath(); ctx.arc(0, -9, 2.2, 0.3, Math.PI - 0.3); ctx.stroke();
+    ctx.restore();
+  },
+
+  /* Una pastilla redondeada: la usan el cactus y algún mueble */
+  capsula(ctx, cx, cy, ancho, alto) {
+    const r = ancho / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy + alto / 2 - r);
+    ctx.lineTo(cx - r, cy - alto / 2 + r);
+    ctx.arc(cx, cy - alto / 2 + r, r, Math.PI, 0);
+    ctx.lineTo(cx + r, cy + alto / 2 - r);
+    ctx.arc(cx, cy + alto / 2 - r, r, 0, Math.PI);
+    ctx.closePath(); ctx.fill();
+  },
+
+  /* --------------------------------- LA PARED Y EL SUELO (el fondo)
+     Estos dos no son trastos: pintan la habitación entera. */
+  pared(ctx, m, W, alto) {
+    ctx.fillStyle = m.a;
+    ctx.fillRect(0, 0, W, alto);
+    if (m.id === 'paredMadera') {
+      ctx.strokeStyle = 'rgba(160,130,95,0.40)'; ctx.lineWidth = 2;
+      for (let y = 26; y < alto; y += 42) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+    } else if (m.id === 'paredMar') {
+      ctx.fillStyle = m.b;
+      for (let x = 0; x < W; x += 58) ctx.fillRect(x, 0, 24, alto);
+    } else if (m.id === 'paredFlores') {
+      ctx.fillStyle = m.b;
+      for (let y = 30; y < alto; y += 66) {
+        for (let x = (y % 132 ? 30 : 64); x < W; x += 68) {
+          for (let i = 0; i < 5; i++) {
+            const a = i * 1.257;
+            ctx.beginPath();
+            ctx.ellipse(x + Math.cos(a) * 7, y + Math.sin(a) * 7, 5, 5, 0, 0, 7); ctx.fill();
+          }
+        }
+      }
+    } else if (m.id === 'paredBosque') {
+      ctx.fillStyle = m.b;
+      for (let y = 26; y < alto; y += 60) {
+        for (let x = (y % 120 ? 26 : 62); x < W; x += 72) {
+          ctx.save(); ctx.translate(x, y); ctx.rotate(((x + y) % 7) * 0.2);
+          ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+    } else {
+      ctx.fillStyle = m.b;
+      for (let y = 24; y < alto; y += 58) {
+        for (let x = (y % 116 ? 28 : 66); x < W; x += 76) {
+          Avatar.estrella(ctx, x, y, 9, 3.8, 5);
+        }
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      for (let i = 0; i < 40; i++) {
+        ctx.fillRect((i * 137) % W, (i * 59) % alto, 2, 2);
+      }
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';                      // el rodapié
+    ctx.fillRect(0, alto - 14, W, 14);
+  },
+
+  suelo(ctx, m, W, desde, hasta) {
+    const h = hasta - desde;
+    ctx.fillStyle = m.a;
+    ctx.fillRect(0, desde, W, h);
+    if (m.id === 'sueloTablones') {
+      ctx.strokeStyle = m.b; ctx.lineWidth = 2; ctx.globalAlpha = 0.45;
+      for (let x = -60; x < W + 120; x += 56) {
+        ctx.beginPath(); ctx.moveTo(x, desde); ctx.lineTo(x - 34, hasta); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    } else if (m.id === 'sueloParquet') {
+      ctx.strokeStyle = m.b; ctx.lineWidth = 2; ctx.globalAlpha = 0.6;
+      for (let f = 0; f < 4; f++) {
+        const y = desde + f * (h / 4);
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        for (let x = 0; x < W; x += 48) {                      // espiga
+          ctx.beginPath();
+          ctx.moveTo(x, y + h / 4); ctx.lineTo(x + 24, y);
+          ctx.lineTo(x + 48, y + h / 4); ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    } else if (m.id === 'sueloBaldosas') {
+      /* Cinco filas, y cada una con la baldosa un poco más ancha que la de
+         atrás: así se ve que el suelo se va hacia el fondo. */
+      const filas = 5, alto = h / filas;
+      for (let f = 0; f < filas; f++) {
+        const y = desde + f * alto, ancho = alto * 1.5 * (1 + f * 0.14);
+        for (let i = -1; i * ancho < W + ancho; i++) {
+          ctx.fillStyle = (i + f) % 2 ? m.b : m.a;
+          ctx.fillRect(i * ancho - (f * ancho) / 3, y, ancho + 1, alto + 1);
+        }
+      }
+    } else {
+      ctx.strokeStyle = m.b; ctx.lineWidth = 2;
+      for (let f = 0; f < 4; f++) {
+        const y = desde + f * (h / 4);
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        for (let x = (f % 2) * 44; x < W; x += 88) {
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 8, y + h / 4); ctx.stroke();
+        }
+      }
+    }
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA HABITACIÓN, A PANTALLA COMPLETA
+   Se dibuja siempre en 1000 × 620 y se estira a lo que dé la pantalla. Se
+   toca una cosa en el dibujo y se abre lo que se puede poner ahí (regla 5:
+   botones grandes, nada que escribir). Debajo están todos los sitios en
+   botones, por si prefiere ir por ahí.
+   ══════════════════════════════════════════════════════════════════════ */
+const ANCHO_CUARTO = 1000, ALTO_CUARTO = 620, SUELO_CUARTO = 470;
+
+const Habitacion = {
+
+  sitio: null,          // qué sitio está mirando ahora
+  lienzo: null,         // el dibujo que se está pintando ahora mismo
+
+  /* ----------------------------------------------------- EL DIBUJO */
+  pintar(ctx, t) {
+    const W = ANCHO_CUARTO, H = ALTO_CUARTO, S = SUELO_CUARTO;
+    const puesto = (id) => CASITA.cosa(CASITA.puesto(id));
+    const en = (id, fn) => {
+      const s = CASITA.sitio(id);
+      ctx.save(); ctx.translate(s.ancla[0], s.ancla[1]); fn(); ctx.restore();
+    };
+
+    ctx.clearRect(0, 0, W, H);
+    Trastos.pared(ctx, puesto('pared') || CASITA.COSAS.pared[0], W, S);
+    en('cortinas', () => { Trastos.ventana(ctx); Trastos.cortinas(ctx, puesto('cortinas')); });
+    en('cuadro', () => Trastos.cuadro(ctx, puesto('cuadro'), t));
+    Trastos.suelo(ctx, puesto('suelo') || CASITA.COSAS.suelo[0], W, S, H);
+
+    en('estanteria', () => {
+      Trastos.estanteria(ctx, puesto('estanteria'));
+      if (CASITA.puesto('estanteria')) Trastos.libros(ctx, puesto('libros'));
+    });
+    en('lampara', () => Trastos.lampara(ctx, puesto('lampara'), t));
+    en('alfombra', () => Trastos.alfombra(ctx, puesto('alfombra')));
+    en('colcha', () => Trastos.colcha(ctx, puesto('colcha')));
+    en('peluche', () => Trastos.peluche(ctx, puesto('peluche')));
+    en('tele', () => Trastos.tele(ctx, puesto('tele')));
+    if (CASITA.puesto('tele')) en('peli', () => Trastos.peli(ctx, puesto('peli'), t));
+    en('planta', () => Trastos.planta(ctx, puesto('planta')));
+    en('rincon', () => Trastos.rincon(ctx, puesto('rincon')));
+
+    if (typeof Avatar !== 'undefined' && Estado.actual) {       // ella, en su cuarto
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.beginPath(); ctx.ellipse(645, 602, 44, 12, 0, 0, 7); ctx.fill();
+      ctx.restore();
+      Avatar.dibujar(ctx, 645, 600, 3.0, Estado.actual.look, -1, 0);
+    }
+
+    // el sitio que está tocando, con su marquito, para saber qué va a cambiar
+    if (this.sitio) {
+      const s = CASITA.sitio(this.sitio);
+      ctx.strokeStyle = '#E8506B'; ctx.lineWidth = 4;
+      ctx.setLineDash([12, 8]);
+      if (s.fondo) ctx.strokeRect(6, s.id === 'pared' ? 6 : S + 4, W - 12, (s.id === 'pared' ? S - 12 : H - S - 10));
+      else ctx.strokeRect(s.zona[0], s.zona[1], s.zona[2], s.zona[3]);
+      ctx.setLineDash([]);
+    }
+  },
+
+  /* La fichita de la tienda y del panel: el mismo dibujo, encogido.
+     El tamaño y el centrado salen solos de la `caja` de cada cosa, así que
+     ninguna se sale ni queda perdida en una esquina. */
+  mini(lienzo, sitioId, cosaId) {
+    const ctx = lienzo.getContext('2d');
+    const s = CASITA.sitio(sitioId), m = CASITA.cosa(cosaId);
+    const w = lienzo.width, h = lienzo.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#F7F1E1'; ctx.fillRect(0, 0, w, h);
+    if (!m) return;
+
+    if (s.fondo) {                                     // la pared y el suelo: un trocito
+      ctx.save();
+      ctx.scale(w / 300, h / 120);
+      if (sitioId === 'pared') Trastos.pared(ctx, m, 300, 134);
+      else Trastos.suelo(ctx, m, 300, 0, 120);
+      ctx.restore();
+      return;
+    }
+
+    const c = m.caja || s.caja;
+    const esc = Math.min(w * 0.94 / (c[2] - c[0]), h * 0.94 / (c[3] - c[1]));
+    ctx.save();
+    ctx.translate(w / 2 - (c[0] + c[2]) / 2 * esc, h / 2 - (c[1] + c[3]) / 2 * esc);
+    ctx.scale(esc, esc);
+    if (sitioId === 'libros') {                        // los libros, sobre una balda de mentira
+      ctx.fillStyle = '#8D5A3B';
+      [-132, -70, -8].forEach(y => ctx.fillRect(-72, y, 144, 8));
+    }
+    if (sitioId === 'peli') {                          // la película, dentro de su pantalla
+      ctx.fillStyle = '#2F3A3A'; ctx.fillRect(-64, -41, 128, 82);
+    }
+    if (sitioId === 'cortinas') Trastos.ventana(ctx);
+    Trastos[sitioId](ctx, m, (Date.now() % 100000) / 1000);
+    ctx.restore();
+  },
+
+  /* Qué se ha tocado: se mira en el orden de la lista (lo de delante antes). */
+  tocado(x, y) {
+    for (const s of CASITA.SITIOS) {
+      if (s.fondo) continue;
+      const z = s.zona;
+      if (x >= z[0] && x <= z[0] + z[2] && y >= z[1] && y <= z[1] + z[3]) return s.id;
+    }
+    return y > SUELO_CUARTO ? 'suelo' : 'pared';
+  },
+
+  /* ---------------------------------------------------- LA PANTALLA */
+  abrir(sitioId) {
+    this.sitio = sitioId || null;
+    const d = CASITA.datos();
+    const botones = CASITA.SITIOS.slice().reverse().map(s => {
+      const cuantas = CASITA.COSAS[s.id].filter(c => CASITA.tiene(c.id) && c.precio > 0).length;
+      const total = CASITA.COSAS[s.id].filter(c => c.precio > 0).length;
+      return `<button class="btn-sitio ${s.id === this.sitio ? 'activo' : ''}" data-s="${s.id}">
+                <span>${s.icono}</span>${s.nombre} <small>${cuantas}/${total}</small></button>`;
+    }).join('');
+
+    UI.abrir(`
+      <div class="quien">Tu habitación</div>
+      <div class="cuarto-marco">
+        <canvas id="laHabitacion" width="${ANCHO_CUARTO}" height="${ALTO_CUARTO}"></canvas>
+      </div>
+      <p class="pista" id="pistaCuarto">Toca una cosa del dibujo para cambiarla.</p>
+      <div class="sitios">${botones}</div>
+      <div class="animales" id="cosasCuarto"></div>
+      <p class="pista">🪚 Todo esto lo vende <b>Bruna</b> en su fustería, al lado de tu cabaña.
+        Llevas <b>${CASITA.compradas()}</b> de ${CASITA.enVenta().length} cosas ·
+        🐚 <b>${Estado.actual.conchas}</b> conchas.</p>
+      <div class="botones"><button class="btn gris" id="cerrarHab">← Volver</button></div>
+    `);
+    const caja = UI.modal && (UI.modal.querySelector('.caja') || UI.modal);
+    if (caja) caja.classList.add('cuarto');            // la ventana, a pantalla completa
+
+    const lienzo = document.getElementById('laHabitacion');
+    this.medir(lienzo);
+    this.arrancar(lienzo);
+
+    lienzo.onclick = (ev) => {
+      const r = lienzo.getBoundingClientRect();
+      const x = (ev.clientX - r.left) / r.width * ANCHO_CUARTO;
+      const y = (ev.clientY - r.top) / r.height * ALTO_CUARTO;
+      Sonido.clic();
+      this.elegir(this.tocado(x, y));
+    };
+    UI.modal.querySelectorAll('.btn-sitio').forEach(b =>
+      b.onclick = () => { Sonido.clic(); this.elegir(b.dataset.s); });
+    document.getElementById('cerrarHab').onclick = () => { Sonido.clic(); Casa.abrir(); };
+
+    if (this.sitio) this.pintarCosas();
+  },
+
+  /* El lienzo, lo más grande que quepa sin que se salga la pantalla */
+  medir(lienzo) {
+    const ancho = Math.min(window.innerWidth - 28,
+                           (window.innerHeight - 250) * (ANCHO_CUARTO / ALTO_CUARTO),
+                           1180);
+    lienzo.style.width = Math.max(300, ancho) + 'px';
+  },
+
+  /* El dibujo se repinta solo (la tele tiene película y la guirnalda parpadea).
+     Se apunta CUÁL es el lienzo de ahora: al abrir otra vez, el de antes se
+     para solo y nunca quedan dos pintando a la vez —ni ninguno, que es lo que
+     pasaba al entrar en la habitación por segunda vez. */
+  arrancar(lienzo) {
+    const ctx = lienzo.getContext('2d');
+    this.lienzo = lienzo;
+    const paso = () => {
+      if (this.lienzo !== lienzo || !document.body.contains(lienzo)) return;
+      this.pintar(ctx, Date.now() / 1000);
+      requestAnimationFrame(paso);
+    };
+    paso();
+  },
+
+  /* Elegir un sitio: se marca en el dibujo y salen sus cosas debajo */
+  elegir(sitioId) {
+    this.sitio = sitioId;
+    UI.modal.querySelectorAll('.btn-sitio').forEach(b =>
+      b.classList.toggle('activo', b.dataset.s === sitioId));
+    this.pintarCosas();
+    const caja = document.getElementById('cosasCuarto');
+    if (caja && caja.scrollIntoView) caja.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  },
+
+  pintarCosas() {
+    const s = CASITA.sitio(this.sitio);
+    const caja = document.getElementById('cosasCuarto');
+    const pista = document.getElementById('pistaCuarto');
+    if (!s || !caja) return;
+
+    const necesita = CASITA.falta(s.id);
+    if (necesita) {
+      caja.innerHTML = '';
+      pista.innerHTML = `Para eso hace falta antes <b>${necesita.nombre.toLowerCase()}</b> ` +
+                        `${necesita.icono}. Sin ella no hay dónde ponerlo.`;
+      return;
+    }
+    pista.innerHTML = `<b>${s.nombre}</b>: toca lo que quieras poner.`;
+
+    const puesto = CASITA.puesto(s.id);
+    const fichas = CASITA.COSAS[s.id].map(c => {
+      const suyo = CASITA.tiene(c.id);
+      return `<button class="ficha-animal ${puesto === c.id ? 'puesta' : ''} ${suyo ? '' : 'porcomprar'}"
+                      data-v="${c.id}">
+                <canvas class="minicosa" data-s="${s.id}" data-c="${c.id}" width="104" height="86"></canvas>
+                <b>${suyo ? c.nombre : '???'}</b>
+                <small>${suyo ? (puesto === c.id ? 'puesto' : 'tocar para poner')
+                              : '🐚 ' + c.precio + ' · lo vende Bruna'}</small>
+              </button>`;
+    }).join('') +
+    (s.fondo ? '' :
+      `<button class="ficha-animal" data-v=""><div class="sinAnimal">🚫</div>
+         <b>Quitarlo</b><small>dejarlo vacío</small></button>`);
+
+    caja.innerHTML = fichas;
+    caja.querySelectorAll('.minicosa').forEach(c => {
+      if (CASITA.tiene(c.dataset.c)) this.mini(c, c.dataset.s, c.dataset.c);
+      else {                                                   // las que no tiene: en gris
+        const g = c.getContext('2d');
+        g.fillStyle = '#E4E0DA'; g.fillRect(0, 0, c.width, c.height);
+        g.fillStyle = '#B4AEA6'; g.font = 'bold 34px system-ui';
+        g.textAlign = 'center'; g.fillText('?', c.width / 2, c.height / 2 + 12);
+      }
+    });
+    caja.querySelectorAll('.ficha-animal').forEach(b =>
+      b.onclick = () => {
+        const id = b.dataset.v;
+        if (id && !CASITA.tiene(id)) {
+          Sonido.fallo();
+          const c = CASITA.cosa(id);
+          document.getElementById('pistaCuarto').innerHTML =
+            `Eso lo vende <b>Bruna</b> en la fustería por <b>🐚 ${c.precio}</b>. ` +
+            `Tienes <b>🐚 ${Estado.actual.conchas}</b>.`;
+          return;
+        }
+        Sonido.clic();
+        CASITA.poner(s.id, id || null);
+        this.pintarCosas();
+      });
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA FUSTERÍA DE BRUNA: la tienda
+   Como la de Mila y la de Tià: pestañas, todo con su dibujo y su precio, y
+   cuando no llega, la resta escrita. Y el trabajo del día en un botón.
+   ══════════════════════════════════════════════════════════════════════ */
+const Fusteria = {
+
+  seccion: 'colcha',
+
+  abrir() { Musica.poner('casa'); this.pintar(); },
+
+  pintar() {
+    const p = Estado.actual;
+    const sitios = CASITA.SITIOS.slice().reverse();
+    const pestanas = sitios.map(s =>
+      `<button class="pestana ${s.id === this.seccion ? 'activa' : ''}" data-s="${s.id}">
+         ${s.icono} ${s.nombre}</button>`).join('');
+
+    const enVenta = CASITA.COSAS[this.seccion].filter(c => c.precio > 0);
+    const fichas = enVenta.map(c => {
+      const mio = CASITA.tiene(c.id);
+      const puede = Estado.puedePagar(c.precio);
+      return `<button class="opcion ${mio ? 'puesta' : ''} ${!mio && !puede ? 'bloqueada' : ''}"
+                      data-v="${c.id}">${mio ? '<span class="chapa">✓</span>' : ''}
+                <canvas class="prevista minicosa" data-s="${this.seccion}" data-c="${c.id}"
+                        width="104" height="86"></canvas>
+                <span>${c.nombre}</span>` +
+             (mio ? '<span class="tuyo">ya es tuyo</span>'
+                  : `<span class="precio">🐚 ${c.precio}</span>`) + '</button>';
+    }).join('');
+
+    UI.abrir(`
+      <div class="quien">Bruna, la carpintera</div>
+      <div class="contador">Tienes 🐚 <b>${p.conchas}</b> conchas ·
+        llevas <b>${CASITA.compradas()}</b> de ${CASITA.enVenta().length} cosas</div>
+      <div class="pestanas">${pestanas}</div>
+      <div class="opciones">${fichas}</div>
+      <p class="pista" id="pistaFusteria">Todo esto es para <b>tu habitación</b>.
+        Se pone desde tu cabaña, en 🛋️ La habitación.</p>
+      <div class="botones">
+        <button class="btn defecto" id="trabajoBruna">🪚 El trabajo de hoy</button>
+        <button class="btn gris" id="charlarBruna">Hablar con Bruna</button>
+      </div>
+    `);
+
+    UI.modal.querySelectorAll('.minicosa').forEach(c =>
+      Habitacion.mini(c, c.dataset.s, c.dataset.c));
+    UI.modal.querySelectorAll('.pestana').forEach(b =>
+      b.onclick = () => { Sonido.clic(); this.seccion = b.dataset.s; this.pintar(); });
+    UI.modal.querySelectorAll('.opcion').forEach(b =>
+      b.onclick = () => this.comprar(b.dataset.v));
+    document.getElementById('trabajoBruna').onclick = () => { Sonido.clic(); CASITA.trabajar(); };
+    document.getElementById('charlarBruna').onclick = () => {
+      Sonido.clic();
+      UI.dialogo('Bruna, la carpintera',
+        'Yo hago muebles, y lo que no sé hacer lo arreglo. Esa tele la encontré en la playa ' +
+        'dentro de un baúl, ¿te lo puedes creer.<br><br>' +
+        'Elige lo que quieras y lo pones en tu habitación como más te guste. Y si quieres ' +
+        'más conchas, échame una mano con las medidas: <b>el trabajo de hoy</b>.',
+        [{ texto: 'Voy a mirar', accion: () => this.pintar() }]);
+    };
+  },
+
+  comprar(id) {
+    const c = CASITA.cosa(id), p = Estado.actual;
+    const pista = document.getElementById('pistaFusteria');
+    const s = CASITA.sitio(CASITA.sitioDe(id));
+
+    if (CASITA.tiene(id)) {
+      pista.innerHTML = 'Eso ya es tuyo. Ponlo en tu cabaña, en <b>🛋️ La habitación</b>.';
+      return;
+    }
+    if (!Estado.puedePagar(c.precio)) {
+      Sonido.fallo();
+      /* La resta se ve escrita, igual que en el taller de Tià: es la cuenta
+         que se lee cada vez que vuelve a la tienda. */
+      pista.innerHTML = `${c.nombre}: <b>🐚 ${c.precio}</b> · tienes <b>🐚 ${p.conchas}</b> · ` +
+                        `te faltan <b>🐚 ${c.precio - p.conchas}</b>.<br>` +
+                        'Haz retos por la isla y vuelve.';
+      return;
+    }
+
+    UI.dialogo('Bruna, la carpintera',
+      `¿Te llevas <b>${c.nombre}</b> por <b>🐚 ${c.precio}</b> conchas?`, [
+      { texto: 'Sí, me lo llevo', accion: () => {
+          p.conchas -= c.precio;
+          const vacio = !CASITA.puesto(s.id);
+          CASITA.dar(c.id);
+          Sonido.fiesta();
+          UI.refrescarHud();
+          UI.dialogo('Bruna, la carpintera',
+            `${s.icono} <b>${c.nombre}</b>: ¡para ti!<br><br>` +
+            (vacio ? 'Ya está <b>puesto</b> en tu habitación.'
+                   : 'Cuando quieras lo cambias: en tu cabaña, <b>🛋️ La habitación</b>.'), [
+            { texto: '🛋️ Verlo puesto', accion: () => Habitacion.abrir(s.id) },
+            { texto: 'Seguir mirando', accion: () => this.pintar() },
+          ]);
+        } },
+      { texto: 'Mejor no', accion: () => this.pintar() },
+    ]);
+  },
+};
+
+/* ------------------------------------------------------ LA FUSTERIA */
+ampliacion(!CASITA.abierta() ? { id: 'cabana2' } : {
+  id: 'cabana2',
+  lugares: [
+    { id: 'fusteria', x: 1260, y: 2640, accion: 'fusteria', dibujo: 'fusteria',
+      nombre: 'La fustería de Bruna', mapa: 'La Fusteria', personaje: 'Bruna, la carpintera' },
+  ],
+
+  dibujos: {
+    fusteria(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x - 20, y + 2, 62, 0);
+      ctx.fillStyle = '#8D5A3B';                                   // el cobertizo
+      ctx.fillRect(x - 96, y - 66, 116, 66);
+      ctx.fillStyle = '#6B4A33';
+      ctx.beginPath();
+      ctx.moveTo(x - 106, y - 66); ctx.lineTo(x - 38, y - 102); ctx.lineTo(x + 30, y - 66);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#A6784D';                                   // el banco de trabajo
+      ctx.fillRect(x - 86, y - 34, 84, 9);
+      ctx.fillStyle = '#7A4B2F';
+      ctx.fillRect(x - 82, y - 25, 6, 25); ctx.fillRect(x - 12, y - 25, 6, 25);
+      ctx.fillStyle = '#C8A24B';                                   // la sierra colgada
+      ctx.fillRect(x - 72, y - 58, 34, 4);
+      ctx.fillStyle = '#7A4B2F'; ctx.fillRect(x - 40, y - 60, 9, 8);
+      ctx.fillStyle = '#D8C08A';                                   // tablones apilados
+      [0, 6, 12].forEach((d, i) => ctx.fillRect(x + 34, y - 12 - d, 44 - i * 4, 5));
+      ctx.fillStyle = '#E6DCC8';                                   // serrín en el suelo
+      ctx.beginPath(); ctx.ellipse(x - 40, y + 2, 34, 8, 0, 0, 7); ctx.fill();
+      this.personajeSimple(ctx, x + 8, y, '#6E8FA8', '#5E3A24', dormido);
+      if (!dormido) {                                              // un mueble a medio hacer
+        ctx.fillStyle = '#B99C63';
+        ctx.fillRect(x - 76, y - 50, 26, 16);
+        ctx.fillStyle = '#8D5A3B';
+        ctx.fillRect(x - 76, y - 44, 26, 3);
+      }
+    },
+  },
+
+  retos: {
+    fusteria: {
+      trabajo: true,
+      quien: 'Bruna, la carpintera',
+      saludo: 'Bruna tiene el lápiz detrás de la oreja y un mueble a medio hacer en el banco. ' +
+              'Dice que antes de cortar la madera hay que <b>medir</b>, y que si le echas la ' +
+              'cuenta bien, te paga el jornal.',
+      exito: '¡Medido y cortado! Bruna sopla el serrín y te paga.',
+      repetido: 'Por hoy ya está. Un trabajo al día, que la madera no crece sola.',
+      dormido: 'Bruna se ha ido a por madera al bosque. Vuelve luego.',
+      despierta: 'Ya está de vuelta, con menos madera y una medida más fácil.',
+      moraleja: { titulo: 'El borde y lo de dentro',
+        texto: 'De un rectángulo se pueden medir dos cosas distintas:<br><br>' +
+               '· <b>El borde</b> (el perímetro): lo que hay que recorrer para darle la vuelta. ' +
+               'Se suman los cuatro lados, y como los lados van de dos en dos, es ' +
+               '<b>(largo + ancho) × 2</b>.<br><br>' +
+               '· <b>Lo de dentro</b> (el área): las baldosas que tapa. Es ' +
+               '<b>largo × ancho</b>.<br><br>' +
+               'Cinta para el borde; baldosas para lo de dentro. No se miden igual.' },
+
+      mayor: {
+        variantes: [
+          { vars: () => { const a = AZ(3, 9), b = AZ(2, 8); return { a, b, s: a + b, sol: (a + b) * 2 }; },
+            enunciado: 'La alfombra mide {a} palmos de largo y {b} de ancho. Bruna quiere rematar ' +
+                       '<b>todo el borde</b> con cinta. ¿Cuántos palmos de cinta hacen falta?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'juntar', 'dosPasos'],
+            explica: { juntar: '{a} + {b} = {s} es solo <b>medio</b> borde: faltan los otros dos lados.',
+                       multiplicar: '{a} × {b} son las baldosas de dentro, no el borde.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: un lado largo y uno ancho, ¿cuánto suman?', sol: '{s}' },
+                        { texto: 'Y dando la vuelta entera, ¿cuánta cinta?', sol: '{sol}' }],
+            pistas: ['{a} + {b} = {s}, y eso va dos veces.', '({a} + {b}) × 2.'] },
+
+          { vars: () => { const a = AZ(3, 9), b = AZ(3, 8); return { a, b, sol: a * b, mal: (a + b) * 2 }; },
+            enunciado: 'El suelo de la habitación tiene {a} baldosas de largo y {b} de ancho. ' +
+                       '¿Cuántas baldosas hay en total?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar {a} y {b} no cuenta las baldosas: hay {b} filas de {a}.',
+                       repartir: 'No repartimos nada: queremos las baldosas que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas baldosas?', sol: '{sol}' }],
+            pistas: ['{b} filas de {a} baldosas.', 'La tabla del {a}.'] },
+
+          { vars: () => { const a = AZ(5, 9), b = AZ(4, 7), c = AZ(2, 4), d = AZ(2, 3);
+                          return { a, b, c, d, suelo: a * b, tapa: c * d, sol: a * b - c * d }; },
+            enunciado: 'El suelo tiene {a} × {b} baldosas y encima pones una alfombra de {c} × {d}. ' +
+                       '¿Cuántas baldosas quedan a la vista?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: 'Con multiplicar sabes las que hay, pero la alfombra tapa unas cuantas…',
+                       quitar: 'Antes de quitar hay que saber cuántas baldosas hay y cuántas tapa.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántas baldosas tiene el suelo?', sol: '{suelo}' },
+                        { texto: '¿Y cuántas tapa la alfombra?', sol: '{tapa}' },
+                        { texto: 'Entonces, ¿cuántas quedan a la vista?', sol: '{sol}' }],
+            pistas: ['{a} × {b} = {suelo} y {c} × {d} = {tapa}.', '{suelo} − {tapa}.'] },
+
+          { vars: () => { const l = AZ(4, 9); return { l, sol: l * 4, s: l + l }; },
+            enunciado: 'La mesilla es <b>cuadrada</b> y cada lado mide {l} palmos. ¿Cuánta cinta ' +
+                       'hace falta para rodear todo el borde?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{l} + {l} = {s} son solo dos lados. Un cuadrado tiene cuatro.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuánta cinta?', sol: '{sol}' }],
+            pistas: ['Cuatro lados iguales de {l}.', '{l} × 4.'] },
+        ],
+        facil: {
+          vars: () => { const a = AZ(2, 5), b = AZ(2, 4); return { a, b, sol: a * b }; },
+          enunciado: 'La mesa tiene {a} baldosas de largo y {b} de ancho. ¿Cuántas baldosas tapa?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '{a} × {b}', sol: '{sol}' }],
+          pistas: ['{b} filas de {a}.', 'Cuéntalas de {a} en {a}.'],
+        },
+      },
+
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(2, 5), b = AZ(2, 4); return { a, b, sol: a * b }; },
+            enunciado: 'La alfombra tapa {b} filas de {a} baldosas. ¿Cuántas baldosas tapa?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{a} y {b} son las filas y lo que mide cada una, no el total.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas baldosas?', sol: '{sol}' }],
+            pistas: ['{a} y otra vez {a}…', '{b} veces {a}.'] },
+
+          { vars: () => { const a = AZ(2, 6), b = AZ(2, 5); return { a, b, s: a + b, sol: (a + b) * 2 }; },
+            enunciado: 'La alfombra mide {a} palmos de largo y {b} de ancho. Para rematar el borde ' +
+                       'hay que dar la vuelta entera. ¿Cuántos palmos de cinta?',
+            operacion: 'dosPasos', opciones: ['juntar', 'multiplicar', 'dosPasos'],
+            explica: { juntar: '{a} + {b} = {s} es medio borde: faltan los otros dos lados.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Un lado largo y uno ancho, ¿cuánto suman?', sol: '{s}' },
+                        { texto: 'Y la vuelta entera, ¿cuánto es?', sol: '{sol}' }],
+            pistas: ['{s} por un lado y {s} por el otro.', 'El doble de {s}.'] },
+
+          { vars: () => { const l = AZ(2, 5); return { l, sol: l * 4 }; },
+            enunciado: 'El cojín es <b>cuadrado</b> y cada lado mide {l} palmos. ¿Cuánto mide el borde entero?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: 'Un cuadrado tiene cuatro lados, no dos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuánto mide el borde?', sol: '{sol}' }],
+            pistas: ['{l}, {l}, {l} y {l}.', 'Cuatro veces {l}.'] },
+        ],
+        facil: {
+          vars: () => { const a = AZ(2, 4); return { a, sol: a * 2 }; },
+          enunciado: 'La alfombra tapa 2 filas de {a} baldosas. ¿Cuántas baldosas tapa?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '2 veces {a}', sol: '{sol}' }],
+          pistas: ['{a} y otra vez {a}.', 'El doble de {a}.'],
+        },
+      },
+    },
+  },
+});
+
+/* --------------------------------- LOS ESTILOS DE LA HABITACIÓN
+   Van aquí y no en index.html para que la expansión siga siendo un solo
+   archivo: si algún día se quita, no deja nada suelto por el camino. */
+if (typeof document !== 'undefined' && document.head) {
+  const hoja = document.createElement('style');
+  hoja.textContent = `
+    .caja.cuarto{max-width:none; width:98vw; padding:18px 10px 12px}
+    .cuarto-marco{margin:10px auto 6px; display:flex; justify-content:center}
+    #laHabitacion{display:block; width:100%; border-radius:16px; cursor:pointer;
+                  box-shadow:0 10px 26px rgba(40,34,26,.22)}
+    .sitios{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin:8px 0}
+    .btn-sitio{font:inherit; color:var(--tinta); font-size:15px; background:#fff;
+               border:2px solid var(--borde); border-radius:14px; padding:7px 10px;
+               cursor:pointer; display:flex; align-items:center; gap:6px}
+    .btn-sitio span{font-size:20px}
+    .btn-sitio small{color:var(--tinta-suave)}
+    .btn-sitio.activo{background:var(--turquesa); color:#fff; border-color:var(--turquesa)}
+    .btn-sitio.activo small{color:#EAF6FB}
+    .ficha-animal .minicosa{display:block; margin:0 auto 4px; border-radius:10px; width:104px; height:86px}
+    .ficha-animal b, .ficha-animal small{display:block}
+    .ficha-animal.porcomprar{opacity:.75}
+    .opcion .minicosa{width:104px; height:86px}
+    @media (max-width:680px){
+      .btn-sitio{font-size:13px; padding:6px 8px}
+      .btn-sitio span{font-size:17px}
+    }`;
+  document.head.appendChild(hoja);
+}
+
+/* ------------------------------------------------------- EL ENGANCHE */
+if (typeof Casa !== 'undefined' && CASITA.abierta()) (function () {
+  /* La cuarta puerta de la cabaña. Se añade al vuelo, sin tocar el motor. */
+  const abrir = Casa.abrir;
+  Casa.abrir = function () {
+    abrir.apply(this, arguments);
+    const caja = UI.modal && UI.modal.querySelector('.puertas');
+    if (!caja) return;
+    const b = document.createElement('button');
+    b.className = 'puerta';
+    b.innerHTML = '<span class="puerta-icono">🛋️</span><b>La habitación</b>' +
+                  '<small>decorarla a tu gusto</small>';
+    b.onclick = () => { Sonido.clic(); Habitacion.abrir(null); };
+    caja.appendChild(b);
+  };
+})();
+
+if (typeof Juego !== 'undefined' && CASITA.abierta()) (function () {
+  const J = Juego;
+  ICONOS.fusteria = '🪚';
+  TECLAS.fusteria = 'F';
+
+  /* El trabajo del día: la cuenta de medir. Paga jornal (como limpiar los
+     animales o los fósiles de la mina); los muebles ya no salen de aquí,
+     se compran. */
+  CASITA.trabajar = function () {
+    Desafio.abrir('fusteria', (bien) => {
+      UI.refrescarHud();
+      if (bien) Fusteria.pintar();      // se vuelve a la tienda con las conchas ya cobradas
+    });
+  };
+
+  const interactuar = J.interactuar;
+  J.interactuar = function (tecla) {
+    const l = this.lugar || this.lugarEn(this.jugador.x, this.jugador.y, 95);
+    if (!this.cogible && !this.entregable && !this.encajable && l && l.accion === 'fusteria' &&
+        (!tecla || tecla === 'Enter' || tecla === 'F')) {
+      this.teclas = {};
+      Sonido.clic();
+      return Fusteria.abrir();
+    }
+    return interactuar.call(this, tecla);
+  };
+
+  /* EL REGALO DEL CRISTAL: además del peto (que da el motor), la colcha de
+     cuadros, ya puesta, para que la cama no esté pelada el primer día. Si la
+     jugadora colocó el cristal antes de que esto existiera, se le da igual. */
+  const iniciar = J.iniciar;
+  J.iniciar = function () {
+    const v = iniciar.apply(this, arguments);
+    if (typeof Sorpresas !== 'undefined' && Estado.actual) {
+      const pr = Sorpresas.progreso();
+      if (pr && (pr.puestos || []).includes('cabana2') && !CASITA.tiene('colchaCuadros')) {
+        CASITA.dar('colchaCuadros');
+      }
+    }
+    return v;
+  };
+})();
+
+</script>
+<script>
 /* === voz/lista.js === */
 /* QUÉ FRASES DE LUMI ESTÁN GRABADAS
    Lo escribe voz.py; no se toca a mano. */
@@ -24460,7 +26131,7 @@ const Inicio = {
         <canvas class="mini" data-i="${i}" width="120" height="150"></canvas>
         <b>${p.nombre}</b>
         <small>🐚 ${p.conchas} · 💎 ${(p.progreso && p.progreso.retos) || 0}</small>
-        <button class="btn jugar" data-i="${i}">Jugar</button>
+        <button class="btn defecto jugar" data-i="${i}">Jugar</button>
         <div class="fila-enlaces">
           <button class="enlace reiniciar" data-i="${i}">empezar de nuevo</button>
           <button class="enlace borrar" data-i="${i}">borrar</button>
