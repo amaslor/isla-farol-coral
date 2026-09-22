@@ -99,7 +99,7 @@
   #mandos .accion{background:var(--verde); color:#fff; font-size:26px}
   .cruceta{display:flex; flex-direction:column; align-items:center; gap:6px}
   .cruceta div{display:flex; gap:6px}
-  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada{font-size:20px; border:0; border-radius:10px;
+  #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada,#bClima{font-size:20px; border:0; border-radius:10px;
            padding:4px 8px; background:rgba(255,255,255,.85); cursor:pointer; margin-right:6px}
 
   /* Los avisos van abajo: arriba taparían las piedras del río */
@@ -283,8 +283,11 @@
     #hud .caja-hud{padding:3px 9px; border-radius:10px}
     #hud .barrita{width:34px}
     #hud .caja-nombre{display:none}          /* el nombre ya sale en la portada */
-    #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:nowrap}
-    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada{font-size:17px; padding:3px 5px; margin-right:0}
+    /* En pantalla estrecha los botones pasan a dos filas: con el 🚲, el 🧚
+       y el 🌦️ ya no caben en una y el 🔊 se salía por la derecha. */
+    #hud .der{display:flex; gap:3px; align-items:center; flex-wrap:wrap;
+              justify-content:flex-end; row-gap:3px}
+    #bSonido,#bMapa,#bPantalla,#bMochila,#bAyuda,#bCuadernos,#bVehiculo,#bCasa,#bVozHada,#bClima{font-size:17px; padding:3px 5px; margin-right:0}
     #volverInicio{font-size:17px; text-decoration:none; padding:0 3px}
 
     /* El hada, más pequeña y por debajo de la barra de arriba */
@@ -513,6 +516,7 @@
     <button id="bCasa" title="Volver a casa (tecla I)">🏠</button>
     <button id="bVehiculo" class="oculto" title="Montarte (tecla B)">🚲</button>
     <button id="bPantalla" title="Pantalla completa (tecla P)">⛶</button>
+    <button id="bClima" class="oculto" title="La ambientación de la isla">🌦️</button>
     <button id="bVozHada" class="oculto" title="La voz de Lumi">🧚</button>
     <button id="bSonido" title="Sonido">🔊</button>
     <button class="enlace" id="volverInicio"><span class="en-ancho">cambiar de jugadora</span><span class="en-estrecho">👤</span></button></span>
@@ -751,13 +755,15 @@ const AJUSTES = {
       pista: 'La isla ha cambiado de color: los árboles están naranjas, se ha levantado <b>viento</b> y está <b>lloviendo</b>. Hay charcos por todas partes… y tú llevas botas de agua.',
       aviso: '¡40 retos! Dile a papá lo del otoño: el chubasquero, la lluvia y el viento.' },
 
-    { id: 'moto', icono: '🛵', nombre: 'La moto de Tià, y un taller más grande',
+    { id: 'moto', icono: '🏍️', nombre: 'La moto de Tià, y un taller más grande',
       cristal: { nombre: 'Cristal de Fuego', color: '#FF9130' },
       regalo: { tipo: 'complementos', id: 'casco', nota: 'con su lamparita encendida' },
+      pista: 'Tià ha terminado la <b>moto</b> y te la ha dejado a ti. Corre muchísimo, echa humo y, si le das al botón de saltar yendo lanzada, hace <b>caballitos</b>. El taller también ha crecido.',
       aviso: '¡50 retos! Dile a papá que Tià ya puede traerte la moto.' },
 
     { id: 'mascotas2', icono: '🐾', nombre: 'Un animal que no está en venta',
       cristal: { nombre: 'Cristal de Mar', color: '#5FD1C6' },
+      pista: 'En la <b>costa del noroeste</b> ha aparecido una <b>cala</b> entre rocas que antes no estaba. Ona dice que allí hay un animal que <b>no está en venta</b> y que te necesita.',
       aviso: '¡60 retos! Dile a papá que Ona tiene algo para ti.' },
 
     { id: 'halloween', icono: '🎃', nombre: 'La isla se vuelve tenebrosa', clima: true,
@@ -773,6 +779,16 @@ const AJUSTES = {
     { id: 'cabana2', icono: '🏠', nombre: 'Decorar la cabaña por dentro',
       cristal: { nombre: 'Cristal de Hierba', color: '#8FD46A' },
       aviso: '¡90 retos! Dile a papá que quieres decorar tu cabaña.' },
+
+    /* Puesto 10: la pidió Antonio el 21-09-2026 pensando en NOVIEMBRE, que es
+       cuando cae a este ritmo. A partir de aquí, las de detrás corren un
+       puesto (el juego de Coco, el invierno, las monedas…). */
+    { id: 'gel', icono: '❄️', nombre: "L'Illa de Gel, en el norte del todo", 
+      cristal: { nombre: 'Cristal de Aurora', color: '#7CF0C8' },
+      regalo: { tipo: 'conjuntos', id: 'abrigogel',
+                nota: 'con capucha de pelo y dos franjas que cambian de color, como la aurora' },
+      pista: 'En la <b>costa norte</b> hay un muelle nuevo con la barca de Neus. Dice que al norte del todo hay una <b>isla de hielo</b> donde es de noche casi siempre y el cielo se enciende de colores.',
+      aviso: '¡100 retos! Dile a papá lo de la isla de hielo del norte.' },
 
     { id: 'juego2', icono: '🎲', nombre: 'Un juego nuevo en el salón de Coco',
       cristal: { nombre: 'Cristal de Rosa', color: '#FF9ED2' },
@@ -5198,6 +5214,7 @@ const Estado = {
       mimos: { dia: '', hechos: {} },   // a quién ha dado de comer y con quién ha jugado hoy
       vehiculos: [],            // patinete, bici… los del taller de Tià
       montura: null,            // en qué va montada ahora (null = a pie)
+      mejorCaballito: 0,        // su récord de caballito en la moto, en segundos
       rarezas: [],              // objetos raros de la mochila
       tope: { dia: '', dadas: 0 },        // conchas de hoy por lo repetible sin fin
       entregado: {},            // encargos ya entregados a su dueño
@@ -12281,6 +12298,69 @@ const Sorpresas = {
     return cual;
   },
 
+  /* EL INTERRUPTOR DE LA AMBIENTACIÓN (22-09-2026)
+     Lo pidió Gala a través de Antonio: la lluvia y el viento molestan para
+     jugar. Pero no apaga «el tiempo», apaga LA AMBIENTACIÓN ENTERA de la
+     isla: el otoño, Halloween, el invierno… lo que haya ganado. El botón de
+     la barra de arriba enseña el icono de la ambientación puesta (🍂, 🎃, ❄️)
+     y la quita; queda ☀️, la isla de siempre, y el mismo botón la devuelve.
+     Se guarda EN EL APARATO, igual que la propia ambientación: la isla no
+     puede estar en otoño para una hermana y normal para la otra.
+     Es a propósito un interruptor de dos posiciones: ambientación sí o no.
+     ELEGIR una (sol, lluvia, nieve, día o noche) será más adelante una
+     expansión entera, el superpoder de mandar en el tiempo. */
+  CLAVE_CLIMA: 'islaClimaApagado',
+
+  climaApagado() {
+    try { return localStorage.getItem(this.CLAVE_CLIMA) === 'si'; } catch (e) { return false; }
+  },
+  apagarClima(apagado) {
+    try { localStorage.setItem(this.CLAVE_CLIMA, apagado ? 'si' : 'no'); } catch (e) {}
+  },
+
+  /* EL BOTÓN DE LA BARRA
+     No aparece hasta que hay una ambientación ganada: si la isla nunca ha
+     cambiado, no hay nada que quitar y la barra no se llena de botones que
+     no hacen nada. Enseña el icono de la que esté puesta (🍂 el otoño, 🎃
+     Halloween, ❄️ el invierno), así se ve de qué habla. */
+  iconoDelClima() {
+    const id = this.climaActivo();
+    const s = this.todas().find(x => x.id === id);
+    return (s && s.icono) || '🌦️';
+  },
+
+  pintarBotonClima() {
+    const b = document.getElementById('bClima');
+    if (!b) return;
+    let hay = !!this.climaActivo();
+    try { if (/prueba/.test(location.pathname)) hay = true; } catch (e) {}
+    b.classList.toggle('oculto', !hay);
+    if (!hay) return;
+    const apagado = this.climaApagado();
+    b.textContent = apagado ? '☀️' : this.iconoDelClima();
+    b.title = apagado ? 'Que vuelva la isla como la ganaste'
+                      : 'Dejar la isla como siempre, sin nada encima';
+  },
+
+  /* Al tocarlo. La isla decide su ambientación al arrancar (los dibujos se
+     enganchan entonces), así que hay que volver a cargar la página; se
+     vuelve sola a la misma partida y no se pierde nada. */
+  alternarClima() {
+    const apagar = !this.climaApagado();
+    UI.dialogo(apagar ? '☀️ La isla de siempre' : this.iconoDelClima() + ' Que vuelva',
+      apagar
+        ? 'La isla se quedará <b>como al principio</b>: sin lluvia, sin viento y sin nada ' +
+          'encima.<br><br>' +
+          'Tu cristal no se pierde: cuando quieras, este mismo botón lo devuelve todo.'
+        : 'Vuelve la isla que ganaste con tu cristal, con todo lo suyo.',
+      [{ texto: 'Sí', accion: () => {
+           this.apagarClima(apagar);
+           if (typeof Inicio !== 'undefined') Inicio.recordarPartida();
+           location.reload();
+         } },
+       { texto: 'Ahora no', accion: () => UI.cerrar() }]);
+  },
+
   /* Los colores de los cristales ya encajados en el Farol, en orden.
      Lo usa el dibujo de la hoguera (Juego.pintar_farol). */
   coloresPuestos() {
@@ -12317,6 +12397,7 @@ const Sorpresas = {
 
   /* LA BARRA, arriba a la izquierda */
   pintar() {
+    this.pintarBotonClima();
     const caja = document.getElementById('cajaCristales');
     if (!caja) return;
     const texto = document.getElementById('cristalTexto');
@@ -12413,6 +12494,7 @@ const Sorpresas = {
    que la repintan (Halloween, y las de lluvia y nieve cuando se hagan). */
 function climaDeLaIsla() {
   if (typeof Sorpresas === 'undefined') return null;
+  if (Sorpresas.climaApagado()) return null;       // el botón ☀️ de la barra la quita
   try { if (typeof window !== 'undefined' && /prueba/.test(location.pathname)) return Sorpresas.climaActivo(); } catch (e) {}
   return Sorpresas.climaActivo();
 }
@@ -12617,6 +12699,7 @@ const Juego = {
     document.getElementById('bMochila').onclick = () => Mochila.abrir();
     document.getElementById('bCuadernos').onclick = () => Cuadernos.abrir();
     document.getElementById('bVehiculo').onclick = () => Vehiculos.alternar();
+    document.getElementById('bClima').onclick = () => Sorpresas.alternarClima();
     document.getElementById('bPantalla').onclick = () => this.pantallaCompleta();
     document.getElementById('bSonido').onclick = () => {
       Sonido.arrancar();
@@ -18916,6 +18999,9 @@ const HALLOWEEN = {
   /* ¿Está la isla grande disfrazada? Manda el clima que se haya ganado. */
   enFiesta() {
     if (typeof window === 'undefined') return true;              // node: se comprueba todo
+    /* El botón ☀️ de la barra deja la isla en calma (22-09-2026). Solo quita
+       el disfraz de la isla grande: la Isla Tenebrosa sigue donde estaba. */
+    if (typeof Sorpresas !== 'undefined' && Sorpresas.climaApagado()) return false;
     if (this.enPruebas()) return /halloween/.test(location.hash);
     if (typeof climaDeLaIsla === 'function' && climaDeLaIsla() === 'halloween') return true;
     const md = this.hoy().slice(5);
@@ -21234,6 +21320,8 @@ const OTONO = {
      poder verlo sin ganarse el cristal. */
   activo() {
     if (typeof window === 'undefined') return true;          // node: se comprueba todo
+    /* El botón ☀️ de la barra deja la isla en calma (22-09-2026) */
+    if (typeof Sorpresas !== 'undefined' && Sorpresas.climaApagado()) return false;
     try { if (/prueba/.test(location.pathname)) return /otono|lluvia/.test(location.hash); } catch (e) {}
     return typeof climaDeLaIsla === 'function' && climaDeLaIsla() === 'lluvia';
   },
@@ -21652,6 +21740,1951 @@ if (typeof Juego !== 'undefined' && OTONO.activo()) (function () {
         'o písalos, que para eso tienes botas de agua.' +
         (atrasado ? ' Ah, y tu premio estaba de camino: tienes un <b>chubasquero amarillo con ' +
                     'capucha y botas de agua</b> esperándote en el armario.' : ''), 11), 6000);
+    }
+    return v;
+  };
+})();
+
+</script>
+<script>
+/* === ampliaciones/moto.js === */
+/* LA MOTO DE TIÀ  ·  el quinto Cristal Mayor (21-09-2026)
+   ───────────────────────────────────────────────────────
+   Lo pidió Antonio: «hazme una moto bien chula; que haga caballitos al darle
+   al botón de saltar, que suene a runrún y que eche humo». Lo de la barrita
+   de gasolina lo propuso y lo retiró él mismo en la misma frase (habría que
+   ponérsela también al patinete y a la bici, y eso es castigo, no juego).
+
+   ES ATREZO, como el resto de vehículos (regla 28 de ROADMAP.md): no da
+   ninguna ventaja en los retos ni paga conchas. Lo pedagógico son los 50
+   retos que hay que hacer para ganarla.
+
+   LA MOTO NO SE COMPRA, SE REGALA (regla 33): el premio de un Cristal Mayor
+   tiene que ser algo tangible que no esté a la venta y que se vea puesto en
+   el momento. Llega con el casco (ese es el `regalo` que ya estaba escrito en
+   AJUSTES.sorpresas) y con un taller más grande, que es el cambio que se ve
+   en la isla. En el taller sale con la chapa ✓, como todo lo que ya es suyo.
+
+   QUÉ TIENE DE MOTO, aparte del dibujo:
+     · el motor ACELERA: el runrún sube de tono con la velocidad, ralentiza
+       cuando se para y PETARDEA al soltar el gas
+     · echa HUMO por el escape, y más cuando acelera o hace el caballito
+     · CABALLITO con el botón de saltar (o el espacio): levanta la rueda de
+       delante mientras va lanzada, y se encadena si se vuelve a pulsar.
+       Guarda el récord: «tu mejor caballito, 2,4 s»
+     · levanta POLVO al arrancar y deja una raya al frenar en seco
+     · lleva el FARO encendido, con su cono de luz
+     · CLAXON en vez de timbre al subirse
+     · y CASCO: en la moto se va con casco puesto, aunque lleve otra cosa en
+       la cabeza. Se lo quita al bajarse.
+
+   Todo vive aquí dentro: no se toca el motor del juego salvo una línea en la
+   plantilla de las partidas (`mejorCaballito`, el récord). */
+
+/* DORMIDA HASTA QUE EL CRISTAL DE FUEGO LA ABRA.
+   El código viaja dentro del juego publicado, pero la moto no existe para la
+   jugadora hasta que lleva su quinto Cristal Mayor al Farol. */
+const MOTO_ABIERTA = typeof sorpresaAbierta === 'function' ? sorpresaAbierta('moto') : true;
+
+ampliacion({ id: 'moto' });      // sin sitios nuevos: la moto no es un lugar
+
+const MOTO = {
+
+  ROJO: '#D94A35', OSCURO: '#A5311F', CROMO: '#C9C2B4',
+  NEGRO: '#2F2A28', FARO: '#FFE9A8',
+
+  humo: [],                  // las bocanadas del escape, en coordenadas del mundo
+  polvo: [],                 // lo que levantan las ruedas
+  cab: { hasta: 0, desde: 0 },
+  velAntes: 0,
+
+  puesta() { return typeof Juego !== 'undefined' && Juego.montura === 'moto'; },
+
+  // ------------------------------------------------------ EL CABALLITO
+  /* Cuánto está levantada la rueda de delante, de 0 (en el suelo) a 1. Sube
+     deprisa y baja suave, para que no parezca un interruptor. */
+  alzada(t) {
+    const c = this.cab;
+    if (t > c.hasta) return 0;
+    const subiendo = Math.min(1, (t - c.desde) / 0.18);
+    const bajando = Math.min(1, (c.hasta - t) / 0.35);
+    return Math.min(subiendo, bajando);
+  },
+
+  /* El botón de saltar, montada en la moto, hace caballito en vez de saltar.
+     Hay que ir lanzada: parada, la moto no se levanta sola. */
+  intentarCaballito() {
+    const t = Juego.t, vel = Math.hypot(Juego.vel.x, Juego.vel.y);
+    if (vel < 2) { if (typeof Sonido !== 'undefined') Sonido.ruido(0.07, 700, 0.07); return; }
+    if (t > this.cab.hasta) this.cab.desde = t;       // empieza uno nuevo
+    this.cab.hasta = Math.max(this.cab.hasta, t) + 0.75;   // y se encadena si insiste
+    this.humear(3, 1.6);
+    if (typeof Sonido !== 'undefined') Sonido.ruido(0.1, 1100, 0.07);
+  },
+
+  /* Se acabó el caballito: si ha durado más que ninguno, se lo decimos. */
+  rematarCaballito() {
+    const p = Estado.actual;
+    if (!p) return;
+    /* Lo que ha durado de verdad: desde que levantó la rueda hasta que la
+       bajó. Un caballito suelto son 0,75 s; encadenando se alarga. */
+    const duro = Math.round((this.cab.hasta - this.cab.desde) * 10) / 10;
+    this.cab.desde = this.cab.hasta = 0;
+    if (duro < 0.7) return;
+    const mejor = p.mejorCaballito || 0;
+    if (duro <= mejor) return;
+    p.mejorCaballito = duro;
+    Estado.guardar();
+    if (typeof Sonido !== 'undefined') Sonido.moneda();
+    if (typeof Hada !== 'undefined')
+      Hada.decir('🏍️ ¡' + String(duro).replace('.', ',') + ' segundos de caballito! ' +
+                 (mejor ? 'Ese es tu récord nuevo.' : 'Ese es tu primer récord.'), 6);
+  },
+
+  // ---------------------------------------------------- HUMO Y POLVO
+  humear(cuantas, fuerza) {
+    const j = Juego.jugador;
+    for (let i = 0; i < cuantas; i++)
+      this.humo.push({ x: j.x - 41 * j.mirando + (Math.random() * 6 - 3),
+                       y: j.y - 19 + (Math.random() * 4 - 2),
+                       vx: -0.5 * j.mirando + (Math.random() - 0.5),
+                       r: 3 + Math.random() * 3, vida: 1, fuerza: fuerza || 1 });
+    if (this.humo.length > 60) this.humo.splice(0, this.humo.length - 60);
+  },
+
+  empolvar(cuantas) {
+    const j = Juego.jugador;
+    for (let i = 0; i < cuantas; i++)
+      this.polvo.push({ x: j.x - 34 * j.mirando, y: j.y + (Math.random() * 6 - 3),
+                        vx: (Math.random() - 0.5) * 2.4, r: 2 + Math.random() * 3, vida: 1 });
+    if (this.polvo.length > 40) this.polvo.splice(0, this.polvo.length - 40);
+  },
+
+  /* Se pintan en coordenadas del mundo, por detrás de la moto */
+  pintarRastro(ctx) {
+    this.humo.forEach(h => {
+      h.vida -= 0.022; h.x += h.vx * 0.6; h.y -= 0.35; h.r += 0.32 * h.fuerza;
+      if (h.vida <= 0) return;
+      ctx.fillStyle = 'rgba(148,146,142,' + (0.38 * h.vida) + ')';
+      ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, 7); ctx.fill();
+    });
+    this.humo = this.humo.filter(h => h.vida > 0);
+
+    this.polvo.forEach(p => {
+      p.vida -= 0.05; p.x += p.vx; p.r += 0.4;
+      if (p.vida <= 0) return;
+      ctx.fillStyle = 'rgba(200,188,160,' + (0.42 * p.vida) + ')';
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r * 0.45, 0, 0, 7); ctx.fill();
+    });
+    this.polvo = this.polvo.filter(p => p.vida > 0);
+  },
+
+  // ------------------------------------------------------- EL MOTOR
+  /* Un runrún de verdad: dos osciladores graves pasados por un filtro, y la
+     frecuencia sube con la velocidad. Cuelga del volumen maestro, así que el
+     botón 🔊 lo calla como todo lo demás. */
+  arrancarMotor() {
+    const S = typeof Sonido !== 'undefined' ? Sonido : null;
+    if (!S || !S.ctx || !S.maestro || this.motor) return;
+    // fuera del navegador (comprobar.js) no hay sonido de verdad: no se monta
+    if (typeof S.ctx.createOscillator !== 'function') return;
+    const osc = S.ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 58;
+    const sub = S.ctx.createOscillator(); sub.type = 'square';   sub.frequency.value = 29;
+    const filtro = S.ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 340;
+    const g = S.ctx.createGain(); g.gain.value = 0;
+    const tremolo = S.ctx.createOscillator();        // el temblor del ralentí
+    const tg = S.ctx.createGain();
+    tremolo.frequency.value = 11; tg.gain.value = 0.022;
+    tremolo.connect(tg); tg.connect(g.gain);
+    osc.connect(filtro); sub.connect(filtro); filtro.connect(g); g.connect(S.maestro);
+    osc.start(); sub.start(); tremolo.start();
+    this.motor = { osc, sub, g, filtro, tremolo };
+  },
+
+  pararMotor() {
+    const m = this.motor;
+    if (!m) return;
+    this.motor = null;
+    try { m.osc.stop(); m.sub.stop(); m.tremolo.stop(); } catch (e) {}
+  },
+
+  /* Cada fotograma: el tono y el volumen siguen a la velocidad */
+  sonarMotor(vel, alzada) {
+    this.arrancarMotor();
+    const m = this.motor;
+    if (!m || !Sonido.ctx) return;
+    const t = Sonido.ctx.currentTime;
+    const gas = vel / 9.2;                                   // 0 parada, 1 a tope
+    const f = 56 + gas * 78 + alzada * 30;                   // en el caballito revoluciona
+    m.osc.frequency.setTargetAtTime(f, t, 0.08);
+    m.sub.frequency.setTargetAtTime(f / 2, t, 0.08);
+    m.filtro.frequency.setTargetAtTime(300 + gas * 700, t, 0.1);
+    m.g.gain.setTargetAtTime(0.05 + gas * 0.055, t, 0.12);
+  },
+};
+
+/* ===================================================================== */
+/* Lo que sigue solo existe cuando la expansión está abierta.            */
+/* ===================================================================== */
+if (MOTO_ABIERTA && typeof VEHICULOS !== 'undefined') (function () {
+
+  /* --- LA MOTO, con sus números (se leen igual que los otros vehículos) */
+  VEHICULOS.push({
+    id: 'moto',
+    nombre: 'Moto',
+    icono: '🏍️',
+    precio: 600,                 // no se vende: se gana. El precio es por si acaso
+    tope: 9.2,
+    arranque: 0.055,             // cuesta arrancarla: se nota que acelera
+    freno: 0.12,                 // frena peor que la bici: pesa más
+    alto: 28,
+    sombra: 34,
+    color: MOTO.ROJO,
+    detalle: '#FFC24D',
+    comoVa: 'La más rápida de la isla. Cuesta arrancarla y tarda en parar.',
+    alComprar: 'Con casco siempre. Y el caballito, en campo abierto.',
+  });
+
+  /* Tià ya no la anuncia como «pronto»: ahora la tiene montada */
+  if (typeof VEHICULOS_PRONTO !== 'undefined') {
+    const i = VEHICULOS_PRONTO.findIndex(v => v.nombre === 'Moto');
+    if (i >= 0) VEHICULOS_PRONTO.splice(i, 1);
+  }
+
+  /* --- Y lo que cuenta Tià cuando le preguntan */
+  if (typeof CHARLAS !== 'undefined' && CHARLAS.tia) {
+    CHARLAS.tia.saludo = 'Ya está. Cinco años montándola y por fin ruge. Ahí fuera la tienes.';
+    const q = CHARLAS.tia.opciones.find(o => /más cosas/.test(o.texto));
+    if (q) q.respuesta = 'La moto ya anda. Me quedan el coche y el caballo, que ese come.' +
+                         '<br><br>Con la moto, tres cosas: <b>casco siempre</b>, el caballito ' +
+                         'en campo abierto y no me la metas en el agua.';
+    CHARLAS.tia.opciones.push({
+      texto: '¿Cómo se hace un caballito?',
+      respuesta: 'Coges carrerilla y le das al botón de <b>saltar</b> (o al espacio). ' +
+                 'La rueda de delante se levanta sola.<br><br>Si vuelves a darle antes de que ' +
+                 'baje, lo alargas. Yo llegué a los cuatro segundos, pero era joven.' });
+  }
+
+  const J = Juego;
+
+  // ------------------------------------------------------------ DIBUJO
+  /* Se envuelve el pintado de vehículos en vez de tocarlo: si es la moto, la
+     pinta esto; si no, el motor de siempre. */
+  const pintarAntes = Vehiculos.pintar;
+  Vehiculos.pintar = function (ctx, x, y, id, mirando, capa) {
+    if (id !== 'moto') return pintarAntes.call(this, ctx, x, y, id, mirando, capa);
+
+    /* El humo y el polvo van en coordenadas del mundo y por detrás de todo.
+       Solo en el lienzo del juego: en la miniatura del taller no pintan nada,
+       porque allí las coordenadas son otras. */
+    if (capa === 'detras' && ctx.canvas === J.lienzo) MOTO.pintarRastro(ctx);
+
+    const alzada = MOTO.alzada(J.t);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(mirando < 0 ? -1 : 1, 1);
+    if (alzada) {                              // el caballito gira sobre la rueda de atrás
+      ctx.translate(-34, -16);
+      ctx.rotate(-alzada * 0.46);
+      ctx.translate(34, 16);
+    }
+    if (capa === 'detras') MOTO.pintarDetras(ctx);
+    else MOTO.pintarDelante(ctx);
+    ctx.restore();
+  };
+
+  MOTO.pintarDetras = function (ctx) {
+    // el tubo de escape, que sale por detrás
+    ctx.strokeStyle = MOTO.CROMO; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-10, -26); ctx.lineTo(-38, -20); ctx.stroke();
+    ctx.fillStyle = '#8A8378';
+    ctx.beginPath(); ctx.ellipse(-41, -19.5, 3.6, 4.2, 0.2, 0, 7); ctx.fill();
+
+    Vehiculos.rueda.call(Vehiculos, ctx, -34, -16, 16, MOTO.CROMO);
+    Vehiculos.rueda.call(Vehiculos, ctx, 34, -15, 15, MOTO.CROMO);
+
+    ctx.strokeStyle = '#4A443E'; ctx.lineWidth = 4.5;    // basculante y horquilla
+    ctx.beginPath(); ctx.moveTo(-34, -16); ctx.lineTo(-6, -28); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(34, -15); ctx.lineTo(27, -48); ctx.stroke();
+    ctx.strokeStyle = '#6B6259'; ctx.lineWidth = 3;      // el muelle de atrás
+    ctx.beginPath(); ctx.moveTo(-26, -19); ctx.lineTo(-18, -36); ctx.stroke();
+
+    ctx.fillStyle = MOTO.NEGRO;                          // el guardabarros de atrás
+    ctx.beginPath(); ctx.arc(-34, -16, 20, Math.PI * 1.15, Math.PI * 1.75); ctx.lineTo(-22, -26);
+    ctx.arc(-34, -16, 17, Math.PI * 1.75, Math.PI * 1.15, true); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = MOTO.ROJO;                           // el cuerpo, largo y bajo
+    ctx.beginPath();
+    ctx.moveTo(-30, -33); ctx.lineTo(6, -36);
+    ctx.quadraticCurveTo(28, -38, 31, -27);
+    ctx.lineTo(12, -22); ctx.lineTo(-24, -24);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = MOTO.OSCURO;                         // su sombra de abajo
+    ctx.beginPath(); ctx.moveTo(-24, -24); ctx.lineTo(12, -22); ctx.lineTo(10, -19);
+    ctx.lineTo(-22, -21); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = MOTO.ROJO;                           // el depósito
+    ctx.beginPath(); ctx.ellipse(-2, -41, 17, 7.5, -0.05, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';            // y su brillo
+    ctx.beginPath(); ctx.ellipse(-5, -44, 9, 2.4, -0.1, 0, 7); ctx.fill();
+    ctx.fillStyle = MOTO.NEGRO;                          // el asiento
+    ctx.beginPath(); ctx.roundRect(-36, -44, 22, 6.5, 3); ctx.fill();
+    ctx.fillStyle = '#4A443E';
+    ctx.beginPath(); ctx.roundRect(-40, -49, 8, 6, 2.5); ctx.fill();   // el respaldo
+
+    ctx.fillStyle = '#EDE7DA';                           // el dorsal, en el carenado
+    ctx.beginPath(); ctx.arc(-14, -28, 6.5, 0, 7); ctx.fill();
+    ctx.fillStyle = MOTO.NEGRO; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('7', -14, -25);
+    ctx.fillStyle = '#E8506B';                           // el piloto de atrás
+    ctx.beginPath(); ctx.ellipse(-44, -30, 3, 4, 0, 0, 7); ctx.fill();
+
+    ctx.strokeStyle = '#6B6259'; ctx.lineWidth = 3;      // el estribo, donde apoya el pie
+    ctx.beginPath(); ctx.moveTo(-8, -23); ctx.lineTo(-3, -14); ctx.stroke();
+    ctx.fillStyle = '#39424A';
+    ctx.beginPath(); ctx.arc(-2, -13, 2.8, 0, 7); ctx.fill();
+  };
+
+  MOTO.pintarDelante = function (ctx) {
+    ctx.strokeStyle = '#39424A'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(16, -55); ctx.lineTo(38, -54); ctx.stroke();   // el manillar
+    ctx.fillStyle = MOTO.NEGRO;                                                // los puños
+    ctx.beginPath(); ctx.arc(39, -54, 3.8, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(15, -55, 3.8, 0, 7); ctx.fill();
+
+    ctx.strokeStyle = '#8A8378'; ctx.lineWidth = 1.8;                          // el retrovisor
+    ctx.beginPath(); ctx.moveTo(32, -55); ctx.lineTo(35, -64); ctx.stroke();
+    ctx.fillStyle = MOTO.CROMO;
+    ctx.beginPath(); ctx.ellipse(35.5, -65.5, 4.2, 3, 0.3, 0, 7); ctx.fill();
+
+    ctx.fillStyle = MOTO.ROJO;                                                 // la cúpula
+    ctx.beginPath();
+    ctx.moveTo(24, -57); ctx.quadraticCurveTo(40, -58, 41, -42);
+    ctx.quadraticCurveTo(30, -44, 25, -49); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = MOTO.OSCURO;
+    ctx.beginPath(); ctx.roundRect(26, -50, 13, 3, 1.5); ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,233,168,0.22)';                                  // el cono del faro
+    ctx.beginPath(); ctx.moveTo(41, -41); ctx.lineTo(72, -46); ctx.lineTo(72, -27);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = MOTO.FARO;                                                 // el faro
+    ctx.beginPath(); ctx.ellipse(40, -40, 5, 6.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(40, -42, 2, 0, 7); ctx.fill();
+
+    ctx.fillStyle = MOTO.NEGRO;                                                // el guardabarros
+    ctx.beginPath(); ctx.arc(34, -15, 19, Math.PI * 1.25, Math.PI * 1.85); ctx.lineTo(45, -25);
+    ctx.arc(34, -15, 16, Math.PI * 1.85, Math.PI * 1.25, true); ctx.closePath(); ctx.fill();
+  };
+
+  /* --- EL CASCO: en la moto se va con casco, lleve lo que lleve en la
+     cabeza. Se dibuja encima del personaje y solo en el lienzo del juego (en
+     el armario y en la tienda se sigue viendo su peinado). */
+  const dibujarAntes = Avatar.dibujar;
+  Avatar.dibujar = function (ctx, x, yPies, esc, look, mirando, paso) {
+    const enMoto = MOTO.puesta() && ctx.canvas === J.lienzo;
+    const alzada = enMoto ? MOTO.alzada(J.t) : 0;
+    if (!enMoto) return dibujarAntes.call(this, ctx, x, yPies, esc, look, mirando, paso);
+
+    ctx.save();
+    if (alzada) {                       // en el caballito se echa atrás con la moto
+      ctx.translate(x - 34 * mirando, yPies + 8);
+      ctx.rotate(alzada * 0.46 * -mirando);
+      ctx.translate(-(x - 34 * mirando), -(yPies + 8));
+    }
+    dibujarAntes.call(this, ctx, x, yPies, esc, look, mirando, paso);
+    if (look.complemento !== 'casco') {
+      ctx.save();
+      ctx.translate(x, yPies);
+      ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+      ctx.fillStyle = MOTO.ROJO;                        // la cúpula
+      ctx.beginPath(); ctx.arc(0, -52, 17.5, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = MOTO.OSCURO;
+      ctx.fillRect(-17.5, -53, 35, 4);
+      ctx.fillStyle = 'rgba(90,150,180,0.65)';          // la pantalla
+      ctx.beginPath(); ctx.roundRect(2, -56, 16, 9, 3); ctx.fill();
+      ctx.fillStyle = '#FFF3C4';
+      ctx.beginPath(); ctx.roundRect(-3, -66, 6, 5, 2); ctx.fill();   // la raya de arriba
+      ctx.restore();
+    }
+    ctx.restore();
+  };
+
+  // ----------------------------------------------------------- CONDUCIR
+  /* Se envuelve el rodar: primero rueda como cualquier vehículo y luego se
+     añade lo que es de la moto (humo, polvo, motor, fin del caballito). */
+  const rodarAntes = Vehiculos.rodar;
+  Vehiculos.rodar = function (Jg, dx, dy, largo) {
+    rodarAntes.call(this, Jg, dx, dy, largo);
+    if (Jg.montura !== 'moto') return;
+
+    const vel = Math.hypot(Jg.vel.x, Jg.vel.y);
+    const alzada = MOTO.alzada(Jg.t);
+    MOTO.sonarMotor(vel, alzada);
+
+    // el escape humea siempre un poco, y más cuando se acelera
+    if (Math.random() < 0.12 + vel * 0.03) MOTO.humear(1, 1 + alzada);
+
+    // polvo al arrancar de parado y al frenar en seco
+    const antes = MOTO.velAntes;
+    if (vel > antes + 0.25 && vel < 4) MOTO.empolvar(1);
+    if (antes - vel > 0.5) {
+      MOTO.empolvar(2);
+      if (antes - vel > 0.9 && typeof Sonido !== 'undefined')
+        Sonido.ruido(0.09, 800, 0.06);                  // el petardeo del escape
+    }
+    MOTO.velAntes = vel;
+
+    // si se acaba el caballito (o se para), se mira si ha sido récord
+    if (MOTO.cab.hasta && (Jg.t > MOTO.cab.hasta || vel < 1)) {
+      if (vel < 1) MOTO.cab.hasta = Math.min(MOTO.cab.hasta, Jg.t);
+      MOTO.rematarCaballito();
+    }
+  };
+
+  /* El botón de saltar (y el espacio), en la moto, hace caballito */
+  const saltarAntes = J.saltar;
+  J.saltar = function () {
+    if (this.montura === 'moto') return MOTO.intentarCaballito();
+    return saltarAntes.call(this);
+  };
+
+  /* Subirse: claxon en vez de timbre, y el motor arranca */
+  const montarAntes = Vehiculos.montar;
+  Vehiculos.montar = function (id) {
+    montarAntes.call(this, id);
+    if (this.puesto() && this.puesto().id === 'moto') {
+      if (typeof Sonido !== 'undefined') {
+        Sonido.nota(392, 0.16, 'square', 0.13);
+        Sonido.nota(523, 0.22, 'square', 0.12, 0.12);   // el claxon
+      }
+      MOTO.arrancarMotor();
+      MOTO.humear(5, 1.4);
+    }
+  };
+
+  /* Bajarse o que la aparquen: se apaga el motor y se acaba el caballito */
+  ['bajar', 'aparcar'].forEach(que => {
+    const antes = Vehiculos[que];
+    Vehiculos[que] = function () {
+      const era = this.puesto();
+      antes.call(this);
+      if (era && era.id === 'moto') {
+        MOTO.pararMotor();
+        MOTO.cab.hasta = MOTO.cab.desde = 0;
+        MOTO.humo = []; MOTO.polvo = [];      // que no reaparezca al volver a montar
+      }
+    };
+  });
+
+  // ------------------------------------------------- EL TALLER, MÁS GRANDE
+  /* Es el cambio que se ve en la isla (regla 33): la nave crece por la
+     derecha, hay un surtidor, neumáticos apilados y la moto aparcada fuera.
+     Y el 🛵 ya no cuelga de la pared entre los que no funcionan. */
+  const tallerAntes = J.pintar_taller;
+  J.pintar_taller = function (ctx, x, y) {
+    tallerAntes.call(this, ctx, x, y);
+
+    ctx.fillStyle = '#B5AC98';                        // el suelo del cobertizo nuevo
+    ctx.beginPath(); ctx.ellipse(x + 76, y + 2, 34, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#C2B8A6';                        // y el cobertizo, a la derecha
+    ctx.fillRect(x + 54, y - 44, 42, 44);
+    ctx.fillStyle = '#4E7DA6';
+    ctx.beginPath(); ctx.moveTo(x + 50, y - 42); ctx.lineTo(x + 62, y - 56);
+    ctx.lineTo(x + 102, y - 56); ctx.lineTo(x + 102, y - 42); ctx.closePath(); ctx.fill();
+
+    for (let k = 0; k < 3; k++) {                     // los neumáticos apilados dentro
+      ctx.fillStyle = MOTO.NEGRO;
+      ctx.beginPath(); ctx.ellipse(x + 86, y - 7 - k * 8, 11, 5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#4A443E';
+      ctx.beginPath(); ctx.ellipse(x + 86, y - 8 - k * 8, 5.5, 2.4, 0, 0, 7); ctx.fill();
+    }
+
+    ctx.fillStyle = '#D94A35';                        // el surtidor, a la entrada
+    ctx.beginPath(); ctx.roundRect(x + 58, y - 38, 13, 36, 3); ctx.fill();
+    ctx.fillStyle = '#EDE7DA';
+    ctx.beginPath(); ctx.roundRect(x + 60.5, y - 34, 8, 6.5, 2); ctx.fill();
+    ctx.strokeStyle = '#39424A'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x + 71, y - 26);
+    ctx.quadraticCurveTo(x + 78, y - 22, x + 75, y - 12); ctx.stroke();
+
+    // la moto de muestra, aparcada fuera del portón
+    ctx.save();
+    ctx.translate(x - 62, y + 6); ctx.scale(0.62, 0.62);
+    const guardado = Vehiculos.giro; Vehiculos.giro = 0.6;
+    MOTO.pintarDetras(ctx); MOTO.pintarDelante(ctx);
+    Vehiculos.giro = guardado;
+    ctx.restore();
+
+    ctx.fillStyle = '#3C6E71'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('Y MOTOS', x + 4, y - 63);
+  };
+
+  // ------------------------------------- LA MOTO SE ENTREGA, NO SE COMPRA
+  /* Al colocar el Cristal de Fuego se recarga la página y entra aquí: si esta
+     jugadora todavía no tiene la moto, Tià se la deja en la puerta. También
+     recoge a quien ganara el cristal antes de que esto existiera. */
+  let contado = false;
+  const iniciarAntes = J.iniciar;
+  J.iniciar = function () {
+    MOTO.pararMotor();          // si salió a la portada a media carrera
+    const v = iniciarAntes.apply(this, arguments);
+    if (!Estado.actual) return v;
+    const nueva = !Estado.tieneVehiculo('moto');
+    if (nueva) {
+      Estado.darVehiculo('moto');
+      if (!Estado.actual.comprado.includes('casco')) Estado.dar('casco');
+      Vehiculos.refrescarBoton();
+    }
+    if (nueva && !contado) {
+      contado = true;
+      setTimeout(() => Hada.decir('🏍️ ¡Tià ha terminado la moto y es <b>tuya</b>! La tienes ' +
+        'en el botón de arriba, con el patinete y la bici. Corre muchísimo, así que ' +
+        'arranca con calma… y prueba a darle al botón de <b>saltar</b> yendo lanzada.', 12), 6000);
+    }
+    return v;
+  };
+})();
+
+</script>
+<script>
+/* === ampliaciones/mascotas2.js === */
+/* UN ANIMAL QUE NO ESTÁ EN VENTA  ·  la sexta expansión (Cristal de Mar)
+   ──────────────────────────────────────────────────────────────────────
+   En la cola desde el principio (`mascotas2` en AJUSTES.sorpresas), con el
+   aviso «dile a papá que Ona tiene algo para ti». Cumple la regla 33: el
+   premio es algo TANGIBLE que no se compra —una foquita, que se ve andando
+   detrás de ella por toda la isla— y viene con un CAMBIO EN LA ISLA: una cala
+   que antes no estaba, en la costa del noroeste.
+
+   Lo pedagógico (regla 24, el objetivo nº1 de Antonio): hay que LEER la
+   escena para saber qué se pregunta, y el rescate es un problema de DOS
+   PASOS (multiplicar y después quitar), que es justo lo que le cuesta a Gala.
+   Después del rescate la cala no se muere: queda el reparto de la pesca, un
+   trabajo al día.
+
+   Todo vive aquí dentro: ni una línea del motor tocada. Va dormida hasta que
+   se coloque el Cristal de Mar (`sorpresaAbierta`). */
+
+const CALA = {
+  x: 1855, y: 445,                       // costa del noroeste, lejos de todo
+  abierta() { return typeof sorpresaAbierta === 'function' ? sorpresaAbierta('mascotas2') : true; },
+  rescatada() {
+    return typeof Estado !== 'undefined' && Estado.actual && Estado.pasoAbierto('foquitaLibre');
+  },
+};
+
+/* ------------------------------------------------------- LA FOQUITA
+   Se añade SIEMPRE a la lista de mascotas, esté o no abierta la expansión:
+   el motor la busca por su id cuando entrega el premio del reto. Con
+   `precio: null` no sale en la Casa dels Bitxos — no está en venta. */
+if (typeof ROPA !== 'undefined') {
+  ROPA.mascotas.push({ id: 'foquita', nombre: 'Foquita de la cala', forma: 'foca',
+    color: '#94A7BA', detalle: '#EDF2F6', precio: null, grupo: 'mar' });
+}
+
+/* Qué come y cómo se sabe (regla 48: la ficha cuenta una escena y NO dice la
+   palabra del cuenco), y dónde se le ata el lacito. */
+if (typeof CUIDADOS !== 'undefined') {
+  CUIDADOS.foquita = { come: 'pescado',
+    ficha: 'Se pasa el rato boca arriba en la orilla, y cuando algo plateado brilla bajo el agua se tira de cabeza.' };
+}
+if (typeof Avatar !== 'undefined' && Avatar.ANCLA_LAZO) Avatar.ANCLA_LAZO.foca = [3, -11];
+
+/* Cómo se pinta: tumbada, con la cola de aletas y los bigotes. Al andar da
+   saltitos, como andan las focas fuera del agua. */
+if (typeof Avatar !== 'undefined' && Avatar.dibujarMascota) (function () {
+  const dibujarMascota = Avatar.dibujarMascota;
+  Avatar.dibujarMascota = function (ctx, x, yPies, esc, id, mirando, t) {
+    if (id !== 'foquita') return dibujarMascota.apply(this, arguments);
+    const m = ROPA.mascotas.find(o => o.id === 'foquita');
+    const bote = Math.abs(Math.sin(t * 3)) * 2.2;
+    ctx.save();
+    ctx.translate(x, yPies - bote);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';                      // la sombra, en el suelo
+    ctx.beginPath(); ctx.ellipse(0, bote, 13, 3.4, 0, 0, 7); ctx.fill();
+
+    ctx.fillStyle = m.color;                                 // el cuerpo, de gota
+    ctx.beginPath();
+    ctx.moveTo(-13, -4);
+    ctx.quadraticCurveTo(-16, -12, -6, -14);
+    ctx.quadraticCurveTo(6, -16, 9, -11);
+    ctx.quadraticCurveTo(12, -4, 6, -1);
+    ctx.quadraticCurveTo(-6, 0, -13, -4);
+    ctx.fill();
+    ctx.fillStyle = m.detalle;                               // la barriga clara
+    ctx.beginPath(); ctx.ellipse(1, -5, 7, 3.4, -0.1, 0, 7); ctx.fill();
+
+    ctx.fillStyle = m.color;                                 // la cola, dos aletas
+    ctx.beginPath();
+    ctx.moveTo(-12, -6);
+    ctx.quadraticCurveTo(-20, -11 + Math.sin(t * 4) * 2, -22, -6);
+    ctx.quadraticCurveTo(-20, -1 + Math.sin(t * 4) * 2, -12, -3);
+    ctx.fill();
+    ctx.beginPath();                                         // la aleta de delante
+    ctx.ellipse(2, -2, 4.5, 2, 0.5 + Math.sin(t * 3) * 0.2, 0, 7); ctx.fill();
+
+    ctx.fillStyle = m.color;                                 // la cabeza
+    ctx.beginPath(); ctx.arc(9, -14, 6.2, 0, 7); ctx.fill();
+    ctx.fillStyle = m.detalle;
+    ctx.beginPath(); ctx.ellipse(11.5, -12.5, 3.6, 2.8, 0.2, 0, 7); ctx.fill();
+    ctx.fillStyle = '#2F2A28';                               // ojos, nariz y bigotes
+    ctx.beginPath(); ctx.arc(8.5, -16, 1.5, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(12.6, -15.4, 1.3, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(13.6, -12.2, 1.5, 1.1, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(47,42,40,0.55)'; ctx.lineWidth = 0.5;
+    [-1.2, 0, 1.2].forEach(d => {
+      ctx.beginPath(); ctx.moveTo(13.4, -12 + d); ctx.lineTo(18.5, -12.5 + d * 2); ctx.stroke();
+    });
+    ctx.restore();
+  };
+})();
+
+/* ------------------------------------------------------------- LA CALA */
+ICONOS.rescate = '🦭';
+TECLAS.rescate = 'R';
+
+ampliacion(!CALA.abierta() ? { id: 'mascotas2' } : {
+  id: 'mascotas2',
+  lugares: [
+    /* Ojo: ya hay un sitio 'cala' en la costa este (una cala para leer), y su
+       dibujo también se llama 'cala'. Este va con otro nombre para no pisarlo. */
+    { id: 'calaFoques', x: CALA.x, y: CALA.y, accion: 'rescate', dibujo: 'calaFoques',
+      nombre: 'La Cala de les Foques', mapa: 'Cala de les Foques',
+      personaje: 'Una foquita atrapada' },
+  ],
+  dibujos: {
+    /* Rocas alrededor, el charco que se queda sin agua y la foquita dentro.
+       Cuando ya está rescatada, el charco está lleno y en las rocas toman el
+       sol su madre y otra cría: ese es el cambio que se ve en la isla. */
+    calaFoques(ctx, x, y, hecho, dormido) {
+      const libre = CALA.rescatada();
+      this.sombra(ctx, x, y + 6, 76, 0);
+
+      ctx.fillStyle = '#F0E0BC';                                  // la arena mojada de la orilla
+      ctx.beginPath(); ctx.ellipse(x - 4, y - 14, 104, 48, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#9FD8E8';                                  // el charco de marea
+      ctx.beginPath(); ctx.ellipse(x - 6, y - 14, 80, 34, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = libre ? '#6FC3DC' : '#BFD9D2';              // sin agua, queda turbio
+      ctx.beginPath(); ctx.ellipse(x - 6, y - 14, 68, 26, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(x - 28, y - 20, 20 + Math.sin(this.t) * 4, 5, 0, 0, 7); ctx.fill();
+
+      [[-104, 6, 26, 18], [-76, -44, 20, 15], [68, -8, 28, 19], [44, -50, 22, 16],
+       [-26, -58, 17, 12], [14, -66, 14, 10]].forEach(r => {      // las rocas de la cala
+        ctx.fillStyle = '#9A958C';
+        ctx.beginPath(); ctx.ellipse(x + r[0], y + r[1], r[2], r[3], 0.2, 0, 7); ctx.fill();
+        ctx.fillStyle = '#B3ADA3';
+        ctx.beginPath(); ctx.ellipse(x + r[0] - 3, y + r[1] - 4, r[2] * 0.62, r[3] * 0.6, 0.2, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#5E8F6B';                                  // algas en la roca mojada
+      [[-96, -6], [60, -20], [-68, -54]].forEach(a => {
+        ctx.beginPath(); ctx.ellipse(x + a[0], y + a[1], 9, 4, 0.4, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#C9A882';                                  // un palo que ha traído el mar
+      ctx.save(); ctx.translate(x - 48, y + 16); ctx.rotate(-0.22);
+      ctx.fillRect(-26, -3, 52, 5); ctx.restore();
+      ctx.fillStyle = '#F6EDE0';                                  // dos conchas en la arena
+      [[26, 16], [-14, 22]].forEach(c => {
+        ctx.beginPath(); ctx.ellipse(x + c[0], y + c[1], 6, 4.5, 0.3, Math.PI, 0); ctx.fill();
+      });
+
+      const foca = (fx, fy, e, mira, dormida) => {               // una foca en la roca
+        ctx.save();
+        ctx.translate(x + fx, y + fy); ctx.scale(e * mira, e);
+        ctx.fillStyle = '#94A7BA';
+        ctx.beginPath();
+        ctx.moveTo(-15, -3);
+        ctx.quadraticCurveTo(-19, -13, -6, -15);
+        ctx.quadraticCurveTo(8, -17, 11, -11);
+        ctx.quadraticCurveTo(14, -3, 6, 0);
+        ctx.quadraticCurveTo(-6, 1, -15, -3);
+        ctx.fill();
+        ctx.beginPath();                                          // la cola
+        ctx.moveTo(-14, -5);
+        ctx.quadraticCurveTo(-23, -11, -25, -5);
+        ctx.quadraticCurveTo(-23, 0, -14, -2);
+        ctx.fill();
+        ctx.fillStyle = '#EDF2F6';
+        ctx.beginPath(); ctx.ellipse(0, -5, 8, 3.6, -0.1, 0, 7); ctx.fill();
+        ctx.fillStyle = '#94A7BA';
+        ctx.beginPath(); ctx.arc(11, -15, 6.6, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2F2A28';
+        if (dormida) {                                            // dormida: dos rayitas
+          ctx.strokeStyle = '#2F2A28'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(10, -17, 1.6, 0.2, Math.PI - 0.2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(14, -16.4, 1.4, 0.2, Math.PI - 0.2); ctx.stroke();
+        } else {
+          ctx.beginPath(); ctx.arc(10, -17, 1.5, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(14.2, -16.4, 1.3, 0, 7); ctx.fill();
+        }
+        ctx.beginPath(); ctx.ellipse(15.4, -13.2, 1.5, 1.1, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      };
+
+      if (!libre) {
+        foca(-4, -12, 1.35, 1, dormido);                          // la cría, en el charco seco
+        if (!dormido) {
+          /* Su madre, esperándola en el agua. Va hacia el NOROESTE, que es
+             por donde queda el mar desde esta cala. */
+          ctx.fillStyle = '#94A7BA';
+          const s = Math.sin(this.t * 1.5) * 3;
+          const mx = x - 104, my = y - 108 + s;
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.beginPath(); ctx.ellipse(mx, my + 9, 20, 4, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = '#94A7BA';
+          ctx.beginPath(); ctx.ellipse(mx, my, 14, 8, 0.15, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(mx - 12, my - 7, 6.4, 0, 7); ctx.fill();
+          ctx.fillStyle = '#2F2A28';
+          ctx.beginPath(); ctx.arc(mx - 11, my - 9, 1.4, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(mx - 15, my - 8, 1.2, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(mx - 17, my - 5.5, 1.5, 1.1, 0, 0, 7); ctx.fill();
+        }
+      } else {
+        foca(-76, -52, 1.15, 1, false);                           // la madre, en la roca
+        foca(50, -58, 0.9, -1, true);                             // y otra cría, dormida
+        ctx.fillStyle = '#6FC3DC';                                // chapoteo
+        [[-14, -10], [12, -18]].forEach((p, i) => {
+          const s = (this.t * 1.5 + i) % 2;
+          if (s > 1) return;
+          ctx.globalAlpha = 0.5 * (1 - s);
+          ctx.beginPath();
+          ctx.ellipse(x + p[0], y + p[1], 6 + s * 14, 2 + s * 5, 0, 0, 7); ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+      }
+    },
+  },
+});
+
+/* --------------------------------------------------------- LOS DOS RETOS
+   Van fuera del `ampliacion(...)` para que probar.js los sortee 300 veces
+   aunque la expansión esté dormida. */
+Object.assign(typeof RETOS !== 'undefined' ? RETOS : {}, {
+
+  /* EL RESCATE. Una sola vez: el premio es la foquita. Dos pasos, que es lo
+     que hay que entrenar: primero cuántos hacen falta y después cuántos
+     faltan. */
+  calaRescate: {
+    premio: { tipo: 'mascotas', id: 'foquita' },
+    quien: 'La cala',
+    saludo: 'La marea se ha ido y en el charco de las rocas se ha quedado una <b>foquita</b> muy pequeña. ' +
+            'No llega al mar, y hasta que el agua vuelva a subir tiene que comer. Su madre la llama desde el agua.',
+    exito: '¡La foquita ha comido y ha recuperado las fuerzas! Se arrastra hasta la orilla, su madre la recibe… ' +
+           'y al rato vuelve contigo, dando saltitos, y ya no se separa.',
+    repetido: 'La foquita ya está a salvo. Ahora vive en la cala contigo.',
+    dormido: 'La marea está muy alta y ha cubierto las rocas. Habrá que volver.',
+    despierta: 'El agua ha bajado otra vez y se ve mejor lo que hay en el charco.',
+    moraleja: { titulo: 'Problemas de dos pasos',
+      texto: 'Este problema no se resuelve con <b>una</b> cuenta, sino con <b>dos</b>.<br><br>' +
+             'Primero hay que averiguar <b>cuántos hacen falta en total</b> (multiplicar), y solo ' +
+             'después se puede saber <b>cuántos faltan</b> (quitar los que ya hay).<br><br>' +
+             'Truco: si la pregunta final dice «¿cuántos faltan?», casi siempre hay que calcular ' +
+             'antes el total.' },
+
+    mayor: {
+      variantes: [
+        { vars: () => { const c = AZ(3, 6), v = AZ(3, 5), y = AZ(2, 7);
+                        return { c, v, y, tot: c * v, sol: c * v - y }; },
+          enunciado: 'La foquita come {c} peces en cada comida y hoy tiene que comer {v} veces. ' +
+                     'En el cubo ya has dejado {y} peces. ¿Cuántos te faltan por pescar?',
+          operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+          explica: { multiplicar: '{c} × {v} = {tot} son los que necesita en todo el día. Pero en el cubo ya hay {y}…',
+                     quitar: 'Antes de quitar hay que saber cuántos necesita: {v} comidas de {c} peces.' },
+          mecanica: 'cerradura',
+          preguntas: [{ texto: 'Primero: ¿cuántos peces necesita hoy?', sol: '{tot}' },
+                      { texto: 'Ahora: ¿cuántos te faltan por pescar?', sol: '{sol}' }],
+          pistas: ['Primero: {c} × {v} = {tot}.', 'Después: {tot} menos los {y} que ya hay.'] },
+
+        { vars: () => { const h = AZ(3, 6), s = AZ(4, 8), y = AZ(3, 9);
+                        return { h, s, y, tot: h * s, sol: h * s - y }; },
+          enunciado: 'La marea sube {s} centímetros cada hora y tardará {h} horas en volver a llenar el charco. ' +
+                     'El agua ya ha subido {y} centímetros. ¿Cuántos le faltan por subir?',
+          operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+          explica: { multiplicar: '{h} × {s} = {tot} es lo que subirá en total. Pero ya ha subido {y}…',
+                     quitar: 'Para quitar hay que saber antes cuánto sube en total: {h} horas de {s} centímetros.' },
+          mecanica: 'cerradura',
+          preguntas: [{ texto: 'Primero: ¿cuánto subirá en total?', sol: '{tot}' },
+                      { texto: 'Ahora: ¿cuánto le falta por subir?', sol: '{sol}' }],
+          pistas: ['Primero: {h} × {s} = {tot}.', 'Después: {tot} menos los {y} que ya ha subido.'] },
+
+        { vars: () => { const n = AZ(3, 5), p = AZ(3, 6), y = AZ(2, 6);
+                        return { n, p, y, tot: n * p, sol: n * p - y }; },
+          enunciado: 'En la cala hay {n} focas y cada una necesita {p} peces. En la red traes {y}. ' +
+                     '¿Cuántos peces te faltan para que coman todas?',
+          operacion: 'dosPasos', opciones: ['juntar', 'multiplicar', 'dosPasos'],
+          explica: { juntar: 'Juntar {n} y {p} no dice cuántos peces hacen falta.',
+                     multiplicar: '{n} × {p} = {tot} hacen falta, sí. Pero en la red ya traes {y}…' },
+          mecanica: 'cerradura',
+          preguntas: [{ texto: 'Primero: ¿cuántos peces hacen falta?', sol: '{tot}' },
+                      { texto: 'Ahora: ¿cuántos te faltan?', sol: '{sol}' }],
+          pistas: ['Primero: {n} × {p} = {tot}.', 'Después: {tot} menos los {y} de la red.'] },
+      ],
+      facil: {
+        vars: () => { const c = AZ(2, 4), v = 2, y = AZ(1, 3); return { c, v, y, tot: c * v, sol: c * v - y }; },
+        enunciado: 'La foquita come {c} peces en cada comida y hoy come {v} veces. Ya tienes {y} en el cubo. ' +
+                   '¿Cuántos te faltan?',
+        operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'], explica: {},
+        mecanica: 'cerradura',
+        preguntas: [{ texto: 'Primero: ¿cuántos necesita?', sol: '{tot}' },
+                    { texto: '¿Cuántos te faltan?', sol: '{sol}' }],
+        pistas: ['{c} y otros {c}.', 'Y a eso le quitas {y}.'],
+      },
+    },
+
+    pequena: {
+      variantes: [
+        { vars: () => { const a = AZ(3, 6), b = AZ(2, 5), y = AZ(1, 4); return { a, b, y, tot: a + b, sol: a + b - y }; },
+          enunciado: 'La foquita come {a} peces por la mañana y {b} por la tarde. En el cubo ya hay {y}. ' +
+                     '¿Cuántos te faltan por pescar?',
+          operacion: 'dosPasos', opciones: ['juntar', 'quitar', 'dosPasos'],
+          explica: { juntar: '{a} y {b} son {tot} en todo el día. Pero en el cubo ya hay {y}…',
+                     quitar: 'Antes de quitar hay que saber cuántos come en todo el día.' },
+          mecanica: 'cerradura',
+          preguntas: [{ texto: 'Primero: ¿cuántos come en todo el día?', sol: '{tot}' },
+                      { texto: '¿Cuántos te faltan?', sol: '{sol}' }],
+          pistas: ['{a} + {b} = {tot}.', '{tot} menos {y}.'] },
+
+        { vars: () => { const n = AZ(2, 3), p = AZ(2, 4), y = AZ(1, 3); return { n, p, y, tot: n * p, sol: n * p - y }; },
+          enunciado: 'En la roca hay {n} focas y cada una come {p} peces. Traes {y} peces. ¿Cuántos te faltan?',
+          operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+          explica: { multiplicar: '{n} × {p} = {tot} hacen falta. Pero ya traes {y}…' },
+          mecanica: 'cerradura',
+          preguntas: [{ texto: 'Primero: ¿cuántos peces hacen falta?', sol: '{tot}' },
+                      { texto: '¿Cuántos te faltan?', sol: '{sol}' }],
+          pistas: ['{n} veces {p}.', 'Y le quitas {y}.'] },
+      ],
+      facil: {
+        vars: () => { const a = AZ(2, 4), b = AZ(1, 3); return { a, b, sol: a + b }; },
+        enunciado: 'La foquita come {a} peces por la mañana y {b} por la tarde. ¿Cuántos come en todo el día?',
+        operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+        mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+        pistas: ['Cuenta {a} y sigue {b} más.', 'Son {sol}.'],
+      },
+    },
+  },
+
+  /* EL REPARTO DE LA PESCA. Una vez al día, para que la cala siga viva
+     después del rescate. Aquí toca repartir a partes iguales. */
+  calaPesca: {
+    trabajo: true,
+    quien: 'La Cala de les Foques',
+    saludo: 'Las focas han salido a las rocas y esperan su parte. Hay que repartir la pesca del día.',
+    exito: '¡Repartido! Todas comen lo mismo y ninguna se queja.',
+    repetido: 'Hoy ya han comido todas. Mañana vuelven a tener hambre.',
+    dormido: 'La marea está alta y las focas se han ido a nadar. Vuelve luego.',
+    despierta: 'Ya vuelven a la roca. Esta vez con menos peces.',
+    moraleja: { titulo: 'Repartir a partes iguales',
+      texto: '«A partes iguales» quiere decir que a <b>todas</b> les toca lo mismo.<br><br>' +
+             'Para saber cuánto le toca a cada una se <b>reparte</b>: se busca qué número, ' +
+             'multiplicado por las que son, da el total.' },
+
+    mayor: {
+      variantes: [
+        { vars: () => { const f = AZ(3, 6), c = AZ(3, 8); return { f, c, t: f * c, sol: c }; },
+          enunciado: 'Traes {t} peces y en la roca hay {f} focas. Si reparto a partes iguales, ' +
+                     '¿cuántos peces le tocan a cada una?',
+          operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { juntar: 'Juntar no dice cuántos le tocan a cada foca.',
+                     multiplicar: 'Si multiplico salen muchos más peces de los que traes.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos peces para cada foca?', sol: '{sol}' }],
+          pistas: ['«A partes iguales» es repartir.', '¿Qué número por {f} da {t}?'] },
+
+        { vars: () => { const f = AZ(3, 5), c = AZ(3, 7), s = AZ(1, 2);
+                        return { f, c, s, t: f * c + s, sol: c }; },
+          enunciado: 'Hoy traes {t} peces para las {f} focas. Repartes a partes iguales y lo que sobre ' +
+                     'se lo comen las gaviotas. ¿Cuántos peces le tocan a cada foca?',
+          operacion: 'repartir', opciones: ['repartir', 'quitar', 'multiplicar'],
+          explica: { quitar: 'Quitar no reparte: hay que hacer grupos iguales.',
+                     multiplicar: 'Multiplicar da muchos más peces de los que hay.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada foca?', sol: '{sol}' }],
+          pistas: ['Ve dando uno a cada una hasta que no llegue para otra vuelta.', 'A {f} focas, de {sol} en {sol}.'] },
+
+        { vars: () => { const f = AZ(2, 4), c = AZ(4, 8); return { f, c, t: f * c, sol: f * c, mal: c }; },
+          enunciado: 'En la cala hay {f} focas y cada una se come {c} peces. ¿Cuántos peces tienes que traer?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+          explica: { repartir: 'Repartir daría {mal}, que es lo de UNA. Se quiere el total.',
+                     juntar: 'Juntar {f} y {c} no da los peces de todas.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos peces en total?', sol: '{sol}' }],
+          pistas: ['{f} focas iguales, de {c} peces.', 'La tabla del {c}.'] },
+      ],
+      facil: {
+        vars: () => { const f = 2, c = AZ(2, 5); return { f, c, t: f * c, sol: c }; },
+        enunciado: 'Traes {t} peces y hay {f} focas. ¿Cuántos para cada una?',
+        operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
+        mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada una?', sol: '{sol}' }],
+        pistas: ['Uno para ti, uno para ti…', 'Mitad y mitad.'],
+      },
+    },
+
+    pequena: {
+      variantes: [
+        { vars: () => { const f = 2, c = AZ(2, 6); return { f, c, t: f * c, sol: c }; },
+          enunciado: 'Traes {t} peces y en la roca hay {f} focas. ¿Cuántos le tocan a cada una?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'],
+          explica: { juntar: 'Juntar no dice lo que le toca a cada foca.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada foca?', sol: '{sol}' }],
+          pistas: ['Uno para una, uno para la otra…', 'Mitad y mitad.'] },
+
+        { vars: () => { const f = AZ(2, 3), c = AZ(2, 4); return { f, c, sol: f * c }; },
+          enunciado: 'En la roca hay {f} focas y cada una come {c} peces. ¿Cuántos peces hacen falta?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+          explica: { juntar: '{f} y {c} no son los peces de todas.' },
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos peces?', sol: '{sol}' }],
+          pistas: ['{c} y otra vez {c}…', '{f} veces {c}.'] },
+      ],
+      facil: {
+        vars: () => { const c = AZ(2, 4); return { c, t: c * 2, sol: c }; },
+        enunciado: 'Traes {t} peces para 2 focas. ¿Cuántos para cada una?',
+        operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
+        mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada una?', sol: '{sol}' }],
+        pistas: ['Uno y uno.', 'La mitad de {t}.'],
+      },
+    },
+  },
+});
+
+/* --------------------------------------------------------- EL ENGANCHE
+   Una acción propia ('rescate'), como la del barco: mientras la foquita esté
+   atrapada se abre el rescate; después, el reparto de la pesca. */
+if (typeof Juego !== 'undefined' && CALA.abierta()) (function () {
+  const J = Juego;
+
+  CALA.llegar = function () {
+    if (!this.rescatada()) {
+      return Desafio.abrir('calaRescate', (bien) => {
+        UI.refrescarHud();
+        if (!bien) return;
+        Estado.abrirPaso('foquitaLibre');
+        Estado.actual.look.mascota = 'foquita';      // se ve puesta en el momento (regla 33)
+        Estado.guardar();
+        Sonido.fiesta();
+        setTimeout(() => Sonido.cristal(), 500);
+        setTimeout(() => Hada.decir('🦭 ¡Es tuya! Bueno… es libre, pero ha decidido que va contigo. ' +
+          'Puedes darle de comer y ponerle nombre en el animalario, como a las demás.', 10), 1200);
+      });
+    }
+    return Desafio.abrir('calaPesca', () => UI.refrescarHud());
+  };
+
+  const interactuar = J.interactuar;
+  J.interactuar = function (tecla) {
+    const l = this.lugar || this.lugarEn(this.jugador.x, this.jugador.y, 95);
+    if (!this.cogible && !this.entregable && !this.encajable && l && l.accion === 'rescate' &&
+        (!tecla || tecla === 'Enter' || tecla === 'R')) {
+      this.teclas = {};
+      Sonido.clic();
+      return CALA.llegar();
+    }
+    return interactuar.call(this, tecla);
+  };
+
+  /* Lumi lo cuenta al entrar, una vez, y solo mientras la foquita siga
+     atrapada: es la pista de dónde hay que ir. */
+  let avisado = false;
+  const iniciar = J.iniciar;
+  J.iniciar = function () {
+    const v = iniciar.apply(this, arguments);
+    if (!avisado && !CALA.rescatada()) {
+      avisado = true;
+      setTimeout(() => Hada.decir('🦭 Ona dice que ha oído algo en la <b>costa del noroeste</b>, ' +
+        'muy lejos del poblado: una cala pequeña entre rocas. Dice que allí hay un animal que ' +
+        '<b>no está en venta</b> y que te necesita. Ve a verlo.', 12), 6000);
+    }
+    return v;
+  };
+})();
+
+</script>
+<script>
+/* === ampliaciones/isla-5-gel.js === */
+/* AMPLIACIÓN 5 · L'ILLA DE GEL  (la isla de hielo del norte)
+   ──────────────────────────────────────────────────────────
+   La pidió Antonio el 21-09-2026 para el puesto 10 de la cola, que a este
+   ritmo cae a primeros de NOVIEMBRE: «una isla totalmente al norte, de hielo,
+   con luz, osos polares, focas y pingüinos».
+
+   Se llega en BARCO desde un muelle nuevo en la costa norte de la isla
+   grande. Está en el mar del norte, en coordenadas NEGATIVAS (regla 43): el
+   mundo crece por arriba sin mover nada de lo que ya existe.
+
+   Qué hay:
+     · El Moll del Nord, con la barca de Neus; la primera vez hay que ayudarla
+       a romper el hielo del muelle (reto corto), y el viaje se ve entero
+       rodeando unos icebergs
+     · NOCHE POLAR: dentro de la isla el cielo se oscurece y se enciende la
+       AURORA, que ondea de verdad. Esa es «la luz» que pedía Antonio
+     · Nanuk, el oso polar, que pesca para sus dos crías (trabajo diario:
+       tablas de multiplicar, con una de dos pasos)
+     · El agujero de las focas (trabajo diario: repartir a partes iguales)
+     · Pere, el pingüino que se equivocó de polo: llegó en un barco desde muy
+       al sur. Forma a los suyos en filas y columnas (trabajo diario:
+       multiplicar y repartir)
+     · L'Estació de les Llums, donde Alba mide cada cuánto se enciende la
+       aurora (trabajo diario: series y múltiplos)
+     · El iceberg encallado y el iglú, para leer
+     · Una aguja de brújula perdida que vuelve a poner en marcha la estación
+
+   Pedagogía: lo de siempre (regla 24). Los enunciados cuentan una escena y
+   hay que entender QUÉ operación piden; los números salen al azar. */
+
+const GEL = {
+  isla: { x: 3300, y: -1250, rx: 760, ry: 500 },
+  dentro(x, y) {
+    const i = this.isla;
+    return Math.pow((x - i.x) / (i.rx + 60), 2) + Math.pow((y - i.y) / (i.ry + 60), 2) <= 1;
+  },
+  /* ¿Está la isla ganada? Va dormida hasta que se coloque su Cristal Mayor. */
+  ganada() { return typeof sorpresaAbierta === 'function' ? sorpresaAbierta('gel') : true; },
+};
+
+/* ------------------------------------------------------- EL ABRIGO POLAR
+   El regalo del cristal (regla 33: no se vende en ninguna tienda). Se añade
+   siempre, porque el juego lo entrega en el momento de colocar el cristal. */
+if (typeof ROPA !== 'undefined') {
+  ROPA.conjuntos.push(
+    { id: 'abrigogel', nombre: 'Anorak de la aurora', forma: 'vestido',
+      color: '#2F6F9E', detalle: '#9BE8D6', precio: null, grupo: 'disfraz' });
+}
+
+if (typeof Avatar !== 'undefined' && Avatar.dibujar) (function () {
+  const AZUL = '#2F6F9E', OSCURO = '#255A80', PIEL = '#EFE3CE';
+  const dibujar = Avatar.dibujar;
+  Avatar.dibujar = function (ctx, x, yPies, esc, look, mirando, paso) {
+    dibujar.apply(this, arguments);
+    if (look.conjunto !== 'abrigogel') return;
+    ctx.save();
+    ctx.translate(x, yPies);
+    ctx.scale(esc * (mirando < 0 ? -1 : 1), esc);
+    const bal = Math.sin(paso || 0) * 3;
+    const t = (typeof Juego !== 'undefined' && Juego.t) || 0;
+
+    ctx.fillStyle = AZUL;                                   // el anorak, largo
+    ctx.beginPath();
+    ctx.moveTo(-10, -36); ctx.lineTo(10, -36);
+    ctx.lineTo(14, -12); ctx.lineTo(-14, -12);
+    ctx.closePath(); ctx.fill();
+    Avatar.capsula(ctx, -11.5 - bal * 0.5, -27, 6.5, 16);   // las mangas
+    Avatar.capsula(ctx, 11.5 + bal * 0.5, -27, 6.5, 16);
+    ctx.fillStyle = PIEL;                                   // los puños de pelo
+    Avatar.capsula(ctx, -11.5 - bal * 0.5, -21, 7, 3.6);
+    Avatar.capsula(ctx, 11.5 + bal * 0.5, -21, 7, 3.6);
+    Avatar.capsula(ctx, 0, -13, 28, 3.6);                   // y el bajo, también de pelo
+    ctx.fillStyle = OSCURO;
+    ctx.fillRect(-1.1, -36, 2.2, 22);                       // la cremallera
+
+    const brillo = 0.5 + Math.sin(t * 1.6) * 0.5;           // dos franjas que cambian
+    ctx.fillStyle = '#9BE8D6'; ctx.globalAlpha = 0.55 + brillo * 0.45;
+    ctx.fillRect(-12.6, -20, 25.2, 1.8);
+    ctx.fillStyle = '#B49BE8'; ctx.globalAlpha = 0.45 + (1 - brillo) * 0.45;
+    ctx.fillRect(-12.2, -17, 24.4, 1.6);
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = PIEL;                                   // la capucha de pelo
+    ctx.beginPath();
+    ctx.moveTo(-21, -31);
+    ctx.quadraticCurveTo(-27, -60, 0, -64);
+    ctx.quadraticCurveTo(27, -60, 21, -31);
+    ctx.lineTo(13, -33);
+    ctx.quadraticCurveTo(15, -49, 0, -55);
+    ctx.quadraticCurveTo(-15, -49, -13, -33);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#DCCEB4';
+    [-1, 1].forEach(d => {                                  // dos mechones de la capucha
+      ctx.beginPath(); ctx.ellipse(d * 19, -40, 4, 6, d * 0.3, 0, 7); ctx.fill();
+    });
+    ctx.restore();
+  };
+})();
+
+/* ---------------------------------------------------------- LA ISLA */
+ampliacion(!GEL.ganada() ? { id: 'gel' } : {
+  id: 'gel',
+
+  /* Hacia arriba del todo: el mar del norte llega ya a −2000, y esta isla
+     pide un poco más para que quede agua por encima. */
+  norte: -2300,
+  islotes: [{ id: 'gel', x: GEL.isla.x, y: GEL.isla.y, rx: GEL.isla.rx, ry: GEL.isla.ry }],
+
+  pasarelas: [
+    { x: 3500, y: 90, rx: 34, ry: 130 },        // el muelle de la isla grande
+    { x: 3300, y: -810, rx: 34, ry: 120 },      // el muelle de l'Illa de Gel
+  ],
+
+  lugares: [
+    { id: 'mollNord', x: 3500, y: -10, accion: 'barco', dibujo: 'mollNord',
+      nombre: 'La barca de Neus', mapa: 'Moll del Nord', personaje: 'Neus, la del hielo',
+      viaje: {
+        paso: 'barcoGel', reto: 'gelBarca', personaje: 'Neus, la del hielo',
+        cerrado: 'Mi barca va al norte del todo, a <b>l\'Illa de Gel</b>. Allí es de noche casi ' +
+                 'todo el día y el cielo se enciende de colores.<br><br>' +
+                 'Pero esta mañana el muelle ha amanecido helado y hay que romper el hielo.',
+        alAbrir: 'Rompéis el hielo a golpes de remo y la barca queda libre.<br><br>' +
+                 '<b>Ya puedes ir al norte cuando quieras.</b>',
+        pregunta: '¿Subimos? Abrígate, que allí arriba hace un frío que pela.',
+        subida: [[3500, -24]],
+        ruta: [[3500, -90], [3470, -230], [3360, -360], [3170, -450], [3060, -600],
+               [3130, -730], [3250, -840], [3296, -876]],
+        bajada: [[3300, -876]],
+        destino: { x: 3300, y: -830 },
+        llegada: '⛵ ¡Hielo! Esto es <b>l\'Illa de Gel</b>. Mira el cielo.' } },
+
+    { id: 'mollGel', x: 3300, y: -876, accion: 'barco', dibujo: 'mollGel',
+      nombre: 'La barca de vuelta', mapa: 'Moll de Gel', personaje: 'Neus, la del hielo',
+      viaje: {
+        personaje: 'Neus, la del hielo',
+        pregunta: '¿Volvemos a la isla grande? Allí no se te hiela la nariz.',
+        subida: [[3300, -876]],
+        ruta: [[3296, -876], [3250, -840], [3130, -730], [3060, -600], [3170, -450],
+               [3360, -360], [3470, -230], [3500, -90]],
+        bajada: [[3500, -24]],
+        destino: { x: 3500, y: 250 },
+        llegada: '⛵ De vuelta en la isla grande. Aquí hasta se está calentito.' } },
+
+    { id: 'nanuk', x: 2950, y: -1050, accion: 'reto', dibujo: 'nanuk',
+      nombre: 'Nanuk, el oso pescador', mapa: 'Nanuk', personaje: 'Nanuk, el oso polar' },
+    { id: 'foquesGel', x: 3650, y: -1000, accion: 'reto', dibujo: 'foquesGel',
+      nombre: 'El agujero de las focas', mapa: 'El Forat', personaje: 'Les foques' },
+    { id: 'pingus', x: 2900, y: -1400, accion: 'reto', dibujo: 'pingus',
+      nombre: 'La formación de Pere', mapa: 'Els Pingüins', personaje: 'Pere, el pingüino' },
+    { id: 'estacio', x: 3350, y: -1560, accion: 'reto', dibujo: 'estacio',
+      nombre: "L'Estació de les Llums", mapa: 'Les Llums', personaje: 'Alba, la que mide la aurora' },
+    { id: 'iceberg', x: 3800, y: -1350, accion: 'ver', historia: 'iceberg', dibujo: 'iceberg',
+      nombre: 'El iceberg encallado', mapa: "L'Iceberg" },
+    { id: 'iglu', x: 3250, y: -1200, accion: 'hablar', charla: 'iglu', dibujo: 'iglu',
+      nombre: 'El iglú de Neus', mapa: "L'Iglú" },
+  ],
+
+  bloqueos: [
+    // en mitad de la travesía: por eso la barca da el rodeo
+    { dibujo: 'icebergs', x: 3400, y: -450, rx: 160, ry: 110 },
+    { dibujo: 'grieta', x: 3560, y: -1470, rx: 210, ry: 80,
+      mensaje: 'El hielo está <b>partido</b> y por la grieta se ve el agua negra. Mejor rodearla.' },
+    { dibujo: 'aguaAbierta', x: 3000, y: -1600, rx: 190, ry: 100,
+      mensaje: 'Aquí el hielo se ha derretido y hay <b>agua abierta</b>. No se pasa andando.' },
+  ],
+
+  nodos: { gelLlegada: { x: 3300, y: -830 } },
+  caminos: [['gelLlegada', 'iglu'], ['iglu', 'nanuk'], ['iglu', 'foquesGel'],
+            ['iglu', 'estacio'], ['nanuk', 'pingus'], ['estacio', 'iceberg']],
+
+  piezas: [
+    { id: 'agujaBrujula', x: 3050, y: -900, icono: '🧭', nombre: 'Una aguja de brújula',
+      hallazgo: 'Una aguja imantada, finísima, clavada en la nieve. Alguien la perdió aquí ' +
+                'hace mucho y sigue señalando al norte, tan tranquila.',
+      encaja: 'estacio', arreglo: 'La estación vuelve a medir',
+      pista: 'En algún sitio de esta isla hay un aparato que mide el cielo y se ha quedado quieto.',
+      alColocar: 'Alba encaja la aguja en el aparato. La rosa de los vientos empieza a girar, ' +
+                 'se para señalando al norte… <b>y la aurora contesta</b> con un temblor verde.' },
+  ],
+
+  rocas: [[3120, -1500], [3700, -1150], [2800, -1200]],
+
+  /* ------------------------------------------------------------ RETOS */
+  retos: {
+
+    gelBarca: {
+      paseo: true,                  // paga como una atracción y no cuenta para el Farol
+      quien: 'Neus, la del hielo',
+      saludo: 'Antes de zarpar hay que romper el hielo del muelle. Échame una cuenta y vamos.',
+      exito: '¡Libre! Sube, que el norte espera.',
+      dormido: 'Se me han helado las manos. Vuelve dentro de un rato.',
+      despierta: 'Ya estoy. Va una más corta.',
+      mayor: {
+        variantes: [
+          { vars: () => { const r = AZ(3, 6), g = AZ(3, 8); return { r, g, sol: r * g }; },
+            enunciado: 'Doy {r} golpes de remo en cada placa de hielo y hay {g} placas. ' +
+                       '¿Cuántos golpes en total?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar {r} y {g} no da los golpes de todas las placas.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos golpes?', sol: '{sol}' }],
+            pistas: ['{g} placas iguales, de {r} golpes.', 'La tabla del {r}.'] },
+          { vars: () => { const t = AZ(12, 20), y = AZ(4, 9); return { t, y, sol: t - y }; },
+            enunciado: 'El muelle tiene {t} placas de hielo y ya he roto {y}. ¿Cuántas quedan?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar', 'multiplicar'],
+            explica: { juntar: 'Si junto salen más placas de las que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas quedan?', sol: '{sol}' }],
+            pistas: ['A las {t} les quito las {y} rotas.', '{t} − {y}.'] },
+        ],
+        facil: { vars: () => { const r = AZ(2, 4); return { r, sol: r * 3 }; },
+          enunciado: '{r} golpes en cada placa y hay 3 placas. ¿Cuántos golpes?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '3 veces {r}', sol: '{sol}' }],
+          pistas: ['{r}, y otra vez {r}, y otra vez {r}.', 'Tres veces {r}.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const a = AZ(3, 7), b = AZ(2, 6); return { a, b, sol: a + b }; },
+            enunciado: 'Rompo {a} placas por la proa y {b} por la popa. ¿Cuántas he roto?',
+            operacion: 'juntar', opciones: ['juntar', 'quitar'],
+            explica: { quitar: 'No quito nada: las estoy juntando.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+            pistas: ['Cuenta {a} y sigue {b} más.', 'Son {sol}.'] },
+          { vars: () => { const t = AZ(8, 14), y = AZ(2, 6); return { t, y, sol: t - y }; },
+            enunciado: 'Quedan {t} placas y rompo {y}. ¿Cuántas quedan ahora?',
+            operacion: 'quitar', opciones: ['juntar', 'quitar'],
+            explica: { juntar: 'Si junto, el muelle tendría más hielo, no menos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '{t} − {y}', sol: '{sol}' }],
+            pistas: ['Cuenta hacia atrás desde {t}.', 'Son {sol}.'] },
+        ],
+        facil: { vars: () => { const a = AZ(2, 5), b = AZ(1, 4); return { a, b, sol: a + b }; },
+          enunciado: '{a} placas y {b} más. ¿Cuántas son?',
+          operacion: 'juntar', opciones: ['juntar', 'quitar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '{a} + {b}', sol: '{sol}' }],
+          pistas: ['Cuenta {a} y sigue {b}.', 'Son {sol}.'] },
+      },
+    },
+
+    /* NANUK: tablas de multiplicar, y una de dos pasos */
+    nanuk: {
+      trabajo: true,
+      quien: 'Nanuk, el oso polar',
+      saludo: 'Gruñe bajito y te enseña el agujero del hielo. Tiene dos crías esperando en la ' +
+              'guarida y hay que echar cuentas antes de meter la pata en el agua.',
+      exito: '¡Cuenta bien echada! Nanuk resopla contento y te deja acariciarle el morro.',
+      repetido: 'Hoy ya han comido las crías. Vuelve mañana, que siempre tienen hambre.',
+      dormido: 'Nanuk se ha echado a dormir encima del hielo. No hay quien lo mueva.',
+      despierta: 'Se despereza y te mira. Hoy con una cuenta más corta.',
+      moraleja: { titulo: 'Lo mismo, muchas veces',
+        texto: 'Cuando algo se repite <b>igual</b> muchas veces, multiplicar es la forma rápida ' +
+               'de contarlo.<br><br>Y cuando después te preguntan cuántos <b>faltan</b> o cuántos ' +
+               '<b>sobran</b>, hacen falta <b>dos</b> cuentas: primero el total y luego la resta.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const c = AZ(3, 6), p = AZ(4, 9); return { c, p, sol: c * p }; },
+            enunciado: 'Nanuk se zambulle {c} veces y cada vez saca {p} peces. ¿Cuántos peces saca?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar {c} y {p} no cuenta los peces de cada zambullida.',
+                       repartir: 'No repartimos: queremos el total que saca.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos peces en total?', sol: '{sol}' }],
+            pistas: ['{c} zambullidas iguales de {p} peces.', 'La tabla del {p}.'] },
+          { vars: () => { const d = AZ(4, 7), p = AZ(3, 6), y = AZ(3, 9);
+                          return { d, p, y, tot: d * p, sol: d * p - y }; },
+            enunciado: 'Las dos crías comen {p} peces cada día y Nanuk quiere comida para {d} días. ' +
+                       'En la guarida ya hay {y} peces. ¿Cuántos le faltan?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'quitar', 'dosPasos'],
+            explica: { multiplicar: '{d} × {p} = {tot} son los de todos los días. Pero ya hay {y}…',
+                       quitar: 'Antes de quitar hay que saber cuántos necesita en {d} días.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos peces para {d} días?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántos le faltan?', sol: '{sol}' }],
+            pistas: ['Primero: {d} × {p} = {tot}.', 'Después: {tot} menos los {y} que ya hay.'] },
+          { vars: () => { const n = AZ(2, 4), p = AZ(4, 8); return { n, p, t: n * p, sol: p }; },
+            enunciado: 'Nanuk trae {t} peces y los reparte entre sus {n} crías, a partes iguales. ' +
+                       '¿Cuántos le tocan a cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { multiplicar: 'Multiplicar da más peces de los que ha traído.',
+                       juntar: 'Juntar no dice lo que le toca a cada cría.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada cría?', sol: '{sol}' }],
+            pistas: ['«A partes iguales» es repartir.', '¿Qué número por {n} da {t}?'] },
+        ],
+        facil: { vars: () => { const c = AZ(2, 4), p = AZ(2, 5); return { c, p, sol: c * p }; },
+          enunciado: 'Nanuk se zambulle {c} veces y saca {p} peces cada vez. ¿Cuántos peces?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '{c} × {p}', sol: '{sol}' }],
+          pistas: ['{p} y otra vez {p}…', '{c} veces {p}.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const c = AZ(2, 3), p = AZ(2, 5); return { c, p, sol: c * p }; },
+            enunciado: 'Nanuk se zambulle {c} veces y saca {p} peces cada vez. ¿Cuántos saca?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{c} y {p} no son los peces de cada zambullida.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos peces?', sol: '{sol}' }],
+            pistas: ['{p} y otra vez {p}…', '{c} veces {p}.'] },
+          { vars: () => { const p = AZ(2, 6); return { p, t: p * 2, sol: p }; },
+            enunciado: 'Nanuk trae {t} peces para sus 2 crías, a partes iguales. ¿Cuántos para cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'repartir'],
+            explica: { juntar: 'Juntar no dice lo que le toca a cada cría.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada cría?', sol: '{sol}' }],
+            pistas: ['Uno para una, uno para la otra…', 'La mitad de {t}.'] },
+        ],
+        facil: { vars: () => { const p = AZ(2, 4); return { p, sol: p * 2 }; },
+          enunciado: 'Nanuk se zambulle 2 veces y saca {p} peces cada vez. ¿Cuántos peces?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '2 veces {p}', sol: '{sol}' }],
+          pistas: ['{p} y otra vez {p}.', 'El doble de {p}.'] },
+      },
+    },
+
+    /* LAS FOCAS: repartir a partes iguales, con restos */
+    foquesGel: {
+      trabajo: true,
+      quien: 'Les foques',
+      saludo: 'Las focas asoman la cabeza por el agujero del hielo, una detrás de otra, y esperan ' +
+              'su turno. Hay que repartir la pesca sin que ninguna salga perdiendo.',
+      exito: '¡Todas con lo mismo! Golpean el hielo con las aletas, que es como aplauden.',
+      repetido: 'Hoy ya han comido. Mañana vuelven a asomar el morro.',
+      dormido: 'Se han ido todas a nadar bajo el hielo. Vuelve luego.',
+      despierta: 'Ya vuelven a asomar. Hoy con menos peces.',
+      moraleja: { titulo: 'Repartir, y lo que sobra',
+        texto: 'Repartir es hacer <b>grupos iguales</b>.<br><br>A veces no cae justo y quedan ' +
+               'algunos fuera: eso que queda se llama <b>lo que sobra</b>, y siempre es MENOS ' +
+               'que el número de grupos (si no, cabría otra vuelta).' },
+      mayor: {
+        variantes: [
+          { vars: () => { const f = AZ(3, 6), c = AZ(3, 8); return { f, c, t: f * c, sol: c }; },
+            enunciado: 'Hay {t} peces y {f} focas esperando. A partes iguales, ¿cuántos para cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { multiplicar: 'Multiplicar daría muchos más peces de los que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada foca?', sol: '{sol}' }],
+            pistas: ['Uno a cada una, y vuelta a empezar.', '¿Qué número por {f} da {t}?'] },
+          { vars: () => { const f = AZ(3, 5), c = AZ(3, 7), s = AZ(1, 2);
+                          return { f, c, s, t: f * c + s, sol: s }; },
+            enunciado: 'Traes {t} peces para {f} focas. Repartes a partes iguales y lo que no ' +
+                       'llegue para otra vuelta se lo queda la gaviota. ¿Cuántos peces le quedan a la gaviota?',
+            operacion: 'repartir', opciones: ['repartir', 'quitar', 'multiplicar'],
+            explica: { quitar: 'Antes de restar hay que repartir: la gaviota se queda lo que sobra.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos peces para cada foca?', sol: '{c}' },
+                        { texto: 'Y a la gaviota, ¿cuántos le sobran?', sol: '{sol}' }],
+            pistas: ['A cada foca le tocan {c}.', '{f} × {c} son {t} menos lo que sobra.'] },
+        ],
+        facil: { vars: () => { const c = AZ(2, 5); return { c, t: c * 3, sol: c }; },
+          enunciado: '{t} peces para 3 focas, a partes iguales. ¿Cuántos para cada una?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada una?', sol: '{sol}' }],
+          pistas: ['Uno, uno y uno… y otra vuelta.', 'Tres grupos iguales.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const c = AZ(2, 6); return { c, t: c * 2, sol: c }; },
+            enunciado: 'Hay {t} peces y 2 focas. ¿Cuántos peces para cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'repartir'],
+            explica: { juntar: 'Juntar no reparte nada.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada foca?', sol: '{sol}' }],
+            pistas: ['Uno para una y uno para la otra.', 'La mitad de {t}.'] },
+          { vars: () => { const c = AZ(2, 4); return { c, t: c * 3, sol: c }; },
+            enunciado: '{t} peces y 3 focas, a partes iguales. ¿Cuántos le tocan a cada una?',
+            operacion: 'repartir', opciones: ['juntar', 'repartir'],
+            explica: { juntar: 'Juntar no dice lo de cada foca.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada foca?', sol: '{sol}' }],
+            pistas: ['Tres montoncitos iguales.', 'De {sol} en {sol}.'] },
+        ],
+        facil: { vars: () => { const c = AZ(1, 4); return { c, t: c * 2, sol: c }; },
+          enunciado: '{t} peces para 2 focas. ¿Cuántos para cada una?',
+          operacion: 'repartir', opciones: ['juntar', 'repartir'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos para cada una?', sol: '{sol}' }],
+          pistas: ['Uno y uno.', 'La mitad de {t}.'] },
+      },
+    },
+
+    /* PERE EL PINGÜINO: filas y columnas, que es la multiplicación que se VE */
+    pingus: {
+      trabajo: true,
+      quien: 'Pere, el pingüino',
+      saludo: 'Pere se cuadra como un sargento. Cada mañana forma a los pingüinos en filas ' +
+              'iguales para contarlos sin liarse, y hoy le toca a otro hacer las cuentas.',
+      exito: '¡Formación perfecta! Pere levanta un ala y todos los pingüinos se inclinan a la vez.',
+      repetido: 'Ya han formado hoy. Mañana otra vez, a la misma hora.',
+      dormido: 'Están todos en corro, tapando a las crías del viento. No se mueven.',
+      despierta: 'Deshacen el corro y vuelven a formar. Hoy son menos.',
+      moraleja: { titulo: 'Filas y columnas',
+        texto: 'Cuando algo se coloca en <b>filas iguales</b>, no hace falta contarlo de uno en ' +
+               'uno: se multiplica <b>filas × los de cada fila</b>.<br><br>Y al revés: si sabes ' +
+               'cuántos hay y cuántas filas quieres, <b>repartes</b> para saber cuántos van en cada una.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const f = AZ(3, 6), c = AZ(4, 9); return { f, c, sol: f * c }; },
+            enunciado: 'Pere forma {f} filas de {c} pingüinos cada una. ¿Cuántos pingüinos hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: '{f} y {c} no son los pingüinos: son filas y los de cada fila.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos pingüinos en total?', sol: '{sol}' }],
+            pistas: ['{f} filas iguales de {c}.', 'La tabla del {c}.'] },
+          { vars: () => { const f = AZ(3, 6), c = AZ(3, 8); return { f, c, t: f * c, sol: c }; },
+            enunciado: 'Hay {t} pingüinos y Pere quiere {f} filas iguales. ¿Cuántos pingüinos van en cada fila?',
+            operacion: 'repartir', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { multiplicar: 'Multiplicar daría muchos más pingüinos de los que hay.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos en cada fila?', sol: '{sol}' }],
+            pistas: ['Reparte los {t} en {f} filas.', '¿Qué número por {f} da {t}?'] },
+          { vars: () => { const f = AZ(3, 5), c = AZ(3, 7), y = AZ(2, 8);
+                          return { f, c, y, tot: f * c, sol: f * c + y }; },
+            enunciado: 'En la formación hay {f} filas de {c} pingüinos, y detrás esperan {y} crías ' +
+                       'que aún no saben formar. ¿Cuántos pingüinos hay en la playa?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'juntar', 'dosPasos'],
+            explica: { multiplicar: '{f} × {c} = {tot} son los de la formación. Faltan las {y} crías…',
+                       juntar: 'Antes de juntar hay que saber cuántos hay formados.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos hay formados?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿cuántos hay en total?', sol: '{sol}' }],
+            pistas: ['Primero: {f} × {c} = {tot}.', 'Y a eso le sumas las {y} crías.'] },
+        ],
+        facil: { vars: () => { const f = AZ(2, 3), c = AZ(3, 5); return { f, c, sol: f * c }; },
+          enunciado: '{f} filas de {c} pingüinos. ¿Cuántos son?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '{f} × {c}', sol: '{sol}' }],
+          pistas: ['{c} y otra vez {c}…', '{f} veces {c}.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const f = AZ(2, 3), c = AZ(2, 5); return { f, c, sol: f * c }; },
+            enunciado: 'Pere forma {f} filas de {c} pingüinos. ¿Cuántos pingüinos hay?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: '{f} y {c} son filas y pingüinos de cada fila, no el total.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos pingüinos?', sol: '{sol}' }],
+            pistas: ['{c} y otra vez {c}…', '{f} veces {c}.'] },
+          { vars: () => { const c = AZ(2, 5); return { c, t: c * 2, sol: c }; },
+            enunciado: 'Hay {t} pingüinos y Pere quiere 2 filas iguales. ¿Cuántos en cada fila?',
+            operacion: 'repartir', opciones: ['juntar', 'repartir'],
+            explica: { juntar: 'Juntar no parte la fila en dos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántos en cada fila?', sol: '{sol}' }],
+            pistas: ['Mitad y mitad.', 'La mitad de {t}.'] },
+        ],
+        facil: { vars: () => { const c = AZ(2, 4); return { c, sol: c * 2 }; },
+          enunciado: '2 filas de {c} pingüinos. ¿Cuántos son?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '2 veces {c}', sol: '{sol}' }],
+          pistas: ['{c} y otra vez {c}.', 'El doble de {c}.'] },
+      },
+    },
+
+    /* ALBA Y LA AURORA: series y múltiplos */
+    estacio: {
+      trabajo: true,
+      quien: 'Alba, la que mide la aurora',
+      saludo: 'Alba tiene un cuaderno lleno de números y el cielo encima. La aurora se enciende ' +
+              'cada cierto rato, siempre igual, y ella lo apunta todo.',
+      exito: '¡Apuntado! Alba levanta la vista justo cuando el cielo se pone verde.',
+      repetido: 'Lo de hoy ya está medido. Vuelve mañana, que la aurora no falla.',
+      dormido: 'Se ha quedado dormida encima del cuaderno. Ha estado toda la noche despierta.',
+      despierta: 'Se frota los ojos. Hoy medimos algo más fácil.',
+      moraleja: { titulo: 'Las series son tablas',
+        texto: 'Cuando algo se repite <b>cada mismo rato</b>, los tiempos van saltando siempre ' +
+               'lo mismo: 6, 12, 18, 24…<br><br>Eso es una <b>tabla</b>, y cada número de la serie ' +
+               'es un <b>múltiplo</b>. Por eso, para saber cuándo será la quinta vez, basta con ' +
+               'multiplicar por 5.' },
+      mayor: {
+        variantes: [
+          { vars: () => { const n = [4, 6, 7, 8, 9][AZ(0, 4)], v = AZ(3, 6);
+                          return { n, v, sol: n * v, d: n * 2, t: n * 3 }; },
+            enunciado: 'La aurora se enciende cada {n} minutos. ¿En qué minuto será la vez número {v}?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar', 'repartir'],
+            explica: { juntar: 'Juntar {n} y {v} no sirve: cada vez suma {n} minutos.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿En qué minuto?', sol: '{sol}' }],
+            pistas: ['{n}, {d}, {t}…', '{v} veces {n}.'] },
+          { vars: () => { const n = [5, 6, 8, 10][AZ(0, 3)], v = AZ(4, 8);
+                          return { n, v, t: n * v, sol: v }; },
+            enunciado: 'La aurora se enciende cada {n} minutos. En {t} minutos, ¿cuántas veces se enciende?',
+            operacion: 'repartir', opciones: ['multiplicar', 'repartir', 'quitar'],
+            explica: { multiplicar: 'Multiplicar daría muchos más minutos de los que han pasado.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas veces?', sol: '{sol}' }],
+            pistas: ['¿Cuántos {n} caben en {t}?', '¿Qué número por {n} da {t}?'] },
+          { vars: () => { const n = [4, 5, 6, 7][AZ(0, 3)], v = AZ(3, 6), y = AZ(2, 9);
+                          return { n, v, y, tot: n * v, sol: n * v + y }; },
+            enunciado: 'La aurora se enciende cada {n} minutos y la primera fue en el minuto {y}. ' +
+                       '¿En qué minuto será la número {v} después de aquella?',
+            operacion: 'dosPasos', opciones: ['multiplicar', 'juntar', 'dosPasos'],
+            explica: { multiplicar: '{v} × {n} = {tot} es lo que pasa desde aquella. Pero empezó en el minuto {y}…',
+                       juntar: 'Antes de sumar hay que saber cuánto tiempo pasa en {v} veces.' },
+            mecanica: 'cerradura',
+            preguntas: [{ texto: 'Primero: ¿cuántos minutos pasan en {v} veces?', sol: '{tot}' },
+                        { texto: 'Ahora: ¿en qué minuto será?', sol: '{sol}' }],
+            pistas: ['Primero: {v} × {n} = {tot}.', 'Y sumas el minuto {y} en que empezó.'] },
+        ],
+        facil: { vars: () => { const n = [2, 5, 10][AZ(0, 2)], v = AZ(2, 4); return { n, v, sol: n * v, d: n * 2 }; },
+          enunciado: 'La aurora se enciende cada {n} minutos. ¿Y la vez número {v}?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '{v} veces {n}', sol: '{sol}' }],
+          pistas: ['{n}, {d}…', 'De {n} en {n}.'] },
+      },
+      pequena: {
+        variantes: [
+          { vars: () => { const n = [2, 5, 10][AZ(0, 2)], v = AZ(2, 5);
+                          return { n, v, sol: n * v, d: n * 2, t: n * 3 }; },
+            enunciado: 'La aurora se enciende cada {n} minutos. ¿En qué minuto será la vez número {v}?',
+            operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'],
+            explica: { juntar: 'Cada vez pasan {n} minutos, no {n} y ya está.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿En qué minuto?', sol: '{sol}' }],
+            pistas: ['{n}, {d}, {t}…', 'Cuenta de {n} en {n}.'] },
+          { vars: () => { const n = [2, 5][AZ(0, 1)], v = AZ(3, 6); return { n, v, t: n * v, sol: v }; },
+            enunciado: 'Se enciende cada {n} minutos. En {t} minutos, ¿cuántas veces se enciende?',
+            operacion: 'repartir', opciones: ['multiplicar', 'repartir'],
+            explica: { multiplicar: 'Multiplicar da más minutos de los que han pasado.' },
+            mecanica: 'cerradura', preguntas: [{ texto: '¿Cuántas veces?', sol: '{sol}' }],
+            pistas: ['Ve contando de {n} en {n} hasta {t}.', '¿Cuántos saltos hay?'] },
+        ],
+        facil: { vars: () => { const v = AZ(2, 5); return { v, sol: v * 2 }; },
+          enunciado: 'La aurora se enciende cada 2 minutos. ¿En qué minuto será la vez número {v}?',
+          operacion: 'multiplicar', opciones: ['juntar', 'multiplicar'], explica: {},
+          mecanica: 'cerradura', preguntas: [{ texto: '{v} veces 2', sol: '{sol}' }],
+          pistas: ['2, 4, 6, 8…', 'De dos en dos.'] },
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------ DIBUJOS */
+  dibujos: {
+    mollNord(ctx, x, y, hecho, dormido) {
+      if (Ampliaciones.viajando()) return;
+      this.pintar_barquito(ctx, x + 80, y + 14);
+      this.personajeSimple(ctx, x, y, '#2F6F9E', '#5E3A24', dormido);
+    },
+    mollGel(ctx, x, y, hecho, dormido) {
+      if (Ampliaciones.viajando()) return;
+      this.pintar_barquito(ctx, x - 16, y + 70);
+      this.personajeSimple(ctx, x, y, '#2F6F9E', '#5E3A24', dormido);
+    },
+
+    /* NANUK: el oso polar, de perfil, junto a su agujero en el hielo */
+    nanuk(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x, y + 2, 54, 0);
+      ctx.fillStyle = '#2C4A66';                                   // el agujero de pescar
+      ctx.beginPath(); ctx.ellipse(x + 74, y - 4, 30, 14, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#E6F2F8';
+      ctx.beginPath(); ctx.ellipse(x + 74, y - 4, 30, 14, 0, 0, 7); ctx.stroke();
+
+      const resp = Math.sin(this.t * 1.4) * 1.2;                   // respira
+      /* Un oso blanco sobre nieve blanca no se ve: lleva contorno. */
+      ctx.strokeStyle = '#A9BCCB'; ctx.lineWidth = 2.5;
+      ctx.fillStyle = '#F6F4EE';
+      ctx.beginPath();                                             // el cuerpo
+      ctx.ellipse(x, y - 34 + resp, 46, 26, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x - 40, y - 26, 16, 18, 0.2, 0, 7); ctx.fill();   // grupa
+      ctx.fillStyle = '#E4E0D6';                                   // las patas
+      [[-30, 0], [-8, 4], [22, 2], [38, -2]].forEach(p => {
+        ctx.beginPath(); ctx.ellipse(x + p[0], y - 8 + p[1], 11, 9, 0, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#F6F4EE';
+      ctx.beginPath();                                             // cabeza
+      ctx.ellipse(x + 48, y - 46 + resp, 20, 16, 0.1, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x + 64, y - 40 + resp, 10, 8, 0.2, 0, 7); ctx.fill();   // morro
+      [[-6, -14], [8, -13]].forEach(o => {                          // orejitas
+        ctx.beginPath(); ctx.arc(x + 48 + o[0], y - 46 + o[1] + resp, 5, 0, 7); ctx.fill();
+      });
+      ctx.fillStyle = '#2F2A28';
+      if (dormido) {
+        ctx.strokeStyle = '#2F2A28'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(x + 54, y - 49 + resp, 3, 0.2, Math.PI - 0.2); ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(x + 54, y - 50 + resp, 2.2, 0, 7); ctx.fill();
+      }
+      ctx.beginPath(); ctx.ellipse(x + 72, y - 40 + resp, 4, 3, 0.2, 0, 7); ctx.fill();    // nariz
+
+      [[-52, -18, 0.42], [-64, -14, 0.36]].forEach((c, i) => {      // las dos crías
+        ctx.save();
+        ctx.translate(x + c[0], y + c[1]); ctx.scale(c[2], c[2]);
+        ctx.fillStyle = '#FDFCF8';
+        ctx.beginPath(); ctx.ellipse(0, 0, 46, 26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(44, -14 + Math.sin(this.t * 2 + i) * 3, 20, 16, 0.1, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2F2A28';
+        ctx.beginPath(); ctx.arc(50, -18 + Math.sin(this.t * 2 + i) * 3, 2.6, 0, 7); ctx.fill();
+        ctx.restore();
+      });
+    },
+
+    /* EL AGUJERO DE LAS FOCAS */
+    foquesGel(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x, y + 2, 46, 0);
+      ctx.fillStyle = '#CFE6F0';                                    // el borde de hielo levantado
+      ctx.beginPath(); ctx.ellipse(x, y - 10, 62, 30, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#20415C';                                    // el agua, oscura
+      ctx.beginPath(); ctx.ellipse(x, y - 10, 50, 22, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(x - 16, y - 16, 16 + Math.sin(this.t * 1.5) * 3, 4, 0, 0, 7); ctx.fill();
+
+      const foca = (fx, fy, e, mira, dormida) => {                  // asoman por el agujero
+        ctx.save();
+        ctx.translate(x + fx, y + fy); ctx.scale(e * mira, e);
+        ctx.fillStyle = '#8B9DAE';
+        ctx.beginPath(); ctx.ellipse(0, 0, 13, 16, 0, Math.PI, 0); ctx.fill();
+        ctx.beginPath(); ctx.arc(6, -14, 9, 0, 7); ctx.fill();
+        ctx.fillStyle = '#E3EAF0';
+        ctx.beginPath(); ctx.ellipse(10, -11, 5, 4, 0.2, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2F2A28';
+        if (dormida) {
+          ctx.strokeStyle = '#2F2A28'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.arc(4, -17, 2.2, 0.2, Math.PI - 0.2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(10, -16, 2, 0.2, Math.PI - 0.2); ctx.stroke();
+        } else {
+          ctx.beginPath(); ctx.arc(4, -17, 2, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(10, -16, 1.8, 0, 7); ctx.fill();
+        }
+        ctx.beginPath(); ctx.ellipse(13, -12, 2, 1.5, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      };
+      const sube = Math.sin(this.t * 1.8) * 3;
+      foca(-20, -14 + sube, 1, 1, dormido);
+      foca(22, -8 - sube, 0.85, -1, dormido);
+      ctx.fillStyle = '#DCE8F0';                                    // pescado en el borde
+      [[-52, -18], [-44, -14]].forEach(p => {
+        ctx.beginPath(); ctx.ellipse(x + p[0], y + p[1], 9, 4, 0.3, 0, 7); ctx.fill();
+      });
+    },
+
+    /* PERE Y SU FORMACIÓN */
+    pingus(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x, y + 2, 60, 0);
+      const pingu = (px, py, e, jefe, i) => {
+        const mov = jefe ? 0 : Math.sin(this.t * 2 + i) * 1.2;
+        ctx.save();
+        ctx.translate(px, py + mov); ctx.scale(e, e);
+        ctx.fillStyle = 'rgba(0,0,0,0.10)';
+        ctx.beginPath(); ctx.ellipse(0, 1, 11, 3, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2B3440';                                  // el cuerpo
+        ctx.beginPath(); ctx.ellipse(0, -16, 12, 17, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#F4F6F8';                                  // la barriga
+        ctx.beginPath(); ctx.ellipse(0, -14, 8, 13, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2B3440';                                  // las alas
+        ctx.beginPath(); ctx.ellipse(-12, -17, 3.4, 9, -0.2 + mov * 0.1, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(12, -17, 3.4, 9, 0.2 - mov * 0.1, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, -32, 9, 0, 7); ctx.fill();      // la cabeza
+        ctx.fillStyle = '#F4F6F8';
+        ctx.beginPath(); ctx.ellipse(0, -29, 6, 5, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2F2A28';
+        if (dormido) {
+          ctx.strokeStyle = '#2F2A28'; ctx.lineWidth = 1.2;
+          [-3.2, 3.2].forEach(d => { ctx.beginPath(); ctx.arc(d, -33, 1.8, 0.2, Math.PI - 0.2); ctx.stroke(); });
+        } else {
+          [-3.2, 3.2].forEach(d => { ctx.beginPath(); ctx.arc(d, -33, 1.7, 0, 7); ctx.fill(); });
+        }
+        ctx.fillStyle = '#F2A33A';                                  // el pico
+        ctx.beginPath(); ctx.moveTo(-3, -28); ctx.lineTo(3, -28); ctx.lineTo(0, -23); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(-4, -1, 5, 2.4, 0, 0, 7); ctx.fill();   // las patas
+        ctx.beginPath(); ctx.ellipse(4, -1, 5, 2.4, 0, 0, 7); ctx.fill();
+        if (jefe) {                                                 // Pere lleva gorra de capitán
+          ctx.fillStyle = '#2F6F9E';
+          ctx.beginPath(); ctx.ellipse(0, -39, 9, 6, 0, Math.PI, 0); ctx.fill();
+          ctx.fillRect(-9, -40, 18, 3);
+          ctx.fillStyle = '#1D4F73';
+          ctx.beginPath(); ctx.ellipse(4, -37.5, 8, 2.4, 0, 0, 7); ctx.fill();
+        }
+        ctx.restore();
+      };
+      pingu(x - 54, y - 6, 1.05, true, 0);                          // Pere, delante
+      let n = 0;
+      for (let f = 0; f < 2; f++) {
+        for (let c = 0; c < 3; c++) {
+          pingu(x + 6 + c * 34, y - 26 + f * 32, 0.78, false, ++n);
+        }
+      }
+    },
+
+    /* L'ESTACIÓ DE LES LLUMS */
+    estacio(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x - 10, y + 2, 56, 0);
+      ctx.fillStyle = '#3B5570';                                    // la caseta
+      ctx.fillRect(x - 62, y - 54, 84, 54);
+      ctx.fillStyle = '#2C4257';
+      ctx.beginPath();
+      ctx.moveTo(x - 70, y - 54); ctx.lineTo(x - 20, y - 80); ctx.lineTo(x + 30, y - 54);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = hecho ? '#FFE9A8' : '#9BE8D6';                // la ventana
+      ctx.fillRect(x - 48, y - 44, 22, 18);
+      ctx.fillStyle = '#6B4A33'; ctx.fillRect(x - 12, y - 34, 16, 34);   // la puerta
+
+      ctx.strokeStyle = '#9AA6B2'; ctx.lineWidth = 4;               // el mástil
+      ctx.beginPath(); ctx.moveTo(x + 46, y); ctx.lineTo(x + 46, y - 96); ctx.stroke();
+      ctx.strokeStyle = '#9AA6B2'; ctx.lineWidth = 2.4;             // los aros de medir
+      [22, 16, 10].forEach((r, i) => {
+        ctx.beginPath();
+        ctx.ellipse(x + 46, y - 96 + i * 3, r, r * 0.34, 0.2 + this.t * (0.3 + i * 0.1), 0, 7);
+        ctx.stroke();
+      });
+      const luz = 0.45 + Math.sin(this.t * 2) * 0.45;               // la luz de arriba
+      ctx.fillStyle = 'rgba(155,232,214,' + luz + ')';
+      ctx.beginPath(); ctx.arc(x + 46, y - 96, 9, 0, 7); ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(x + 46, y - 96, 4, 0, 7); ctx.fill();
+
+      this.personajeSimple(ctx, x + 16, y, '#B49BE8', '#2F2A28', dormido);
+      ctx.fillStyle = '#F4F1E8';                                    // el cuaderno
+      ctx.fillRect(x + 26, y - 30, 12, 9);
+    },
+
+    /* EL ICEBERG ENCALLADO: lo que se ve y lo que hay debajo */
+    iceberg(ctx, x, y, hecho, dormido) {
+      ctx.fillStyle = 'rgba(120,180,220,0.30)';                     // la parte de debajo
+      ctx.beginPath();
+      ctx.moveTo(x - 70, y - 10); ctx.lineTo(x + 76, y - 10);
+      ctx.lineTo(x + 40, y + 46); ctx.lineTo(x - 44, y + 44);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#DCEEF7';                                    // la punta que asoma
+      ctx.beginPath();
+      ctx.moveTo(x - 66, y - 8); ctx.lineTo(x - 30, y - 92);
+      ctx.lineTo(x + 6, y - 44); ctx.lineTo(x + 34, y - 108);
+      ctx.lineTo(x + 72, y - 8);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.moveTo(x - 30, y - 92); ctx.lineTo(x + 6, y - 44); ctx.lineTo(x - 8, y - 20);
+      ctx.lineTo(x - 22, y - 60);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(155,232,214,0.55)';                     // la burbuja de aire
+      ctx.beginPath(); ctx.arc(x + 34, y - 62, 6, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath();
+      ctx.ellipse(x + 4, y - 2, 74 + Math.sin(this.t * 1.5) * 5, 9, 0, 0, 7); ctx.fill();
+    },
+
+    /* EL IGLÚ */
+    iglu(ctx, x, y, hecho, dormido) {
+      this.sombra(ctx, x, y + 2, 52, 0);
+      ctx.fillStyle = '#EAF4FA';                                    // la cúpula
+      ctx.beginPath(); ctx.ellipse(x, y, 54, 48, 0, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = '#8FA8BA'; ctx.lineWidth = 2.4;             // el borde, para que se vea
+      ctx.beginPath(); ctx.ellipse(x, y, 54, 48, 0, Math.PI, 0); ctx.stroke();
+      ctx.fillStyle = '#DCE9F2';                                    // media sombra
+      ctx.beginPath(); ctx.ellipse(x - 16, y, 34, 40, 0, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = '#B2C6D4'; ctx.lineWidth = 1.6;             // los bloques
+      [38, 26, 14].forEach(r => {
+        ctx.beginPath(); ctx.ellipse(x, y, r + 8, r, 0, Math.PI, 0); ctx.stroke();
+      });
+      for (let a = 0.35; a < Math.PI; a += 0.5) {
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(a) * 54, y - Math.sin(a) * 6);
+        ctx.lineTo(x + Math.cos(a) * 30, y - Math.sin(a) * 44);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#EAF4FA';                                    // el túnel de entrada
+      ctx.beginPath(); ctx.ellipse(x + 40, y, 22, 22, 0, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#25405A';
+      ctx.beginPath(); ctx.ellipse(x + 40, y, 12, 14, 0, Math.PI, 0); ctx.fill();
+      const luz = 0.35 + Math.sin(this.t * 1.2) * 0.25;             // la lumbre de dentro
+      ctx.fillStyle = 'rgba(255,200,120,' + luz + ')';
+      ctx.beginPath(); ctx.ellipse(x + 40, y - 4, 9, 9, 0, Math.PI, 0); ctx.fill();
+      this.personajeSimple(ctx, x - 62, y, '#2F6F9E', '#5E3A24', dormido);
+    },
+  },
+
+  /* -------------------------------------------------------- OBSTÁCULOS */
+  obstaculos: {
+    icebergs(ctx, b) {
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y + 8, b.rx + 22 + Math.sin(this.t * 2) * 5, b.ry + 14, 0, 0, 7); ctx.fill();
+      [[-0.55, 0.15, 46], [0.05, -0.25, 62], [0.6, 0.2, 40]].forEach(([fx, fy, r]) => {
+        const x = b.x + b.rx * fx, y = b.y + b.ry * fy;
+        ctx.fillStyle = '#DCEEF7';
+        ctx.beginPath();
+        ctx.moveTo(x - r, y + r * 0.2); ctx.lineTo(x - r * 0.3, y - r * 0.9);
+        ctx.lineTo(x + r * 0.2, y - r * 0.35); ctx.lineTo(x + r * 0.6, y - r * 1.05);
+        ctx.lineTo(x + r, y + r * 0.2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.moveTo(x - r * 0.3, y - r * 0.9); ctx.lineTo(x + r * 0.2, y - r * 0.35);
+        ctx.lineTo(x, y + r * 0.1);
+        ctx.closePath(); ctx.fill();
+      });
+    },
+    grieta(ctx, b) {
+      ctx.fillStyle = '#CFE6F0';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx + 10, b.ry + 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#16304A';                                    // el agua negra del fondo
+      ctx.beginPath();
+      ctx.moveTo(b.x - b.rx, b.y);
+      for (let i = 1; i <= 6; i++) {
+        const t = i / 6;
+        ctx.lineTo(b.x - b.rx + b.rx * 2 * t, b.y - b.ry * 0.55 * Math.sin(i * 1.7));
+      }
+      for (let i = 6; i >= 0; i--) {
+        const t = i / 6;
+        ctx.lineTo(b.x - b.rx + b.rx * 2 * t, b.y + b.ry * 0.55 * Math.sin(i * 1.3 + 1));
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(b.x - b.rx * 0.3, b.y, 22 + Math.sin(this.t * 1.6) * 4, 4, 0, 0, 7); ctx.fill();
+    },
+    aguaAbierta(ctx, b) {
+      ctx.fillStyle = '#CFE6F0';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx + 14, b.ry + 10, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#20415C';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#E9F4FA';                                    // placas sueltas flotando
+      [[-0.4, -0.3, 34, 16], [0.35, 0.25, 28, 13], [0.1, -0.55, 22, 10]].forEach(p => {
+        ctx.save();
+        ctx.translate(b.x + b.rx * p[0], b.y + b.ry * p[1] + Math.sin(this.t + p[0] * 4) * 2);
+        ctx.rotate(p[0]);
+        ctx.beginPath(); ctx.ellipse(0, 0, p[2], p[3], 0, 0, 7); ctx.fill();
+        ctx.restore();
+      });
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(b.x - 30, b.y - 10, 26 + Math.sin(this.t * 1.4) * 5, 5, 0, 0, 7); ctx.fill();
+    },
+  },
+
+  /* -------------------------------------------------- HISTORIAS Y CHARLA */
+  historias: {
+    iceberg: {
+      titulo: 'El iceberg encallado',
+      texto: 'Es una montaña de hielo del tamaño de una casa, encallada en la orilla. Lo raro ' +
+             'es lo que se ve por debajo del agua: <b>otra montaña mucho más grande</b>, azul ' +
+             'y borrosa, que baja y baja.<br><br>' +
+             'Alba dice que de un iceberg <b>solo se ve la punta</b>: por cada trozo que asoma ' +
+             'hay como <b>ocho</b> escondidos debajo. Por eso los barcos les dan tanto respeto: ' +
+             'lo que se ve no es ni la novena parte de lo que hay.<br><br>' +
+             'Dentro del hielo, atrapada, hay una <b>burbuja de aire</b>. Alba dice que ese aire ' +
+             'lleva ahí encerrado desde mucho antes de que naciera nadie de la isla.' },
+  },
+
+  charlas: {
+    iglu: {
+      quien: 'Neus, la del hielo',
+      opciones: [
+        { pregunta: '¿Vives aquí?',
+          respuesta: 'Medio año aquí y medio en la isla grande. Aquí construyo el iglú con bloques ' +
+                     'de nieve apretada; dentro no hace frío, aunque no te lo creas: la nieve guarda ' +
+                     'el calor como una manta.' },
+        { pregunta: '¿Y el pingüino?',
+          respuesta: 'Pere llegó en un barco, dormido dentro de una caja de pescado. Los pingüinos ' +
+                     'viven en el <b>otro</b> polo, en el sur del todo, así que se equivocó de sitio ' +
+                     'por unos cuantos miles de kilómetros. Le dio igual: montó su formación y se quedó.' },
+        { pregunta: '¿Por qué está oscuro de día?',
+          respuesta: 'Porque estamos muy al norte. En invierno el sol casi no sube, y hay días en ' +
+                     'que no sale del todo. A cambio tenemos la aurora, que no está nada mal.' },
+        { pregunta: '¿Nanuk es peligroso?',
+          respuesta: 'Nanuk es un oso, así que respeto siempre. Pero lleva años viniendo al mismo ' +
+                     'agujero y ya nos conocemos. Si le echas cuentas para sus crías, te deja ' +
+                     'acercarte. Eso sí: no te pongas entre él y el agua.' },
+      ],
+    },
+  },
+});
+
+/* ══════════════════════════════════════════════════════════════════════
+   LA ATMÓSFERA DE L'ILLA DE GEL
+   Todo esto solo pasa MIENTRAS SE ESTÁ EN LA ISLA: el resto del mundo no se
+   entera. Es lo que la hace distinta de las otras islas: allí arriba es de
+   noche casi todo el día y el cielo se enciende.
+   ══════════════════════════════════════════════════════════════════════ */
+if (typeof Juego !== 'undefined' && GEL.ganada()) (function () {
+  const J = Juego;
+  const I = GEL.isla;
+
+  /* ---- el suelo: hielo, nieve y grietas (se pinta encima del islote) */
+  const grietas = [];
+  for (let k = 0; k < 26; k++) {
+    const a = k * 2.399, rr = Math.sqrt(((k * 7919) % 1000) / 1000) * 0.88;
+    grietas.push([I.x + Math.cos(a) * (I.rx - 90) * rr, I.y + Math.sin(a) * (I.ry - 70) * rr,
+                  a, 40 + (k % 5) * 22]);
+  }
+  const dibujarIslotes = J.dibujarIslotes;
+  J.dibujarIslotes = function (ctx) {
+    dibujarIslotes.call(this, ctx);
+    ctx.fillStyle = '#DCEEF7';                                   // la orilla de hielo
+    ctx.beginPath(); ctx.ellipse(I.x, I.y, I.rx, I.ry, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#F2FAFD';                                   // la nieve de dentro
+    ctx.beginPath(); ctx.ellipse(I.x, I.y, I.rx - 70, I.ry - 55, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#E4F1F8';                                   // sombras de la nieve
+    [[-320, 90, 240, 120], [280, -110, 210, 120], [40, 200, 200, 90]].forEach(m => {
+      ctx.beginPath(); ctx.ellipse(I.x + m[0], I.y + m[1], m[2], m[3], 0.2, 0, 7); ctx.fill();
+    });
+    ctx.strokeStyle = 'rgba(150,190,215,0.55)'; ctx.lineWidth = 2;   // las grietas finas
+    grietas.forEach(g => {
+      ctx.save();
+      ctx.translate(g[0], g[1]); ctx.rotate(g[2]);
+      ctx.beginPath();
+      ctx.moveTo(-g[3] / 2, 0);
+      ctx.lineTo(-g[3] / 6, 6); ctx.lineTo(g[3] / 6, -5); ctx.lineTo(g[3] / 2, 3);
+      ctx.stroke();
+      ctx.restore();
+    });
+  };
+
+  /* ---- EL VIENTO POLAR: ruido grave, como el de la lluvia de otoño, que
+     solo suena en la isla y cuelga del volumen maestro (lo calla el 🔊). */
+  const Aire = {
+    nodo: null,
+    montar() {
+      const S = Sonido;
+      if (this.nodo || !S.ctx) return;
+      const n = S.ctx.sampleRate * 4;
+      const buf = S.ctx.createBuffer(1, n, S.ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      let u = 0;
+      for (let i = 0; i < n; i++) { u = (u + (Math.random() * 2 - 1) * 0.12) * 0.975; d[i] = u; }
+      const src = S.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+      const f = S.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380;
+      this.nodo = S.ctx.createGain(); this.nodo.gain.value = 0;
+      src.connect(f); f.connect(this.nodo); this.nodo.connect(S.maestro);
+      src.start();
+    },
+    ajustar(v) { if (this.nodo) this.nodo.gain.value = v; },
+  };
+
+  /* ---- LA NOCHE POLAR Y LA AURORA */
+  const estrellas = Array.from({ length: 70 }, (_, k) => ({
+    x: ((k * 197) % 100) / 100, y: ((k * 71) % 55) / 100, r: 0.6 + (k % 3) * 0.5, k,
+  }));
+  const BANDAS = [
+    { color: '155,232,214', base: 0.08, alto: 0.30, amp: 28, f: 1.7, v: 0.22, a: 0.38 },
+    { color: '124,240,200', base: 0.15, alto: 0.26, amp: 36, f: 1.1, v: -0.15, a: 0.32 },
+    { color: '180,155,232', base: 0.22, alto: 0.22, amp: 22, f: 2.3, v: 0.31, a: 0.26 },
+  ];
+
+  const dibujar = J.dibujar;
+  J.dibujar = function () {
+    dibujar.apply(this, arguments);
+    const j = this.jugador, ctx = this.ctx, W = this.ANCHO, H = this.ALTO;
+    Aire.montar();
+    if (!j || !GEL.dentro(j.x, j.y)) return Aire.ajustar(0);
+    Aire.ajustar(0.09);
+
+    ctx.fillStyle = 'rgba(14,26,50,0.34)';                       // la noche polar
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = '#FFFFFF';                                   // las estrellas
+    estrellas.forEach(e => {
+      ctx.globalAlpha = 0.35 + Math.abs(Math.sin(this.t * 0.7 + e.k)) * 0.5;
+      ctx.beginPath(); ctx.arc(e.x * W, e.y * H, e.r, 0, 7); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    /* LA AURORA: tres cortinas que ondean, cada una a su ritmo. Se dibujan
+       como una franja de color que se desvanece hacia abajo. */
+    BANDAS.forEach((b, n) => {
+      const y0 = H * b.base, alto = H * b.alto;
+      const g = ctx.createLinearGradient(0, y0 - b.amp, 0, y0 + alto);
+      g.addColorStop(0, 'rgba(' + b.color + ',0)');
+      g.addColorStop(0.35, 'rgba(' + b.color + ',' + b.a + ')');
+      g.addColorStop(1, 'rgba(' + b.color + ',0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      const paso = W / 26;
+      for (let i = 0; i <= 26; i++) {
+        const x = i * paso;
+        const y = y0 + Math.sin(i * 0.42 * b.f + this.t * b.v + n) * b.amp
+                     + Math.sin(i * 0.17 + this.t * b.v * 0.6) * b.amp * 0.4;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      for (let i = 26; i >= 0; i--) {
+        const x = i * paso;
+        const y = y0 + alto + Math.sin(i * 0.42 * b.f + this.t * b.v + n) * b.amp * 0.5;
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.fill();
+    });
+
+    /* y el reflejo de la aurora en el hielo, muy suave */
+    const r = ctx.createLinearGradient(0, H * 0.72, 0, H);
+    r.addColorStop(0, 'rgba(155,232,214,0)');
+    r.addColorStop(1, 'rgba(155,232,214,' + (0.06 + Math.sin(this.t * 0.5) * 0.03) + ')');
+    ctx.fillStyle = r; ctx.fillRect(0, H * 0.72, W, H * 0.28);
+  };
+
+  /* ---- Lumi lo cuenta la primera vez que se llega */
+  let contado = false;
+  const iniciar = J.iniciar;
+  J.iniciar = function () {
+    const v = iniciar.apply(this, arguments);
+    contado = false;
+    return v;
+  };
+  const actualizar = J.actualizar;
+  J.actualizar = function () {
+    const v = actualizar.apply(this, arguments);
+    const j = this.jugador;
+    if (!contado && j && GEL.dentro(j.x, j.y)) {
+      contado = true;
+      setTimeout(() => Hada.decir('❄️ Estás en <b>l\'Illa de Gel</b>, en el norte del todo. Aquí es ' +
+        'de noche casi todo el día, y eso verde que ondea en el cielo es la <b>aurora</b>. ' +
+        'Cuidado con las grietas del hielo.', 11), 900);
     }
     return v;
   };
@@ -22394,6 +24427,30 @@ const Inicio = {
     Sorpresas.vigilar();          // la barra de sorpresas, atenta a cuando se llena
     this.pintarPerfiles();
     UI.pantalla('inicio');
+    this.volverASuPartida();      // si se acaba de recargar al cambiar el clima
+  },
+
+  /* VOLVER SOLA A LA MISMA PARTIDA (22-09-2026)
+     El botón del clima recarga la página (es así como la isla cambia de
+     tiempo), y eso dejaría a la niña otra vez en la pantalla de los nombres.
+     Antes de recargar se apunta quién estaba jugando, y aquí se entra sola a
+     su partida. Vale UNA sola vez: si cierra el juego y vuelve a abrirlo,
+     elige su nombre como siempre. */
+  CLAVE_VUELTA: 'islaFarol.volverA',
+
+  recordarPartida() {
+    try {
+      localStorage.setItem(this.CLAVE_VUELTA, String(Estado.perfiles.indexOf(Estado.actual)));
+    } catch (e) {}
+  },
+
+  volverASuPartida() {
+    let i = -1;
+    try {
+      i = parseInt(localStorage.getItem(this.CLAVE_VUELTA), 10);
+      localStorage.removeItem(this.CLAVE_VUELTA);
+    } catch (e) { return; }
+    if (i >= 0 && Estado.perfiles[i]) this.jugar(i);
   },
 
   pintarPerfiles() {
