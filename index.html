@@ -18,7 +18,7 @@
     --tinta:#2B2723; --tinta-suave:#7C7365;
     --coral:#CE5B44;        /* quien habla, los precios, los avisos */
     --farol:#EFA82C; --farol-hondo:#C9821A;   /* el botón principal */
-    --mar:#1F6B7C; --mar-hondo:#14505E;       /* los botones normales */
+    --mar:#2E8093; --mar-hondo:#1D6375;       /* los botones normales */
     --verde:#4E9B5B; --verde-hondo:#3B7845;   /* solo «bien» */
     --turquesa:var(--mar);  /* nombre viejo: lo usan muchas piezas del juego */
     --sombra:0 3px 0 rgba(43,39,35,.10);
@@ -60,8 +60,11 @@
      línea debajo (eso es lo que hacía el botón principal más alto). */
   .btn .tecla{font-size:11px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;
               background:rgba(0,0,0,.12); border-radius:7px; padding:3px 8px; opacity:.9}
-  /* El dibujito de cada botón, en su columna: así en una lista quedan alineados */
-  .btn .icono-btn{font-size:24px; width:1.5em; flex:none; text-align:center}
+  /* El dibujito de cada botón va en una chapa clara y redonda: los dibujitos
+     oscuros (la bici, la moto) no se veían sobre el azul. (22-09-2026) */
+  .btn .icono-btn{font-size:22px; flex:none; width:38px; height:38px; line-height:38px;
+                  text-align:center; border-radius:50%; background:#FFFCF5;
+                  box-shadow:inset 0 -1px 0 rgba(43,39,35,.10)}
   .cerrar{position:absolute; top:14px; right:14px; width:42px; height:42px; border:0;
           border-radius:50%; background:var(--arena); color:var(--tinta-suave);
           font-size:19px; cursor:pointer; box-shadow:0 2px 0 rgba(43,39,35,.08)}
@@ -19378,8 +19381,13 @@ ampliacion(!HALLOWEEN.islaGanada() ? { id: 'tenebrosa' } : {
                  '<b>Ya puedes ir en su barca cuando quieras.</b>',
         pregunta: '¿Vamos a la isla? Súbete, que la barca es muy tranquila. Tranquilísima. De verdad.',
         subida: [[820, 3712]],
-        // la ida es larga: sale hacia el este entre las dos islas y rodea la Tenebrosa entera (unos 30 s)
-        ruta: [[904, 3712], [1100, 4050], [1700, 4230], [2250, 4380], [2520, 4850], [2450, 5300],
+        /* La ida es larga: sale hacia el este entre las dos islas y rodea la Tenebrosa entera
+           (unos 30 s). CUIDADO AL TOCAR ESTOS NÚMEROS (22-09-2026): sube al barco en la PUNTA
+           del embarcadero y los tres primeros puntos van por el canal que queda entre la playa
+           del sur de la isla grande y la arena de la Tenebrosa. Antes iban 100-150 px más
+           arriba y la barca cruzaba por encima de la arena. */
+        ruta: [[820, 3755], [900, 3900], [1100, 4194], [1700, 4361], [2250, 4599],
+               [2520, 4850], [2450, 5300],
                [2050, 5620], [1400, 5690], [800, 5640], [350, 5450], [90, 5200], [120, 5074]],
         bajada: [[140, 5004]],
         destino: { x: 480, y: 5000 },
@@ -19392,7 +19400,8 @@ ampliacion(!HALLOWEEN.islaGanada() ? { id: 'tenebrosa' } : {
         personaje: 'Ossets, el barquero',
         pregunta: '¿Volvemos a la isla grande? Tranquila: a la vuelta el mar ya no asusta tanto.',
         subida: [[140, 5004]],
-        ruta: [[120, 5074], [80, 4950], [100, 4700], [230, 4350], [460, 4080], [760, 3900], [904, 3712]],
+        // el último punto es la punta del embarcadero: ahí baja (ver el aviso de la ida)
+        ruta: [[120, 5074], [80, 4950], [100, 4700], [230, 4350], [460, 4080], [760, 3900], [820, 3755]],
         bajada: [[820, 3712]],
         destino: { x: 820, y: 3440 },
         llegada: '⛵ De vuelta en la isla grande. El mar vuelve a ser azul, como si nada.' } },
