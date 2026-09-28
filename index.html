@@ -15249,7 +15249,7 @@ const Juego = {
        se ve DE LEJOS: es lo que la hace cruzar la isla para buscarlo. Se apaga
        en cuanto lo resuelve. */
     if (rid && typeof Enigmas !== 'undefined' && Enigmas.pendiente(rid))
-      this.cristalDeEnigma(ctx, l.x, l.y - alto - 26 + flota);
+      this.cristalDeEnigma(ctx, l.x, l.y - alto - 52 + flota, l.y);
 
     // el icono aparece solo de cerca: hasta entonces no sabes qué hay
     if (!icono || cerca < 0.32) return;
@@ -15573,23 +15573,66 @@ const Juego = {
      Lo pidió Antonio: el Cristal Mayor no se coloca solo, se lleva. Mientras
      lo lleva encima se le ve en la mano, brillando, ande donde ande. */
   /* El rombo de cristal que flota sobre un sitio con Enigma */
-  cristalDeEnigma(ctx, x, y) {
+  /* EL CRISTAL DE LOS ENIGMAS.
+     Agrandado el 28-09-2026, lo pidió Antonio: «creo que mi hija no está
+     encontrando dónde está». Antes era un rombo de 17 px flotando a media
+     altura y, sobre la arena de la feria o entre los árboles, se perdía.
+     Ahora se ve de lejos por tres cosas a la vez:
+       · un ANILLO en el suelo, en la base del sitio, que late. Se ve aunque
+         el cristal quede tapado por un tejado o una palmera;
+       · un HAZ de luz que sube del anillo al cristal;
+       · el CRISTAL, el doble de grande, con borde ámbar y dos destellos.
+     Todo con transparencias suaves: llama la atención sin tapar el dibujo. */
+  cristalDeEnigma(ctx, x, y, ySuelo) {
     const late = 1 + Math.sin(this.t * 2.6 + x) * 0.12;
+    const pulso = (Math.sin(this.t * 2.2 + x) + 1) / 2;
     ctx.save();
-    ctx.globalAlpha = 0.28 + Math.sin(this.t * 2.6 + x) * 0.10;
+
+    if (ySuelo !== undefined) {
+      ctx.globalAlpha = 0.16 + pulso * 0.20;                  // el anillo del suelo
+      ctx.strokeStyle = '#4FB8D8'; ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(x, ySuelo + 4, 40 + pulso * 12, 14 + pulso * 4, 0, 0, 7); ctx.stroke();
+      ctx.globalAlpha = 0.10 + pulso * 0.10;
+      ctx.fillStyle = '#7FD8E8';
+      ctx.beginPath(); ctx.ellipse(x, ySuelo + 4, 38, 13, 0, 0, 7); ctx.fill();
+
+      const haz = ctx.createLinearGradient(0, y, 0, ySuelo);   // el haz de luz
+      haz.addColorStop(0, 'rgba(127,216,232,0.30)');
+      haz.addColorStop(1, 'rgba(127,216,232,0)');
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = haz;
+      ctx.beginPath();
+      ctx.moveTo(x - 13, y); ctx.lineTo(x + 13, y);
+      ctx.lineTo(x + 30, ySuelo + 4); ctx.lineTo(x - 30, ySuelo + 4);
+      ctx.closePath(); ctx.fill();
+    }
+
+    ctx.globalAlpha = 0.30 + pulso * 0.16;                    // el resplandor
     ctx.fillStyle = '#7FD8E8';
-    ctx.beginPath(); ctx.arc(x, y, 26 * late, 0, 7); ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(x, y, 40 * late, 0, 7); ctx.fill();
+
+    ctx.globalAlpha = 1;                                      // el cristal
     ctx.fillStyle = '#4FB8D8';
     ctx.beginPath();
-    ctx.moveTo(x, y - 17 * late); ctx.lineTo(x + 11, y);
-    ctx.lineTo(x, y + 13 * late); ctx.lineTo(x - 11, y); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.beginPath(); ctx.moveTo(x, y - 17 * late); ctx.lineTo(x + 5, y); ctx.lineTo(x, y + 4); ctx.fill();
-    ctx.strokeStyle = '#F2B441'; ctx.lineWidth = 1.6;          // ámbar del Farol
+    ctx.moveTo(x, y - 26 * late); ctx.lineTo(x + 17, y);
+    ctx.lineTo(x, y + 20 * late); ctx.lineTo(x - 17, y); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
     ctx.beginPath();
-    ctx.moveTo(x, y - 17 * late); ctx.lineTo(x + 11, y);
-    ctx.lineTo(x, y + 13 * late); ctx.lineTo(x - 11, y); ctx.closePath(); ctx.stroke();
+    ctx.moveTo(x, y - 26 * late); ctx.lineTo(x + 8, y); ctx.lineTo(x, y + 6); ctx.fill();
+    ctx.strokeStyle = '#F2B441'; ctx.lineWidth = 2.6;         // ámbar del Farol
+    ctx.beginPath();
+    ctx.moveTo(x, y - 26 * late); ctx.lineTo(x + 17, y);
+    ctx.lineTo(x, y + 20 * late); ctx.lineTo(x - 17, y); ctx.closePath(); ctx.stroke();
+
+    [[-24, -16, 0], [22, -6, 1.7], [4, -36, 3.1]].forEach(d => {   // los destellos
+      const b = (Math.sin(this.t * 3 + d[2] + x) + 1) / 2;
+      ctx.globalAlpha = 0.25 + b * 0.75;
+      ctx.fillStyle = '#FFF3C4';
+      if (typeof Avatar !== 'undefined' && Avatar.estrella)
+        Avatar.estrella(ctx, x + d[0], y + d[1], 3 + b * 3, 1.2, 4);
+      else { ctx.beginPath(); ctx.arc(x + d[0], y + d[1], 2 + b * 2, 0, 7); ctx.fill(); }
+    });
     ctx.restore();
   },
 
