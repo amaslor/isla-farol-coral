@@ -12808,12 +12808,27 @@ const Sorpresas = {
      ELEGIR una (sol, lluvia, nieve, día o noche) será más adelante una
      expansión entera, el superpoder de mandar en el tiempo. */
   CLAVE_CLIMA: 'islaClimaApagado',
+  CLAVE_CLIMA_DE: 'islaClimaApagadoDe',   // qué ambientación se apagó
 
+  /* EL INTERRUPTOR APAGA LA AMBIENTACIÓN QUE HABÍA, NO LAS QUE VENGAN
+     (01-11-2026). Gala apagó la lluvia del otoño; semanas después ganó el
+     Cristal de Calabaza y la isla no se disfrazó: el interruptor seguía
+     apagado y tapaba también Halloween. Ahora se apunta QUÉ se apagó, y si
+     después manda otra ambientación, vuelve encendida sola. Los aparatos
+     que lo apagaron antes de existir este apunte solo pudieron apagar la
+     lluvia (era la única ambientación que había llegado). */
   climaApagado() {
-    try { return localStorage.getItem(this.CLAVE_CLIMA) === 'si'; } catch (e) { return false; }
+    try {
+      if (localStorage.getItem(this.CLAVE_CLIMA) !== 'si') return false;
+      const de = localStorage.getItem(this.CLAVE_CLIMA_DE) || 'lluvia';
+      return de === this.climaActivo();
+    } catch (e) { return false; }
   },
   apagarClima(apagado) {
-    try { localStorage.setItem(this.CLAVE_CLIMA, apagado ? 'si' : 'no'); } catch (e) {}
+    try {
+      localStorage.setItem(this.CLAVE_CLIMA, apagado ? 'si' : 'no');
+      localStorage.setItem(this.CLAVE_CLIMA_DE, this.climaActivo() || '');
+    } catch (e) {}
   },
 
   /* EL BOTÓN DE LA BARRA
