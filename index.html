@@ -265,6 +265,8 @@
   .cromo.falta{border-style:dashed}
   .cromo.falta .cara{filter:grayscale(1); opacity:.45}
   .cromo.llevo{border-color:var(--coral); background:#FFF1EC}
+  .cromo.plata{border-color:#B8C4CC; background:#F4F7F9}
+  .cromo.oro{border-color:#F2C14E; background:#FFF6D8}
 
   /* Las conchas en filas de cinco: así se cuentan de un vistazo */
   /* Los peces del espigón */
@@ -1068,6 +1070,8 @@ const ROPA = {
     { id: 'globos',    nombre: 'Un ramo de globos',  color: '#FF8FA3', precio: 65, grupo: 'llevar' },
     // bota sola mientras andas: es la pelota con la que juegas en el animalario
     { id: 'pelotamano',nombre: 'La pelota del perro', color: '#D9F24E', precio: 30, grupo: 'llevar' },
+    // de exploradora (02-11-2026): la lente brilla con un destello que va y viene
+    { id: 'catalejomano', nombre: 'Catalejo de exploradora', color: '#C9A227', precio: 45, grupo: 'llevar' },
     // premio del Cristal Dorado (20 retos): no se compra
     { id: 'linterna',  nombre: 'Linterna de minera', color: '#FFD98A', precio: null, premio: 'cristal-mina', grupo: 'llevar' },
   ],
@@ -1113,6 +1117,8 @@ const ROPA = {
     { id: 'orejasrana',nombre: 'Gorro de ranita',      precio: 40, grupo: 'cabeza' },
     { id: 'cuernos',   nombre: 'Cuernitos de dragón',  precio: 45, grupo: 'cabeza' },
     { id: 'tarta',     nombre: 'Gorro de tarta',       precio: 60, grupo: 'cabeza' },
+    // sombrero de safari con una mariposa posada que abre y cierra las alas (02-11-2026)
+    { id: 'gorroexplo',nombre: 'Sombrero de exploradora', precio: 55, grupo: 'cabeza' },
     { id: 'diadema',   nombre: 'Diadema de perlas',    precio: 65, grupo: 'cabeza' },
     { id: 'pulpo',     nombre: 'Gorro de pulpo',       precio: 70, grupo: 'cabeza' },
     { id: 'bruja',     nombre: 'Sombrero de bruja',    precio: 80, grupo: 'cabeza' },
@@ -1133,6 +1139,8 @@ const ROPA = {
     { id: 'cohete',    nombre: 'Mochila cohete',       precio: 100, grupo: 'espalda' },
     // por la ventanita asoma un bichito que se esconde y vuelve a salir
     { id: 'mochilabicho', nombre: 'Mochila con ventanita', precio: 85, grupo: 'espalda' },
+    // vuela por encima atada con un hilo, con dos colas largas que ondean (02-11-2026)
+    { id: 'cometa',    nombre: 'Una cometa',             precio: 80, grupo: 'espalda' },
 
     // --- para el cuerpo
     { id: 'collar',    nombre: 'Collar de conchas',    precio: 30, grupo: 'cuerpo' },
@@ -3719,6 +3727,10 @@ const PROBLEMAS = {
           con: '¿Cuántos saltos ha dado Pau? Mila ha dado {c}, que son {d} menos que Pau.',
           sin: '¿Cuántos saltos ha dado Pau? Mila ha dado unos cuantos, que son menos que Pau.',
           marca: 'que son {d} menos que Pau' },
+        { quien: 'Tià', quien2: 'Bruna', cosas: 'tablones', mas: 'quien2', busca: 0,
+          con: 'Tià ha apilado {c} tablones en el taller. Son {d} menos que los que tiene Bruna en la fustería. ¿Cuántos tablones tiene Bruna?',
+          sin: 'Tià ha apilado unos tablones en el taller. Son menos que los que tiene Bruna en la fustería. ¿Cuántos tablones tiene Bruna?',
+          marca: 'Son {d} menos que los que tiene Bruna' },
         { quien: 'la barca azul', quien2: 'la barca roja', cosas: 'niñas', mas: 'quien2', busca: 0,
           con: 'La barca azul lleva {c} niñas, {d} menos que la barca roja. ¿Cuántas niñas lleva la barca roja?',
           sin: 'La barca azul lleva unas niñas, menos que la barca roja. ¿Cuántas niñas lleva la barca roja?',
@@ -4007,6 +4019,8 @@ const PROBLEMAS = {
           marca: '{b} paquetes de {c} hojas' },
         { con: '¿Cuántas conchas le quedan a Mila? Tenía {b} cajas con {c} conchas cada una y ha vendido {q}.',
           marca: '{b} cajas con {c} conchas cada una' },
+        { con: 'Nube pega en su álbum {b} filas de {c} cromos, y se le despegan {q}. ¿Cuántos cromos quedan pegados?',
+          marca: '{b} filas de {c} cromos' },
       ],
       explicaPasos: { quitar: 'Para quitar primero hay que saber cuántos había, y eso todavía no lo sabes.' },
       pistas: ['¿Qué necesitas saber antes de poder quitar?', 'Primero: ¿cuántos había al principio?'],
@@ -6260,6 +6274,28 @@ const Avatar = {
       ctx.fillStyle = '#E8C33D';
       ctx.beginPath(); ctx.arc(fx, my - 25, 2, 0, 7); ctx.fill();
     }
+    /* EL CATALEJO DE EXPLORADORA: un tubo de latón apuntando al cielo; la
+       lente lanza un destello que va y viene mientras andas. */
+    if (man && man.id === 'catalejomano') {
+      ctx.save();
+      ctx.translate(mx, my); ctx.rotate(0.95);           // apunta hacia fuera y arriba
+      ctx.fillStyle = '#5A3A22';                          // tubo grueso
+      ctx.beginPath(); ctx.roundRect(-4, -12, 8, 14, 2); ctx.fill();
+      ctx.fillStyle = '#C9A227';                          // aro de latón
+      ctx.fillRect(-4.5, -13, 9, 3);
+      ctx.fillStyle = '#7A5B3A';                          // tubo fino
+      ctx.beginPath(); ctx.roundRect(-3, -26, 6, 14, 2); ctx.fill();
+      ctx.fillStyle = '#C9A227';
+      ctx.fillRect(-3.5, -27, 7, 3);
+      ctx.fillStyle = '#8FD3F4';                          // la lente
+      ctx.beginPath(); ctx.ellipse(0, -27.5, 3.2, 1.6, 0, 0, 7); ctx.fill();
+      ctx.restore();
+      const brillo = Math.max(0, Math.sin(paso * 0.7));     // el destello
+      if (brillo > 0.2) {
+        ctx.fillStyle = 'rgba(255,255,255,' + (0.55 * brillo) + ')';
+        this.estrella(ctx, mx + 23, my - 17, 3 + 4 * brillo, 1.2, 4);
+      }
+    }
     if (man && man.id === 'varita') {
       ctx.strokeStyle = '#E8DCC0'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(mx, my + 2); ctx.lineTo(mx + 10, my - 26); ctx.stroke();
@@ -6289,6 +6325,29 @@ const Avatar = {
     }
 
     // --- complemento por detrás
+    /* LA COMETA: vuela por encima y por detrás, atada con un hilo al hombro,
+       y se balancea con el paso; las dos colas largas ondean. */
+    if (look.complemento === 'cometa') {
+      const vx = -24 + Math.sin(paso * 0.5) * 6, vy = -96 + Math.cos(paso * 0.7) * 3;
+      ctx.strokeStyle = 'rgba(80,60,40,0.7)'; ctx.lineWidth = 1;   // el hilo
+      ctx.beginPath(); ctx.moveTo(-8, -30); ctx.quadraticCurveTo(vx * 0.6, vy * 0.55, vx, vy); ctx.stroke();
+      ctx.fillStyle = '#E8506B';                                  // el rombo
+      ctx.beginPath(); ctx.moveTo(vx, vy - 14); ctx.lineTo(vx + 10, vy); ctx.lineTo(vx, vy + 16);
+      ctx.lineTo(vx - 10, vy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#FFE066';
+      ctx.beginPath(); ctx.moveTo(vx, vy - 14); ctx.lineTo(vx + 10, vy); ctx.lineTo(vx, vy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#5AA9DC';
+      ctx.beginPath(); ctx.moveTo(vx, vy); ctx.lineTo(vx, vy + 16); ctx.lineTo(vx - 10, vy); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#5A3A22'; ctx.lineWidth = 1;             // las varillas
+      ctx.beginPath(); ctx.moveTo(vx, vy - 14); ctx.lineTo(vx, vy + 16); ctx.moveTo(vx - 10, vy); ctx.lineTo(vx + 10, vy); ctx.stroke();
+      [['#F26FA8', -3], ['#7ED6A5', 3]].forEach((cola, i) => {  // las colas
+        ctx.strokeStyle = cola[0]; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(vx, vy + 16);
+        for (let k = 1; k <= 5; k++)
+          ctx.lineTo(vx + cola[1] * k + Math.sin(paso * 1.6 + k + i) * 4, vy + 16 + k * 6);
+        ctx.stroke();
+      });
+    }
     if (look.complemento === 'alas') {
       ctx.fillStyle = 'rgba(180, 235, 255, 0.75)';
       ctx.beginPath(); ctx.ellipse(-13, -30, 11, 7, -0.6, 0, 7); ctx.fill();
@@ -6732,6 +6791,26 @@ const Avatar = {
       this.estrella(ctx, -9, -76, 7, 3, 5);
       ctx.fillStyle = '#8FD3F4';
       this.estrella(ctx, 9, -76, 7, 3, 5);
+    }
+    /* EL SOMBRERO DE EXPLORADORA: de safari, con cinta, y una mariposa
+       posada en el ala que abre y cierra las alas. */
+    if (look.complemento === 'gorroexplo') {
+      ctx.fillStyle = '#C8B48A';                        // el ala ancha
+      ctx.beginPath(); ctx.ellipse(0, -56, 25, 6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#D9C69C';                        // la copa
+      ctx.beginPath(); ctx.roundRect(-14, -70, 28, 15, 6); ctx.fill();
+      ctx.fillStyle = '#6B4226';                        // la cinta
+      ctx.fillRect(-14, -61, 28, 4);
+      const abre = 0.35 + Math.abs(Math.sin(paso * 1.3)) * 0.65;   // la mariposa
+      const bx = 17, by = -60;
+      ctx.fillStyle = '#B58BE0';
+      ctx.beginPath(); ctx.ellipse(bx - 4 * abre, by - 3, 4 * abre, 3.5, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(bx + 4 * abre, by - 3, 4 * abre, 3.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#F26FA8';
+      ctx.beginPath(); ctx.ellipse(bx - 3 * abre, by + 1, 3 * abre, 2.4, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(bx + 3 * abre, by + 1, 3 * abre, 2.4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3A3A';
+      ctx.beginPath(); ctx.ellipse(bx, by - 1, 1, 4, 0, 0, 7); ctx.fill();
     }
     if (look.complemento === 'orejasrana') {
       ctx.fillStyle = '#8FD86B';                       // la capucha
@@ -10153,11 +10232,12 @@ const Mochila = {
 };
 
 /* ==================================================== LOS CUADERNOS =====
-   Tres cuadernos en uno, con pestañas, para que quepa en una sola cabeza:
+   Cuatro cuadernos en uno, con pestañas, para que quepa en una sola cabeza:
      🧠 Cabeza   → las formas de problema resueltas, y su regla
      🔧 Manitas  → las cosas de la isla que ha puesto en marcha
      🤝 Vecinos  → la gente a la que le ha devuelto lo suyo
-   Los tres funcionan igual: lo conseguido a color, lo que falta apagado y
+     🃏 Cromos   → los sitios de la isla que ya ha pisado (02-11-2026, S2)
+   Los cuatro funcionan igual: lo conseguido a color, lo que falta apagado y
    con una pista. Un cuaderno a medias tira mucho más que uno vacío. */
 const Cuadernos = {
 
@@ -10167,6 +10247,7 @@ const Cuadernos = {
     { id: 'cabeza',  titulo: '🧠 Cabeza' },
     { id: 'manitas', titulo: '🔧 Manitas' },
     { id: 'vecinos', titulo: '🤝 Vecinos' },
+    { id: 'cromos',  titulo: '🃏 Cromos' },
   ],
 
   abrir(cual) {
@@ -10270,6 +10351,51 @@ const Cuadernos = {
       pie: 'Los objetos raros que encuentras <b>no son adornos: son de alguien</b>. Cada uno ' +
            'dice a quién preguntar. Lee bien lo que te cuentan y averigua de quién es.',
     };
+  },
+
+  /* 🃏 EL ÁLBUM DE CROMOS DE LA ISLA (02-11-2026, mejora S2). Un cromo por
+     sitio: se rellena solo con acercarse (lo que ya apunta «descubiertos»),
+     y se vuelve de oro cuando además se ha superado su reto. Los huecos
+     vacíos llevan una pista que hay que leer: el sitio conocido más cercano
+     o, si no hay ninguno cerca, el rumbo desde la cabaña. Nunca el nombre. */
+  hoja_cromos() {
+    const sitios = MUNDO.lugares.filter(l => l.nombre);
+    const tengo = sitios.filter(l => Estado.estaDescubierto(l.id)).length;
+    const fichas = sitios.map(l => {
+      if (!Estado.estaDescubierto(l.id))
+        return `<div class="cromo falta"><span class="cara">?</span>
+                <b>¿?</b><small>${this.pistaCromo(l, sitios)}</small></div>`;
+      const reto = Estado.retoDeLugar(l);
+      const oro = reto && Estado.tieneCristal(reto);
+      const icono = (l.id === 'cabana' && '🏠') ||
+                    (typeof Mapa !== 'undefined' && Mapa.ICONOS[l.id] && Mapa.ICONOS[l.id][0]) ||
+                    (typeof ICONOS !== 'undefined' && ICONOS[l.accion]) || '📍';
+      const nota = (l.personaje ? 'Aquí está ' + l.personaje + '. ' : '') +
+                   (oro ? '🏅 Reto superado.' : reto ? 'Tiene un reto.' : '');
+      return `<div class="cromo ${oro ? 'oro' : 'hecho'}"><span class="cara">${icono}</span>
+              <b>${l.nombre}</b><small>${nota}</small></div>`;
+    }).join('');
+    return {
+      cuenta: `Tienes <b>${tengo}</b> de <b>${sitios.length}</b> cromos de la isla`,
+      fichas,
+      pie: 'Cada sitio de la isla tiene su cromo, y <b>se pega solo al llegar</b>. Si además ' +
+           'superas su reto, se vuelve de oro. Los huecos dicen por dónde buscar.',
+    };
+  },
+
+  pistaCromo(l, sitios) {
+    let cerca = null, d = 700;           // solo cuenta como «cerca» si está a menos de 700
+    sitios.forEach(s => {
+      if (s.id === l.id || !Estado.estaDescubierto(s.id)) return;
+      const k = Math.hypot(s.x - l.x, s.y - l.y);
+      if (k < d) { d = k; cerca = s; }
+    });
+    if (cerca) return 'Está cerca de <b>' + cerca.nombre.charAt(0).toLowerCase() + cerca.nombre.slice(1) + '</b>.';
+    const cab = sitios.find(s => s.id === 'cabana') || { x: 0, y: 0 };
+    const dx = l.x - cab.x, dy = l.y - cab.y;
+    const rumbo = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'al este' : 'al oeste')
+                                              : (dy > 0 ? 'al sur' : 'al norte');
+    return 'Queda lejos, <b>' + rumbo + '</b> de tu cabaña.';
   },
 };
 
@@ -12064,10 +12190,11 @@ const Tutorial = {
              'ha jugado sale contigo dando saltitos.' },
 
     { icono: '📔', titulo: 'Tus cuadernos',
-      texto: 'El botón 📔 de arriba (o la tecla <b>L</b>) abre tus tres cuadernos:<br><br>' +
+      texto: 'El botón 📔 de arriba (o la tecla <b>L</b>) abre tus cuatro cuadernos:<br><br>' +
              '🧠 <b>Cabeza</b>: las formas de problema que ya sabes. Toca una y te cuenta su regla.<br>' +
              '🔧 <b>Manitas</b>: lo que has arreglado en la isla.<br>' +
-             '🤝 <b>Vecinos</b>: a quién le has devuelto lo suyo.<br><br>' +
+             '🤝 <b>Vecinos</b>: a quién le has devuelto lo suyo.<br>' +
+             '🃏 <b>Cromos</b>: los sitios de la isla que ya has pisado.<br><br>' +
              'Lo que falta sale en gris, con una pista.' },
 
     { icono: '🗺️', titulo: 'Si te pierdes',
@@ -13381,7 +13508,7 @@ const Juego = {
     MUNDO.lugares.forEach(l => {
       if (Math.hypot(l.x - j.x, l.y - j.y) < 230 && Estado.descubrir(l.id)) {
         Sonido.cristal();
-        Hada.decir('🗺️ ¡Has encontrado <b>' + l.nombre + '</b>!', 5);
+        Hada.decir('🗺️ ¡Has encontrado <b>' + l.nombre + '</b>! Ya tienes su cromo 🃏', 5);
       }
       /* El mapa solo marca los cristales que YA ha visto con sus ojos
          (22-09-2026): descubrir dónde hay Enigma es suyo, volver no cuesta. */
